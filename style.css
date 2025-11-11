@@ -1,108 +1,139 @@
-/* 全体レイアウト */
+/* ===================================
+   教員ページ：スタイリッシュ暗色テーマ
+   =================================== */
+
 body {
-  font-family: "Hiragino Sans", "Noto Sans JP", sans-serif;
-  background-color: #fafafa;
-  color: #333;
+  font-family: "Noto Sans JP", sans-serif;
+  background: linear-gradient(145deg, #0d1117, #1a1f29);
+  color: #e0e0e0;
   text-align: center;
   margin: 0;
-  padding: 1em;
+  padding: 1.5em;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
 }
 
-/* タイトル */
 h1 {
-  margin-top: 0.5em;
-  font-size: 1.6em;
-  color: #2a3f57;
+  font-size: 1.8em;
+  margin-bottom: 1em;
+  color: #80d8ff;
+  text-shadow: 0 0 8px rgba(128, 216, 255, 0.7);
 }
 
-/* 操作ボタン */
+/* ----- コントロールボタン群 ----- */
 .controls {
   margin: 1.2em auto;
   display: flex;
   justify-content: center;
   flex-wrap: wrap;
-  gap: 0.6em;
+  gap: 0.8em;
 }
 
+/* ベーススタイル */
 button {
-  background-color: #4caf50;
   border: none;
-  color: white;
-  padding: 0.6em 1.2em;
+  color: #fff;
+  padding: 0.8em 1.4em;
   font-size: 1em;
-  border-radius: 8px;
+  border-radius: 10px;
   cursor: pointer;
-  transition: background-color 0.2s, transform 0.1s;
-  box-shadow: 1px 2px 3px rgba(0,0,0,0.1);
+  position: relative;
+  overflow: hidden;
+  background: #222;
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.1);
+  transition: all 0.25s ease;
 }
 
+/* ホバー時に少し浮く */
 button:hover {
-  background-color: #43a047;
-  transform: scale(1.03);
+  transform: translateY(-2px);
 }
 
-button:active {
-  transform: scale(0.97);
+/* アクティブ時に発光 */
+button.active {
+  transform: scale(1.06);
+  box-shadow: 0 0 15px 4px rgba(255,255,255,0.4);
 }
 
-/* 各ボタンカラー */
-#unlock { background-color: #4caf50; } /* 開始 */
-#lock   { background-color: #f44336; } /* 終了 */
-#reset  { background-color: #607d8b; } /* リセット */
-#showQR { background-color: #2196f3; } /* QR表示 */
-#backBtn { background-color: #9c27b0; } /* 戻る */
+/* ---- ボタンごとの色分け ---- */
+#unlock.active {
+  box-shadow: 0 0 20px 6px rgba(0, 255, 100, 0.9);
+  background: linear-gradient(90deg, #00e676, #1de9b6);
+}
 
-/* グラフ領域 */
+#lock.active {
+  box-shadow: 0 0 20px 6px rgba(255, 0, 80, 0.9);
+  background: linear-gradient(90deg, #f44336, #ff1744);
+}
+
+#reset.active {
+  box-shadow: 0 0 20px 6px rgba(120, 200, 255, 0.9);
+  background: linear-gradient(90deg, #607d8b, #90a4ae);
+}
+
+#showQR.active {
+  box-shadow: 0 0 20px 6px rgba(33, 150, 243, 0.9);
+  background: linear-gradient(90deg, #1976d2, #03a9f4);
+}
+
+#backBtn.active {
+  box-shadow: 0 0 20px 6px rgba(156, 39, 176, 0.9);
+  background: linear-gradient(90deg, #8e24aa, #ba68c8);
+}
+
+/* ---- グラフ部分 ---- */
 #chart-section {
-  width: 280px;
-  height: 280px;
-  margin: 1.5em auto;
-  background-color: white;
-  border-radius: 10px;
-  box-shadow: 0 0 10px rgba(0,0,0,0.08);
-  padding: 1em;
+  width: 300px;
+  height: 300px;
+  margin: 2em auto;
+  background: #161b22;
+  border-radius: 16px;
+  box-shadow: 0 0 20px rgba(0,0,0,0.6);
+  padding: 1.2em;
 }
 
-/* QRコードセクション */
+canvas {
+  width: 100%;
+  height: 100%;
+}
+
+/* ---- QRコード部分 ---- */
 #qr-section {
-  display: flex;
+  display: none;
   flex-direction: column;
-  align-items: center;       /* ✅ 横方向中央 */
-  justify-content: center;   /* ✅ 縦方向中央 */
+  align-items: center;
+  justify-content: center;
   text-align: center;
-  background-color: white;
-  border-radius: 10px;
-  box-shadow: 0 0 10px rgba(0,0,0,0.08);
-  padding: 2em 1em;
+  background: #161b22;
+  border-radius: 16px;
+  box-shadow: 0 0 20px rgba(0,0,0,0.6);
+  padding: 1.5em;
   width: 320px;
   margin: 2em auto;
 }
 
 #qr-section h2 {
-  font-size: 1.2em;
-  color: #2a3f57;
+  color: #80d8ff;
   margin-bottom: 0.8em;
+  text-shadow: 0 0 6px rgba(128,216,255,0.6);
 }
 
-/* ✅ QRコード本体を中央揃え */
 #qrcode {
   display: flex;
   justify-content: center;
   align-items: center;
-  width: 260px;
-  height: 260px;
+  width: 220px;
+  height: 220px;
   margin: 1em auto;
-}
-
-#qrcode canvas {
-  border: 2px solid #ccc;
+  border: 2px solid #2c2c2c;
   border-radius: 8px;
-  background-color: #fff;
+  background: #fff;
 }
 
-/* リンク */
 a {
-  color: #2196f3;
+  color: #80d8ff;
   text-decoration: none;
   word-break: break-all;
 }
@@ -111,55 +142,18 @@ a:hover {
   text-decoration: underline;
 }
 
-/* スマホでも整うように */
-@media (max-width: 500px) {
+/* スマホ対応 */
+@media (max-width: 600px) {
   h1 {
-    font-size: 1.3em;
+    font-size: 1.4em;
   }
   button {
     font-size: 0.9em;
-    padding: 0.5em 1em;
+    padding: 0.6em 1em;
   }
   #chart-section, #qr-section {
     width: 260px;
     height: auto;
   }
-}
-
-/* ===== 教員ボタンのクリック時エフェクト ===== */
-
-/* 全ボタンに軽い押下アニメーション */
-button {
-  position: relative;
-  overflow: hidden;
-}
-
-button::after {
-  content: "";
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 0;
-  height: 0;
-  background: rgba(255, 255, 255, 0.5);
-  border-radius: 50%;
-  transform: translate(-50%, -50%);
-  transition: width 0.3s ease, height 0.3s ease, opacity 0.6s ease;
-  opacity: 0;
-}
-
-/* クリック時に波紋エフェクト */
-button:active::after {
-  width: 200%;
-  height: 200%;
-  opacity: 1;
-  transition: 0s;
-}
-
-/* 選択状態（光る） */
-button.active {
-  box-shadow: 0 0 12px 3px rgba(255, 235, 59, 0.7);
-  transform: scale(1.05);
-  transition: all 0.25s ease;
 }
 
