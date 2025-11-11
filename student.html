@@ -2,71 +2,96 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>教員用クイズコントローラ</title>
+<title>学生用クイズ回答</title>
 <link rel="stylesheet" href="style.css">
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script type="module">
-import { db, ref, set, onValue, update } from "./common.js";
+import { db, ref, get, set, onValue, update } from "./common.js";
 
 const activityRef = ref(db, "activity");
 const resultRef = ref(db, "result");
 
-// 初期化（データベースに初期値を設定）
-set(activityRef, { status: "locked" });
-set(resultRef, { O: 0, X: 0 });
+// 学生ごとに一意のIDを生成（ブラウザごとに保存）
+let studentId = localStorage.getItem("studentId");
+if (!studentId) {
+  studentId = "stu_" + Math.random().toString(36).substring(2, 9);
+  localStorage.setItem("studentId", studentId);
+}
+
+// 各学生の回答を追跡
+const answersRef = ref(db, "answers/" + studentId);
 
 document.addEventListener("DOMContentLoaded", () => {
-  const lockBtn = document.getElementById("lock");
-  const unlockBtn = document.getElementById("unlock");
-  const resetBtn = document.getElementById("reset");
-  const ctx = document.getElementById("resultChart").getContext("2d");
+  const oBtn = document.getElementById("o-btn");
+  const xBtn = document.getElementById("x-btn");
+  const status = document.getElementById("status");
 
-  // Chart.js設定
-  const chart = new Chart(ctx, {
-    type: "doughnut",
-    data: {
-      labels: ["○", "×"],
-      datasets: [{
-        data: [0, 0],
-        backgroundColor: ["#4dd0e1", "#ef9a9a"],
-        borderWidth: 1
-      }]
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        legend: { position: "bottom" },
-        title: { display: true, text: "リアルタイム集計結果" }
-      }
+  // ロック・解除監視
+  onValue(activityRef, (snapshot) => {
+    const data = snapshot.val();
+    if (data.status === "open") {
+      oBtn.disabled = false;
+      xBtn.disabled = false;
+      status.textContent = "回答受付中";
+    } else {
+      oBtn.disabled = true;
+      xBtn.disabled = true;
+      status.textContent = "ロック中（待機してください）";
     }
   });
 
-  // ボタン操作
-  lockBtn.onclick = () => update(activityRef, { status: "locked" });
-  unlockBtn.onclick = () => update(activityRef, { status: "open" });
-  resetBtn.onclick = () => set(resultRef, { O: 0, X: 0 });
-
-  // リアルタイム更新
-  onValue(resultRef, (snapshot) => {
-    const data = snapshot.val() || { O: 0, X: 0 };
-    chart.data.datasets[0].data = [data.O, data.X];
-    chart.update();
+  // 回答済み状態を復元
+  get(answersRef).then(snapshot => {
+    const last = snapshot.val();
+    if (last) highlightButton(last);
   });
+
+  oBtn.onclick = () => submitAnswer("O");
+  xBtn.onclick = () => submitAnswer("X");
 });
+
+async function submitAnswer(choice) {
+  const prevSnap = await get(answersRef);
+  const prev = prevSnap.val();
+
+  // 前回の回答を取り消す
+  if (prev && prev !== choice) {
+    const resSnap = await get(resultRef);
+    const res = resSnap.val() || { O: 0, X: 0 };
+    res[prev] = Math.max(0, res[prev] - 1);
+    await set(resultRef, res);
+  }
+
+  // 新しい回答を登録
+  const resSnap2 = await get(resultRef);
+  const res2 = resSnap2.val() || { O: 0, X: 0 };
+  res2[choice]++;
+  await set(resultRef, res2);
+
+  // この学生の最新回答を保存
+  await set(answersRef, choice);
+
+  highlightButton(choice);
+}
+
+// 選択ボタンの色反転
+function highlightButton(choice) {
+  const oBtn = document.getElementById("o-btn");
+  const xBtn = document.getElementById("x-btn");
+  oBtn.classList.remove("selected");
+  xBtn.classList.remove("selected");
+  if (choice === "O") oBtn.classList.add("selected");
+  if (choice === "X") xBtn.classList.add("selected");
+}
 </script>
 </head>
-
 <body>
-<h1>教員コントロールパネル</h1>
+<h1>○☓クイズ 回答ページ</h1>
+<p id="status">ロック中（待機してください）</p>
 
-<div class="controls">
-  <button id="unlock">🟢 回答開始</button>
-  <button id="lock">🔴 回答終了</button>
-  <button id="reset">🧹 リセット</button>
+<div class="buttons">
+  <button id="o-btn" disabled>○</button>
+  <button id="x-btn" disabled>×</button>
 </div>
-
-<canvas id="resultChart" width="300" height="300"></canvas>
-
 </body>
 </html>
 
