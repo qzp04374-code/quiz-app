@@ -2,55 +2,71 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>学生用クイズ回答</title>
+<title>教員用クイズコントローラ</title>
 <link rel="stylesheet" href="style.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script type="module">
-import { db, ref, get, set, onValue, update } from "./common.js";
+import { db, ref, set, onValue, update } from "./common.js";
 
 const activityRef = ref(db, "activity");
 const resultRef = ref(db, "result");
 
-document.addEventListener("DOMContentLoaded", () => {
-  const oBtn = document.getElementById("o-btn");
-  const xBtn = document.getElementById("x-btn");
-  const status = document.getElementById("status");
+// 初期化（データベースに初期値を設定）
+set(activityRef, { status: "locked" });
+set(resultRef, { O: 0, X: 0 });
 
-  // 回答状態の監視
-  onValue(activityRef, (snapshot) => {
-    const data = snapshot.val();
-    if (data.status === "open") {
-      oBtn.disabled = false;
-      xBtn.disabled = false;
-      status.textContent = "回答受付中";
-    } else {
-      oBtn.disabled = true;
-      xBtn.disabled = true;
-      status.textContent = "ロック中（待機してください）";
+document.addEventListener("DOMContentLoaded", () => {
+  const lockBtn = document.getElementById("lock");
+  const unlockBtn = document.getElementById("unlock");
+  const resetBtn = document.getElementById("reset");
+  const ctx = document.getElementById("resultChart").getContext("2d");
+
+  // Chart.js設定
+  const chart = new Chart(ctx, {
+    type: "doughnut",
+    data: {
+      labels: ["○", "×"],
+      datasets: [{
+        data: [0, 0],
+        backgroundColor: ["#4dd0e1", "#ef9a9a"],
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position: "bottom" },
+        title: { display: true, text: "リアルタイム集計結果" }
+      }
     }
   });
 
-  oBtn.onclick = () => submitAnswer("O", oBtn);
-  xBtn.onclick = () => submitAnswer("X", xBtn);
-});
+  // ボタン操作
+  lockBtn.onclick = () => update(activityRef, { status: "locked" });
+  unlockBtn.onclick = () => update(activityRef, { status: "open" });
+  resetBtn.onclick = () => set(resultRef, { O: 0, X: 0 });
 
-function submitAnswer(type, btn) {
-  get(resultRef).then(snapshot => {
+  // リアルタイム更新
+  onValue(resultRef, (snapshot) => {
     const data = snapshot.val() || { O: 0, X: 0 };
-    data[type]++;
-    set(resultRef, data);
-    btn.classList.add("selected");
+    chart.data.datasets[0].data = [data.O, data.X];
+    chart.update();
   });
-}
+});
 </script>
 </head>
-<body>
-<h1>○☓クイズ 回答ページ</h1>
-<p id="status">ロック中（待機してください）</p>
 
-<div class="buttons">
-  <button id="o-btn" disabled>○</button>
-  <button id="x-btn" disabled>×</button>
+<body>
+<h1>教員コントロールパネル</h1>
+
+<div class="controls">
+  <button id="unlock">🟢 回答開始</button>
+  <button id="lock">🔴 回答終了</button>
+  <button id="reset">🧹 リセット</button>
 </div>
+
+<canvas id="resultChart" width="300" height="300"></canvas>
+
 </body>
 </html>
 
