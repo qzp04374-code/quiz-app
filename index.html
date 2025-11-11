@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>教員用クイズコントローラ</title>
+<link rel="stylesheet" href="style.css">
+<script type="module">
+import { db, ref, set, onValue, update } from "./common.js";
+
+const activityRef = ref(db, "activity");
+const resultRef = ref(db, "result");
+
+// 初期化
+set(activityRef, { status: "locked" });
+set(resultRef, { O: 0, X: 0 });
+
+// ロック・解除・リセット
+document.addEventListener("DOMContentLoaded", () => {
+  const lockBtn = document.getElementById("lock");
+  const unlockBtn = document.getElementById("unlock");
+  const resetBtn = document.getElementById("reset");
+  const chart = document.getElementById("chart");
+
+  lockBtn.onclick = () => update(activityRef, { status: "locked" });
+  unlockBtn.onclick = () => update(activityRef, { status: "open" });
+  resetBtn.onclick = () => set(resultRef, { O: 0, X: 0 });
+
+  // 結果のリアルタイム表示
+  onValue(resultRef, (snapshot) => {
+    const data = snapshot.val();
+    chart.innerHTML = `
+      <div class="bar o" style="height:${data.O * 10}px">○ ${data.O}</div>
+      <div class="bar x" style="height:${data.X * 10}px">× ${data.X}</div>
+    `;
+  });
+});
+</script>
+</head>
+<body>
+<h1>教員コントロールパネル</h1>
+
+<div class="controls">
+  <button id="unlock">🟢 回答開始</button>
+  <button id="lock">🔴 回答終了</button>
+  <button id="reset">🧹 リセット</button>
+</div>
+
+<h2>リアルタイム集計</h2>
+<div id="chart" class="chart"></div>
+
+</body>
+</html>
+

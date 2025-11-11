@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>学生用クイズ回答</title>
+<link rel="stylesheet" href="style.css">
+<script type="module">
+import { db, ref, get, set, onValue, update } from "./common.js";
+
+const activityRef = ref(db, "activity");
+const resultRef = ref(db, "result");
+
+document.addEventListener("DOMContentLoaded", () => {
+  const oBtn = document.getElementById("o-btn");
+  const xBtn = document.getElementById("x-btn");
+  const status = document.getElementById("status");
+
+  // 回答状態の監視
+  onValue(activityRef, (snapshot) => {
+    const data = snapshot.val();
+    if (data.status === "open") {
+      oBtn.disabled = false;
+      xBtn.disabled = false;
+      status.textContent = "回答受付中";
+    } else {
+      oBtn.disabled = true;
+      xBtn.disabled = true;
+      status.textContent = "ロック中（待機してください）";
+    }
+  });
+
+  oBtn.onclick = () => submitAnswer("O", oBtn);
+  xBtn.onclick = () => submitAnswer("X", xBtn);
+});
+
+function submitAnswer(type, btn) {
+  get(resultRef).then(snapshot => {
+    const data = snapshot.val() || { O: 0, X: 0 };
+    data[type]++;
+    set(resultRef, data);
+    btn.classList.add("selected");
+  });
+}
+</script>
+</head>
+<body>
+<h1>○☓クイズ 回答ページ</h1>
+<p id="status">ロック中（待機してください）</p>
+
+<div class="buttons">
+  <button id="o-btn" disabled>○</button>
+  <button id="x-btn" disabled>×</button>
+</div>
+</body>
+</html>
+
