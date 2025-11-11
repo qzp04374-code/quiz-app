@@ -5,75 +5,76 @@
 <title>学生用クイズ回答</title>
 <link rel="stylesheet" href="style.css">
 <script type="module">
-import { db, ref, get, set, onValue, update } from "./common.js";
+import { db, ref, get, set, onValue } from "./common.js";
 
 const activityRef = ref(db, "activity");
 const resultRef = ref(db, "result");
 
-// 学生ごとに一意のIDを生成（ブラウザごとに保存）
+// 学生を識別（ブラウザごとに固定）
 let studentId = localStorage.getItem("studentId");
 if (!studentId) {
   studentId = "stu_" + Math.random().toString(36).substring(2, 9);
   localStorage.setItem("studentId", studentId);
 }
-
-// 各学生の回答を追跡
 const answersRef = ref(db, "answers/" + studentId);
+
+let selected = null;   // ○ or ✕の一時選択
+let submitted = false; // 決定済フラグ
 
 document.addEventListener("DOMContentLoaded", () => {
   const oBtn = document.getElementById("o-btn");
   const xBtn = document.getElementById("x-btn");
+  const submitBtn = document.getElementById("submit-btn");
   const status = document.getElementById("status");
+  const msg = document.getElementById("message");
 
-  // ロック・解除監視
+  // 教員の制御状態を監視
   onValue(activityRef, (snapshot) => {
     const data = snapshot.val();
     if (data.status === "open") {
       oBtn.disabled = false;
       xBtn.disabled = false;
+      submitBtn.disabled = false;
       status.textContent = "回答受付中";
+      msg.textContent = "";
+      submitted = false;
+      selected = null;
+      highlightButton(null);
     } else {
       oBtn.disabled = true;
       xBtn.disabled = true;
+      submitBtn.disabled = true;
       status.textContent = "ロック中（待機してください）";
     }
   });
 
-  // 回答済み状態を復元
-  get(answersRef).then(snapshot => {
-    const last = snapshot.val();
-    if (last) highlightButton(last);
-  });
+  oBtn.onclick = () => { selected = "O"; highlightButton("O"); };
+  xBtn.onclick = () => { selected = "X"; highlightButton("X"); };
 
-  oBtn.onclick = () => submitAnswer("O");
-  xBtn.onclick = () => submitAnswer("X");
-});
-
-async function submitAnswer(choice) {
-  const prevSnap = await get(answersRef);
-  const prev = prevSnap.val();
-
-  // 前回の回答を取り消す
-  if (prev && prev !== choice) {
+  submitBtn.onclick = async () => {
+    if (submitted) return;
+    if (!selected) {
+      msg.textContent = "○か✕を選んでから決定してください。";
+      return;
+    }
+    // 回答を登録
     const resSnap = await get(resultRef);
     const res = resSnap.val() || { O: 0, X: 0 };
-    res[prev] = Math.max(0, res[prev] - 1);
+    res[selected]++;
     await set(resultRef, res);
-  }
+    await set(answersRef, selected);
 
-  // 新しい回答を登録
-  const resSnap2 = await get(resultRef);
-  const res2 = resSnap2.val() || { O: 0, X: 0 };
-  res2[choice]++;
-  await set(resultRef, res2);
+    msg.textContent = `あなたの回答（${selected === "O" ? "○" : "✕"}）を受け付けました。`;
+    submitted = true;
 
-  // この学生の最新回答を保存
-  await set(answersRef, choice);
+    // ボタンを無効化
+    oBtn.disabled = true;
+    xBtn.disabled = true;
+    submitBtn.disabled = true;
+  };
+});
 
-  highlightButton(choice);
-}
-
-// 選択ボタンの色反転
+// ボタン選択の強調表示
 function highlightButton(choice) {
   const oBtn = document.getElementById("o-btn");
   const xBtn = document.getElementById("x-btn");
@@ -92,6 +93,9 @@ function highlightButton(choice) {
   <button id="o-btn" disabled>○</button>
   <button id="x-btn" disabled>×</button>
 </div>
+
+<p><button id="submit-btn" disabled style="padding:0.6em 1.5em;">決定</button></p>
+<p id="message" style="color:#333;font-weight:bold;"></p>
 </body>
 </html>
 
