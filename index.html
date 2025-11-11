@@ -5,13 +5,14 @@
 <title>教員用クイズコントローラ</title>
 <link rel="stylesheet" href="style.css">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs/qrcode.min.js"></script>
 <script type="module">
-import { db, ref, set, onValue, update } from "./common.js";
+import { db, ref, set, update, onValue } from "./common.js";
 
 const activityRef = ref(db, "activity");
 const resultRef = ref(db, "result");
 
-// 初期化
+// 起動時初期化
 set(activityRef, { status: "locked" });
 set(resultRef, { O: 0, X: 0 });
 
@@ -19,15 +20,24 @@ document.addEventListener("DOMContentLoaded", () => {
   const lockBtn = document.getElementById("lock");
   const unlockBtn = document.getElementById("unlock");
   const resetBtn = document.getElementById("reset");
+  const qrBtn = document.getElementById("showQR");
+  const backBtn = document.getElementById("backBtn");
+  const chartSection = document.getElementById("chart-section");
+  const qrSection = document.getElementById("qr-section");
+
+  // 初期表示（グラフモード）
+  chartSection.style.display = "block";
+  qrSection.style.display = "none";
+
+  // グラフ設定
   const ctx = document.getElementById("resultChart").getContext("2d");
 
-  // 中央に％を描くプラグイン
   const centerText = {
     id: "centerText",
     afterDraw(chart) {
       const {ctx, chartArea: {width, height}} = chart;
       ctx.save();
-      ctx.font = "bold 28px sans-serif";
+      ctx.font = "bold 26px sans-serif";
       ctx.fillStyle = "#333";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
@@ -38,7 +48,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   };
 
-  // グラフ設定
   const chart = new Chart(ctx, {
     type: "doughnut",
     data: {
@@ -60,17 +69,43 @@ document.addEventListener("DOMContentLoaded", () => {
     plugins: [centerText]
   });
 
-  // 操作ボタン
+  // ボタン操作
   lockBtn.onclick = () => update(activityRef, { status: "locked" });
   unlockBtn.onclick = () => update(activityRef, { status: "open" });
   resetBtn.onclick = () => set(resultRef, { O: 0, X: 0 });
 
-  // リアルタイム更新
+  // グラフ更新
   onValue(resultRef, (snapshot) => {
     const data = snapshot.val() || { O: 0, X: 0 };
     chart.data.datasets[0].data = [data.O, data.X];
     chart.update();
   });
+
+  // ✅ QRコード表示（固定URL）
+  qrBtn.onclick = () => {
+    const qrDiv = document.getElementById("qrcode");
+    qrDiv.innerHTML = "";
+
+    const studentUrl = "https://qzp04374-code.github.io/quiz-app/student.html";
+
+    new QRCode(qrDiv, {
+      text: studentUrl,
+      width: 240,
+      height: 240
+    });
+
+    document.getElementById("qrLink").textContent = studentUrl;
+    document.getElementById("qrLink").href = studentUrl;
+
+    chartSection.style.display = "none";
+    qrSection.style.display = "block";
+  };
+
+  // 戻るボタン
+  backBtn.onclick = () => {
+    qrSection.style.display = "none";
+    chartSection.style.display = "block";
+  };
 });
 </script>
 </head>
@@ -82,10 +117,20 @@ document.addEventListener("DOMContentLoaded", () => {
   <button id="unlock">🟢 回答開始</button>
   <button id="lock">🔴 回答終了</button>
   <button id="reset">🧹 リセット</button>
+  <button id="showQR">📱 QR表示</button>
 </div>
 
-<div style="width:260px; height:260px; margin: 1em auto;">
+<!-- グラフセクション -->
+<div id="chart-section" style="width:260px; height:260px; margin:1em auto;">
   <canvas id="resultChart"></canvas>
+</div>
+
+<!-- QRコードセクション -->
+<div id="qr-section" style="text-align:center;">
+  <h2>学生用アクセスQRコード</h2>
+  <div id="qrcode" style="margin:1em auto;"></div>
+  <p><a id="qrLink" href="#" target="_blank" style="word-wrap:break-word;"></a></p>
+  <button id="backBtn">↩ 集計画面に戻る</button>
 </div>
 
 </body>
