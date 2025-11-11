@@ -126,3 +126,40 @@ a:hover {
   }
 }
 
+/* ===== 教員ボタンのクリック時エフェクト ===== */
+
+/* 全ボタンに軽い押下アニメーション */
+button {
+  position: relative;
+  overflow: hidden;
+}
+
+button::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transition: width 0.3s ease, height 0.3s ease, opacity 0.6s ease;
+  opacity: 0;
+}
+
+/* クリック時に波紋エフェクト */
+button:active::after {
+  width: 200%;
+  height: 200%;
+  opacity: 1;
+  transition: 0s;
+}
+
+/* 選択状態（光る） */
+button.active {
+  box-shadow: 0 0 12px 3px rgba(255, 235, 59, 0.7);
+  transform: scale(1.05);
+  transition: all 0.25s ease;
+}
+
