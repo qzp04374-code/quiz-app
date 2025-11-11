@@ -4,38 +4,58 @@
 <meta charset="UTF-8">
 <title>教員用クイズコントローラ</title>
 <link rel="stylesheet" href="style.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script type="module">
 import { db, ref, set, onValue, update } from "./common.js";
 
 const activityRef = ref(db, "activity");
 const resultRef = ref(db, "result");
 
-// 初期化
+// 初期化（データベースに初期値を設定）
 set(activityRef, { status: "locked" });
 set(resultRef, { O: 0, X: 0 });
 
-// ロック・解除・リセット
 document.addEventListener("DOMContentLoaded", () => {
   const lockBtn = document.getElementById("lock");
   const unlockBtn = document.getElementById("unlock");
   const resetBtn = document.getElementById("reset");
-  const chart = document.getElementById("chart");
+  const ctx = document.getElementById("resultChart").getContext("2d");
 
+  // Chart.js設定
+  const chart = new Chart(ctx, {
+    type: "doughnut",
+    data: {
+      labels: ["○", "×"],
+      datasets: [{
+        data: [0, 0],
+        backgroundColor: ["#4dd0e1", "#ef9a9a"],
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position: "bottom" },
+        title: { display: true, text: "リアルタイム集計結果" }
+      }
+    }
+  });
+
+  // ボタン操作
   lockBtn.onclick = () => update(activityRef, { status: "locked" });
   unlockBtn.onclick = () => update(activityRef, { status: "open" });
   resetBtn.onclick = () => set(resultRef, { O: 0, X: 0 });
 
-  // 結果のリアルタイム表示
+  // リアルタイム更新
   onValue(resultRef, (snapshot) => {
-    const data = snapshot.val();
-    chart.innerHTML = `
-      <div class="bar o" style="height:${data.O * 10}px">○ ${data.O}</div>
-      <div class="bar x" style="height:${data.X * 10}px">× ${data.X}</div>
-    `;
+    const data = snapshot.val() || { O: 0, X: 0 };
+    chart.data.datasets[0].data = [data.O, data.X];
+    chart.update();
   });
 });
 </script>
 </head>
+
 <body>
 <h1>教員コントロールパネル</h1>
 
@@ -45,8 +65,7 @@ document.addEventListener("DOMContentLoaded", () => {
   <button id="reset">🧹 リセット</button>
 </div>
 
-<h2>リアルタイム集計</h2>
-<div id="chart" class="chart"></div>
+<canvas id="resultChart" width="300" height="300"></canvas>
 
 </body>
 </html>
