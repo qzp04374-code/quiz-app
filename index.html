@@ -2,136 +2,131 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>教員用クイズコントローラ</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>教員用コントロールページ</title>
 <link rel="stylesheet" href="style.css">
+
+<!-- Chart.js & QRCode.js 読み込み -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/qrcodejs/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+<!-- Firebaseモジュール -->
 <script type="module">
-import { db, ref, set, update, onValue } from "./common.js";
-
-const activityRef = ref(db, "activity");
-const resultRef = ref(db, "result");
-
-// 起動時初期化
-set(activityRef, { status: "locked" });
-set(resultRef, { O: 0, X: 0 });
+import { db, ref, set, onValue, update } from "./common.js";
 
 document.addEventListener("DOMContentLoaded", () => {
-  const lockBtn = document.getElementById("lock");
   const unlockBtn = document.getElementById("unlock");
+  const lockBtn = document.getElementById("lock");
   const resetBtn = document.getElementById("reset");
-  const qrBtn = document.getElementById("showQR");
+  const showQRBtn = document.getElementById("showQR");
   const backBtn = document.getElementById("backBtn");
-  const chartSection = document.getElementById("chart-section");
+
   const qrSection = document.getElementById("qr-section");
-
-  // 初期表示（グラフモード）
-  chartSection.style.display = "block";
-  qrSection.style.display = "none";
-
-  // グラフ設定
+  const chartSection = document.getElementById("chart-section");
   const ctx = document.getElementById("resultChart").getContext("2d");
 
-  const centerText = {
-    id: "centerText",
-    afterDraw(chart) {
-      const {ctx, chartArea: {width, height}} = chart;
-      ctx.save();
-      ctx.font = "bold 26px sans-serif";
-      ctx.fillStyle = "#333";
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      const data = chart.data.datasets[0].data;
-      const total = data[0] + data[1];
-      const percent = total > 0 ? Math.round((data[0] / total) * 100) : 0;
-      ctx.fillText(`${percent}%`, width / 2, height / 2);
-    }
-  };
+  // Firebase参照
+  const activityRef = ref(db, "activity");
+  const resultRef = ref(db, "result");
 
-  const chart = new Chart(ctx, {
+  // グラフ初期化
+  let chart = new Chart(ctx, {
     type: "doughnut",
     data: {
       labels: ["○", "×"],
       datasets: [{
         data: [0, 0],
-        backgroundColor: ["#4dd0e1", "#ef9a9a"],
-        borderWidth: 1
+        backgroundColor: ["#4caf50", "#f44336"],
+        borderWidth: 0
       }]
     },
     options: {
-      responsive: true,
-      maintainAspectRatio: false,
       plugins: {
-        legend: { position: "bottom" },
-        title: { display: true, text: "リアルタイム集計結果" }
-      }
-    },
-    plugins: [centerText]
+        legend: { display: true, position: "bottom" }
+      },
+      cutout: "65%"
+    }
   });
 
-  // ボタン操作
-  lockBtn.onclick = () => update(activityRef, { status: "locked" });
-  unlockBtn.onclick = () => update(activityRef, { status: "open" });
-  resetBtn.onclick = () => set(resultRef, { O: 0, X: 0 });
-
-  // グラフ更新
+  // リアルタイム更新
   onValue(resultRef, (snapshot) => {
     const data = snapshot.val() || { O: 0, X: 0 };
-    chart.data.datasets[0].data = [data.O, data.X];
+    chart.data.datasets[0].data = [data.O || 0, data.X || 0];
     chart.update();
   });
 
-  // ✅ QRコード表示（固定URL）
-  qrBtn.onclick = () => {
-    const qrDiv = document.getElementById("qrcode");
-    qrDiv.innerHTML = "";
+  // 回答開始
+  unlockBtn.addEventListener("click", () => {
+    set(activityRef, { status: "open" });
+    glowButton(unlockBtn);
+  });
 
-    const studentUrl = "https://qzp04374-code.github.io/quiz-app/student.html";
+  // 回答終了
+  lockBtn.addEventListener("click", () => {
+    set(activityRef, { status: "closed" });
+    glowButton(lockBtn);
+  });
 
-    new QRCode(qrDiv, {
-      text: studentUrl,
-      width: 240,
-      height: 240
-    });
+  // 集計リセット
+  resetBtn.addEventListener("click", () => {
+    set(resultRef, { O: 0, X: 0 });
+    glowButton(resetBtn);
+  });
 
-    document.getElementById("qrLink").textContent = studentUrl;
-    document.getElementById("qrLink").href = studentUrl;
-
+  // QR表示切り替え
+  showQRBtn.addEventListener("click", () => {
     chartSection.style.display = "none";
-    qrSection.style.display = "block";
-  };
+    qrSection.style.display = "flex";
+    glowButton(showQRBtn);
 
-  // 戻るボタン
-  backBtn.onclick = () => {
+    // 生成済みでなければQR作成
+    if (!document.getElementById("qrcode").hasChildNodes()) {
+      new QRCode(document.getElementById("qrcode"), {
+        text: "https://qzp04374-code.github.io/quiz-app/student.html",
+        width: 220,
+        height: 220
+      });
+    }
+  });
+
+  // QR→戻る
+  backBtn.addEventListener("click", () => {
     qrSection.style.display = "none";
     chartSection.style.display = "block";
-  };
+    glowButton(backBtn);
+  });
+
+  // 発光エフェクト関数
+  function glowButton(btn) {
+    document.querySelectorAll("button").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+  }
 });
 </script>
 </head>
 
 <body>
-<h1>教員コントロールパネル</h1>
+  <h1>クイズ コントロールパネル</h1>
 
-<div class="controls">
-  <button id="unlock">🟢 回答開始</button>
-  <button id="lock">🔴 回答終了</button>
-  <button id="reset">🧹 リセット</button>
-  <button id="showQR">📱 QR表示</button>
-</div>
+  <div class="controls">
+    <button id="unlock">回答開始</button>
+    <button id="lock">回答終了</button>
+    <button id="reset">集計リセット</button>
+    <button id="showQR">QRコード表示</button>
+    <button id="backBtn">グラフに戻る</button>
+  </div>
 
-<!-- グラフセクション -->
-<div id="chart-section" style="width:260px; height:260px; margin:1em auto;">
-  <canvas id="resultChart"></canvas>
-</div>
+  <!-- 円グラフ表示 -->
+  <div id="chart-section">
+    <canvas id="resultChart" width="240" height="240"></canvas>
+  </div>
 
-<!-- QRコードセクション -->
-<div id="qr-section" style="text-align:center;">
-  <h2>学生用アクセスQRコード</h2>
-  <div id="qrcode" style="margin:1em auto;"></div>
-  <p><a id="qrLink" href="#" target="_blank" style="word-wrap:break-word;"></a></p>
-  <button id="backBtn">↩ 集計画面に戻る</button>
-</div>
+  <!-- QRコード表示 -->
+  <div id="qr-section" style="display:none;">
+    <h2>学生アクセス用 QRコード</h2>
+    <div id="qrcode"></div>
+    <p><a href="https://qzp04374-code.github.io/quiz-app/student.html" target="_blank">https://qzp04374-code.github.io/quiz-app/student.html</a></p>
+  </div>
 
 </body>
 </html>
