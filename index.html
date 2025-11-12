@@ -12,7 +12,7 @@
 
 <!-- Firebaseモジュール -->
 <script type="module">
-import { db, ref, set, onValue, update } from "./common.js";
+import { db, ref, set, onValue, update, child } from "./common.js";
 
 document.addEventListener("DOMContentLoaded", () => {
   const unlockBtn = document.getElementById("unlock");
@@ -28,6 +28,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // Firebase参照
   const activityRef = ref(db, "activity");
   const resultRef = ref(db, "result");
+  const answersRef = ref(db, "answers"); // 学生回答データをリセット対象に追加
 
   // グラフ初期化
   let chart = new Chart(ctx, {
@@ -55,10 +56,16 @@ document.addEventListener("DOMContentLoaded", () => {
     chart.update();
   });
 
-  // 回答開始
-  unlockBtn.addEventListener("click", () => {
-    set(activityRef, { status: "open" });
+  // ✅ 回答開始（集計リセット＋開始）
+  unlockBtn.addEventListener("click", async () => {
+    // ① 既存集計をクリア
+    await set(answersRef, {});
+    await set(resultRef, { O: 0, X: 0 });
+
+    // ② 回答開始
+    await set(activityRef, { status: "open" });
     glowButton(unlockBtn);
+    alert("集計をリセットして、回答を開始しました。");
   });
 
   // 回答終了
@@ -67,10 +74,12 @@ document.addEventListener("DOMContentLoaded", () => {
     glowButton(lockBtn);
   });
 
-  // 集計リセット
+  // 集計リセットのみ（独立操作用）
   resetBtn.addEventListener("click", () => {
     set(resultRef, { O: 0, X: 0 });
+    set(answersRef, {});
     glowButton(resetBtn);
+    alert("集計をリセットしました。");
   });
 
   // QR表示切り替え
@@ -79,7 +88,6 @@ document.addEventListener("DOMContentLoaded", () => {
     qrSection.style.display = "flex";
     glowButton(showQRBtn);
 
-    // 生成済みでなければQR作成
     if (!document.getElementById("qrcode").hasChildNodes()) {
       new QRCode(document.getElementById("qrcode"), {
         text: "https://qzp04374-code.github.io/quiz-app/student.html",
@@ -103,8 +111,8 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 });
 </script>
-</head>
 
+</head>
 <body>
   <h1>クイズ コントロールパネル</h1>
 
@@ -125,7 +133,8 @@ document.addEventListener("DOMContentLoaded", () => {
   <div id="qr-section" style="display:none;">
     <h2>学生アクセス用 QRコード</h2>
     <div id="qrcode"></div>
-    <p><a href="https://qzp04374-code.github.io/quiz-app/student.html" target="_blank">https://qzp04374-code.github.io/quiz-app/student.html</a></p>
+    <p><a href="https://qzp04374-code.github.io/quiz-app/student.html" target="_blank">
+      https://qzp04374-code.github.io/quiz-app/student.html</a></p>
   </div>
 
 </body>
