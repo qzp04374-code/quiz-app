@@ -6,105 +6,140 @@
 <title>教員用コントロールページ</title>
 <link rel="stylesheet" href="style.css">
 
-<!-- Chart.js & QRCode.js 読み込み -->
+<!-- Chart.js & QRCode.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
 <!-- Firebaseモジュール -->
 <script type="module">
-import { db, ref, set, onValue, update, child } from "./common.js";
+import { db, ref, set, onValue } from "./common.js";
 
 document.addEventListener("DOMContentLoaded", () => {
+  // --- ボタン取得 ---
   const unlockBtn = document.getElementById("unlock");
-  const lockBtn = document.getElementById("lock");
-  const resetBtn = document.getElementById("reset");
+  const lockBtn   = document.getElementById("lock");
+  const resetBtn  = document.getElementById("reset");
   const showQRBtn = document.getElementById("showQR");
-  const backBtn = document.getElementById("backBtn");
+  const backBtn   = document.getElementById("backBtn");
 
-  const qrSection = document.getElementById("qr-section");
-  const chartSection = document.getElementById("chart-section");
-  const ctx = document.getElementById("resultChart").getContext("2d");
+  // --- 要素参照 ---
+  const qrSection   = document.getElementById("qr-section");
+  const chartSection= document.getElementById("chart-section");
+  const ctx = document.getElementById("resultChart")?.getContext("2d");
 
-  // Firebase参照
+  // --- Firebase参照 ---
   const activityRef = ref(db, "activity");
-  const resultRef = ref(db, "result");
-  const answersRef = ref(db, "answers"); // 学生回答データをリセット対象に追加
+  const resultRef   = ref(db, "result");
+  const answersRef  = ref(db, "answers");
 
-  // グラフ初期化
-  let chart = new Chart(ctx, {
-    type: "doughnut",
-    data: {
-      labels: ["○", "×"],
-      datasets: [{
-        data: [0, 0],
-        backgroundColor: ["#4caf50", "#f44336"],
-        borderWidth: 0
-      }]
-    },
-    options: {
-      plugins: {
-        legend: { display: true, position: "bottom" }
+  console.log("Firebase refs initialized:", { activityRef, resultRef, answersRef });
+
+  // --- グラフ初期化 ---
+  let chart = null;
+  if (ctx) {
+    chart = new Chart(ctx, {
+      type: "doughnut",
+      data: {
+        labels: ["○", "×"],
+        datasets: [{
+          data: [0, 0],
+          backgroundColor: ["#4caf50", "#f44336"],
+          borderWidth: 0
+        }]
       },
-      cutout: "65%"
+      options: {
+        plugins: {
+          legend: { display: true, position: "bottom", labels: { color: "#fff" } }
+        },
+        cutout: "65%"
+      }
+    });
+  }
+
+  // --- リアルタイム更新 ---
+  onValue(resultRef, (snapshot) => {
+    const data = snapshot.val() || { O: 0, X: 0 };
+    console.log("Realtime update:", data);
+    if (chart) {
+      chart.data.datasets[0].data = [data.O || 0, data.X || 0];
+      chart.update();
+    }
+  }, (error) => {
+    console.error("onValue error:", error);
+    alert("Firebaseの読み取りに失敗しました。ルール設定を確認してください。");
+  });
+
+  // --- 回答開始（集計リセット＋開始）---
+  unlockBtn.addEventListener("click", async () => {
+    try {
+      await set(answersRef, {});
+      await set(resultRef, { O: 0, X: 0 });
+      await set(activityRef, { status: "open" });
+      glowButton(unlockBtn);
+      alert("集計をリセットして、回答を開始しました。");
+    } catch (e) {
+      console.error("回答開始エラー:", e);
+      alert("回答開始に失敗しました。Firebase設定を確認してください。");
     }
   });
 
-  // リアルタイム更新
-  onValue(resultRef, (snapshot) => {
-    const data = snapshot.val() || { O: 0, X: 0 };
-    chart.data.datasets[0].data = [data.O || 0, data.X || 0];
-    chart.update();
+  // --- 回答終了 ---
+  lockBtn.addEventListener("click", async () => {
+    try {
+      await set(activityRef, { status: "closed" });
+      glowButton(lockBtn);
+      alert("回答を終了しました。");
+    } catch (e) {
+      console.error("回答終了エラー:", e);
+      alert("回答終了に失敗しました。");
+    }
   });
 
-  // ✅ 回答開始（集計リセット＋開始）
-  unlockBtn.addEventListener("click", async () => {
-    // ① 既存集計をクリア
-    await set(answersRef, {});
-    await set(resultRef, { O: 0, X: 0 });
-
-    // ② 回答開始
-    await set(activityRef, { status: "open" });
-    glowButton(unlockBtn);
-    alert("集計をリセットして、回答を開始しました。");
+  // --- 集計リセットのみ ---
+  resetBtn.addEventListener("click", async () => {
+    try {
+      await set(resultRef, { O: 0, X: 0 });
+      await set(answersRef, {});
+      glowButton(resetBtn);
+      alert("集計をリセットしました。");
+    } catch (e) {
+      console.error("リセットエラー:", e);
+      alert("集計リセットに失敗しました。");
+    }
   });
 
-  // 回答終了
-  lockBtn.addEventListener("click", () => {
-    set(activityRef, { status: "closed" });
-    glowButton(lockBtn);
-  });
-
-  // 集計リセットのみ（独立操作用）
-  resetBtn.addEventListener("click", () => {
-    set(resultRef, { O: 0, X: 0 });
-    set(answersRef, {});
-    glowButton(resetBtn);
-    alert("集計をリセットしました。");
-  });
-
-  // QR表示切り替え
+  // --- QRコード表示 ---
   showQRBtn.addEventListener("click", () => {
-    chartSection.style.display = "none";
-    qrSection.style.display = "flex";
-    glowButton(showQRBtn);
+    try {
+      chartSection.style.display = "none";
+      qrSection.style.display = "flex";
+      glowButton(showQRBtn);
 
-    if (!document.getElementById("qrcode").hasChildNodes()) {
-      new QRCode(document.getElementById("qrcode"), {
+      const qrContainer = document.getElementById("qrcode");
+      qrContainer.innerHTML = "";
+      new QRCode(qrContainer, {
         text: "https://qzp04374-code.github.io/quiz-app/student.html",
         width: 220,
         height: 220
       });
+    } catch (e) {
+      console.error("QR表示エラー:", e);
+      alert("QRコードの生成に失敗しました。");
     }
   });
 
-  // QR→戻る
+  // --- 戻る（グラフ表示へ）---
   backBtn.addEventListener("click", () => {
-    qrSection.style.display = "none";
-    chartSection.style.display = "block";
-    glowButton(backBtn);
+    try {
+      qrSection.style.display = "none";
+      chartSection.style.display = "block";
+      glowButton(backBtn);
+    } catch (e) {
+      console.error("戻るボタンエラー:", e);
+    }
   });
 
-  // 発光エフェクト関数
+  // --- 発光アニメーション ---
   function glowButton(btn) {
     document.querySelectorAll("button").forEach(b => b.classList.remove("active"));
     btn.classList.add("active");
@@ -112,7 +147,62 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 </script>
 
+<style>
+body {
+  background-color: #121212;
+  color: #fff;
+  font-family: "Segoe UI", sans-serif;
+  text-align: center;
+  padding: 20px;
+}
+
+h1 {
+  margin-bottom: 1rem;
+}
+
+.controls {
+  margin-bottom: 1.5rem;
+}
+
+button {
+  margin: 0.3rem;
+  padding: 0.8rem 1.5rem;
+  font-size: 1rem;
+  border: none;
+  border-radius: 10px;
+  color: #fff;
+  background: linear-gradient(145deg, #333, #222);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+button:hover {
+  transform: scale(1.05);
+  background: linear-gradient(145deg, #444, #111);
+}
+
+button.active {
+  box-shadow: 0 0 20px 5px #00e5ff;
+}
+
+#chart-section {
+  display: block;
+  margin-top: 20px;
+}
+
+#qr-section {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+#qrcode {
+  margin: 20px;
+}
+</style>
 </head>
+
 <body>
   <h1>クイズ コントロールパネル</h1>
 
@@ -124,19 +214,19 @@ document.addEventListener("DOMContentLoaded", () => {
     <button id="backBtn">グラフに戻る</button>
   </div>
 
-  <!-- 円グラフ表示 -->
+  <!-- グラフ表示 -->
   <div id="chart-section">
     <canvas id="resultChart" width="240" height="240"></canvas>
   </div>
 
   <!-- QRコード表示 -->
-  <div id="qr-section" style="display:none;">
+  <div id="qr-section">
     <h2>学生アクセス用 QRコード</h2>
     <div id="qrcode"></div>
     <p><a href="https://qzp04374-code.github.io/quiz-app/student.html" target="_blank">
-      https://qzp04374-code.github.io/quiz-app/student.html</a></p>
+      https://qzp04374-code.github.io/quiz-app/student.html
+    </a></p>
   </div>
-
 </body>
 </html>
 
