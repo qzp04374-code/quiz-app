@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Firebase接続診断</title>
+<style>
+body {
+  background: #121212;
+  color: #fff;
+  font-family: monospace;
+  padding: 2rem;
+}
+pre {
+  background: #1f1f1f;
+  padding: 1rem;
+  border-radius: 10px;
+  overflow-x: auto;
+}
+button {
+  padding: 0.8rem 1.5rem;
+  margin-top: 1rem;
+  border: none;
+  border-radius: 6px;
+  background: #00bcd4;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+}
+button:hover {
+  background: #0097a7;
+}
+</style>
+
+<script type="module">
+import { db, ref, set, get } from "./common.js";
+
+async function testFirebase() {
+  const output = document.getElementById("output");
+  output.textContent = "=== Firebase 通信テストを開始 ===\n";
+
+  try {
+    // 書き込みテスト
+    const testRef = ref(db, "diagnostic/test");
+    const value = { time: new Date().toLocaleString(), status: "ok" };
+    await set(testRef, value);
+    output.textContent += "✅ 書き込み成功\n";
+
+    // 読み込みテスト
+    const snap = await get(testRef);
+    const data = snap.val();
+    output.textContent += "✅ 読み込み成功\n";
+    output.textContent += "受信データ: " + JSON.stringify(data, null, 2) + "\n";
+
+    output.textContent += "\n🎉 Firebase 通信は正常に動作しています！";
+
+  } catch (e) {
+    output.textContent += "\n❌ エラー発生:\n" + e.message + "\n\n";
+    output.textContent += "💡 対策: \n";
+    output.textContent += "1. common.js の Firebase 設定が正しいか確認\n";
+    output.textContent += "2. Realtime Database のルールを以下にして保存\n";
+    output.textContent += `{
+  "rules": {
+    ".read": true,
+    ".write": true
+  }
+}\n`;
+  }
+}
+document.addEventListener("DOMContentLoaded", () => {
+  document.getElementById("testBtn").addEventListener("click", testFirebase);
+});
+</script>
+</head>
+
+<body>
+<h1>Firebase 接続診断ツール</h1>
+<p>下のボタンを押して、Firebase との通信が成功するか確認します。</p>
+<button id="testBtn">通信テストを実行</button>
+<pre id="output">準備中...</pre>
+</body>
+</html>
+
