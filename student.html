@@ -1,115 +1,103 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>学生回答ページ</title>
 <link rel="stylesheet" href="student.css">
 
-<!-- Firebase -->
+<!-- Firebase 読み込み -->
 <script type="module">
-import { db, ref, onValue, push } from "./common.js";
+import { db, ref, set, update, onValue } from "./common.js";
 
+/* ===========================
+   ① URL パラメータからクラス取得
+   =========================== */
+const url = new URL(window.location.href);
+let room = url.searchParams.get("room");
+
+if (!room) {
+  room = "default";
+  alert("クラスが指定されていません。\n例: ?room=kyoto-01");
+}
+
+/* タイトルに反映 */
 document.addEventListener("DOMContentLoaded", () => {
-
-  /* ====================================================
-      URLから room を確実に取得する（最新版）
-     ==================================================== */
-  let classRoom = "kyoto-01"; // フォールバック用
-
-  try {
-    const url = new URL(window.location.href);
-    const r = url.searchParams.get("room");
-    if (r) classRoom = r;
-  } catch (e) {
-    console.warn("URL解析に失敗。フォールバック kyoto-01 を使用します");
-  }
-
-  // ページに表示
-  document.getElementById("roomName").textContent = classRoom;
-
-
-  /* ====================================================
-      Firebase参照
-     ==================================================== */
-  const answersRef   = ref(db, `answers/${classRoom}`);
-  const activityRef  = ref(db, "activity");
-
-  let isOpen = false;
-  let hasAnswered = false;
-
-  /* 回答音 */
-  const popSound = new Audio(
-    "https://qzp04374-code.github.io/quiz-app/poyon.mp3"
-  );
-
-  /* ボタン取得 */
-  const btnO = document.getElementById("btnO");
-  const btnX = document.getElementById("btnX");
-
-  /* ====================================================
-      回答（1回のみ）
-     ==================================================== */
-  function answer(value) {
-    if (!isOpen) {
-      alert("まだ回答できません。");
-      return;
-    }
-
-    if (hasAnswered) {
-      alert("回答は1回です。");
-      return;
-    }
-
-    push(answersRef, value);
-
-    if (value === "O") {
-      btnO.classList.add("answered");
-      btnX.classList.remove("answered");
-    } else {
-      btnX.classList.add("answered");
-      btnO.classList.remove("answered");
-    }
-
-    hasAnswered = true;
-
-    popSound.currentTime = 0;
-    popSound.play();
-  }
-
-  btnO.addEventListener("click", () => answer("O"));
-  btnX.addEventListener("click", () => answer("X"));
-
-  /* ====================================================
-      回答開始／停止の監視
-     ==================================================== */
-  onValue(activityRef, snap => {
-    const v = snap.val() || {};
-    isOpen = (v.status === "open" && v.class === classRoom);
-
-    document.getElementById("statusText").textContent =
-      isOpen ? "回答できます" : "回答停止中";
-  });
-
+  document.getElementById("roomName").textContent = room;
 });
-</script>
-</head>
 
+/* ===========================
+   ② Firebase 参照
+   =========================== */
+const activityRef = ref(db, `rooms/${room}/activity`);
+const resultRef   = ref(db, `rooms/${room}/result`);
+const answersRef  = ref(db, `rooms/${room}/answers`);
+
+/* ===========================
+   ③ 回答状態（open/closed）監視
+   =========================== */
+onValue(activityRef, (snap) => {
+  const st = snap.val();
+  const msg = document.getElementById("statusMsg");
+  const btns = document.querySelectorAll(".ansBtn");
+
+  if (st === "open") {
+    msg.textContent = "回答可能です";
+    btns.forEach(b => b.disabled = false);
+  } else {
+    msg.textContent = "回答は締め切られています";
+    btns.forEach(b => b.disabled = true);
+  }
+});
+
+/* ===========================
+   ④ 回答送信（1回答制）
+   =========================== */
+function sendAnswer(val) {
+  // ボタン無効化
+  const btns = document.querySelectorAll(".ansBtn");
+  btns.forEach(b => b.disabled = true);
+
+  // 音を再生
+  playPoyo();
+
+  // Firebase に登録
+  const myId = "user-" + Math.random().toString(36).slice(2, 10);
+
+  update(answersRef, { [myId]: val });
+  update(resultRef, {});
+
+  // 決定表示
+  document.getElementById("yourAnswer").textContent = "あなたの回答：" + val;
+}
+
+/* ===========================
+   ⑤ ぽよん♪ 音
+   =========================== */
+function playPoyo() {
+  const audio = new Audio("./poyo.mp3");
+  audio.play();
+}
+
+/* ボタンへ紐付け */
+window.sendAnswer = sendAnswer;
+</script>
+
+</head>
 <body>
 
-  <div class="container">
-    <h2 id="title">学生回答ページ</h2>
+<div class="container">
+  <h2>学生回答ページ</h2>
+  <p class="room-label">あなたのクラス：<span id="roomName"></span></p>
+  <p id="statusMsg" class="status">読み込み中…</p>
 
-    <div class="room-info">
-      <p>あなたのクラス： <span id="roomName"></span></p>
-      <p id="statusText">読み込み中…</p>
-    </div>
-
-    <div class="button-box">
-      <button id="btnO" class="answer-btn o">○</button>
-      <button id="btnX" class="answer-btn x">✕</button>
-    </div>
+  <div class="btn-area">
+    <button class="ansBtn btnO" onclick="sendAnswer('O')">○</button>
+    <button class="ansBtn btnX" onclick="sendAnswer('X')">✕</button>
   </div>
+
+  <p id="yourAnswer" class="your-answer"></p>
+</div>
 
 </body>
 </html>
