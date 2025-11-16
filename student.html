@@ -4,99 +4,97 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<!-- キャッシュ対策（Safari/iPhone向け） -->
+<title>学生ページ</title>
+
+<!-- キャッシュ対策（iPhone用） -->
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
 
-<title>学生ページ</title>
-
-<!-- CSS 読み込み（キャッシュ対策でバージョン付与） -->
 <link rel="stylesheet" href="student.css?v=20251117">
 
-<!-- Firebase モジュール -->
 <script type="module">
 import { db, ref, set, onValue } from "./common.js?v=20251117";
 
 document.addEventListener("DOMContentLoaded", () => {
 
   /* ---------------------------------------------------
-     ① URL から room パラメータを必ず取得する（重要）
+     ① room を確実に URL から取得（Safari対策）
   --------------------------------------------------- */
-  const url = new URL(window.location.href);
+  const url = new URL(location.href);
   let room = url.searchParams.get("room");
 
-  // room が取れなかった場合に備えて "default" に逃がす
   if (!room) {
-    console.warn("room パラメータがありません → default に設定");
+    alert("ルーム情報がありません（room=???）");
     room = "default";
   }
-  console.log("参加ルーム:", room);
 
   /* ---------------------------------------------------
-     ② Firebase の参照を rooms/{room} 配下に変更
+     ② Firebase パスを rooms/{room}/... に統一
   --------------------------------------------------- */
   const activityRef = ref(db, `rooms/${room}/activity`);
-  const resultRef   = ref(db, `rooms/${room}/result`);
   const answersRef  = ref(db, `rooms/${room}/answers`);
 
-  /* ---------------------------------------------------
-     ③ ボタン
-  --------------------------------------------------- */
   const btnO = document.getElementById("btnO");
   const btnX = document.getElementById("btnX");
   const statusText = document.getElementById("statusText");
 
-  let myAnswer = null; // 最後に押した回答（1回のみ）
+  /* ---------------------------------------------------
+     ③ 学生ごとに固定の userId を発行（1 回だけ）
+        → 毎回回答IDが変わる問題を完全修正
+  --------------------------------------------------- */
+  let userId = localStorage.getItem("quiz_userId");
+  if (!userId) {
+    userId = "u_" + Math.random().toString(36).slice(2, 10);
+    localStorage.setItem("quiz_userId", userId);
+  }
 
   /* ---------------------------------------------------
-     ④ 回答開始/終了を監視
+     ④ 回答開始/終了のリアルタイム監視
   --------------------------------------------------- */
   onValue(activityRef, (snap) => {
     const data = snap.val();
-    if (!data) return;
 
-    if (data.status === "open") {
-      statusText.textContent = "【回答受付中】";
-      btnO.disabled = false;
-      btnX.disabled = false;
-    } else {
+    if (!data || data.status !== "open") {
       statusText.textContent = "【回答終了】";
       btnO.disabled = true;
       btnX.disabled = true;
+    } else {
+      statusText.textContent = "【回答受付中】";
+      btnO.disabled = false;
+      btnX.disabled = false;
     }
   });
 
   /* ---------------------------------------------------
-     ⑤ 回答送信（1人1回に制限）
+     ⑤ 回答送信（1 回だけ上書き可能）
   --------------------------------------------------- */
-  function sendAnswer(ans) {
-    myAnswer = ans;
+  const send = (val) => {
+    set(ref(db, `rooms/${room}/answers/${userId}`), val);
+    document.getElementById("pop").play();
+  };
 
-    // 自分の回答を Firebase に記録（上書き方式）
-    const userId = `user_${Math.random().toString(36).slice(2, 8)}`;
-    set(ref(db, `rooms/${room}/answers/${userId}`), ans);
-
-    alert("回答しました！");
-  }
-
-  btnO.addEventListener("click", () => sendAnswer("O"));
-  btnX.addEventListener("click", () => sendAnswer("X"));
+  btnO.onclick = () => send("O");
+  btnX.onclick = () => send("X");
 
 });
 </script>
-
 </head>
 
 <body>
+<h1>回答ページ</h1>
 
-  <h1>回答ページ</h1>
-  <div id="statusText">状態確認中…</div>
+<div id="statusText">状態確認中…</div>
 
-  <div class="btn-area">
-    <button id="btnO" class="answer-btn o" disabled>○</button>
-    <button id="btnX" class="answer-btn x" disabled>✕</button>
-  </div>
+<div class="btn-area">
+  <button id="btnO" class="answer-btn o" disabled>○</button>
+  <button id="btnX" class="answer-btn x" disabled>✕</button>
+</div>
+
+<!-- かわいい音：ぽよん♪ -->
+<audio id="pop">
+  <source src="pop.mp3">
+</audio>
 
 </body>
 </html>
