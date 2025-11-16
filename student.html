@@ -8,47 +8,48 @@
 
 <!-- Firebase -->
 <script type="module">
-import { db, ref, onValue, set, push } from "./common.js";
+import { db, ref, onValue, push } from "./common.js";
 
 document.addEventListener("DOMContentLoaded", () => {
 
-  /* ───────────────────────────────
-      URL から classRoom を読み取る
-  ─────────────────────────────── */
-  const params = new URLSearchParams(window.location.search);
-  const classRoom = params.get("room") || "kyoto-01";
+  /* ====================================================
+      URLから room を確実に取得する（最新版）
+     ==================================================== */
+  let classRoom = "kyoto-01"; // フォールバック用
 
+  try {
+    const url = new URL(window.location.href);
+    const r = url.searchParams.get("room");
+    if (r) classRoom = r;
+  } catch (e) {
+    console.warn("URL解析に失敗。フォールバック kyoto-01 を使用します");
+  }
+
+  // ページに表示
   document.getElementById("roomName").textContent = classRoom;
 
 
-  /* ───────────────────────────────
+  /* ====================================================
       Firebase参照
-  ─────────────────────────────── */
-  const answersRef = ref(db, `answers/${classRoom}`);
-  const activityRef = ref(db, "activity");
+     ==================================================== */
+  const answersRef   = ref(db, `answers/${classRoom}`);
+  const activityRef  = ref(db, "activity");
 
   let isOpen = false;
-  let hasAnswered = false;  // 1回回答制限
+  let hasAnswered = false;
 
-
-  /* ───────────────────────────────
-      回答音（ぽよん♪）
-  ─────────────────────────────── */
+  /* 回答音 */
   const popSound = new Audio(
-    "https://github.com/qzp04374-code/quiz-app/raw/main/poyon.mp3"
+    "https://qzp04374-code.github.io/quiz-app/poyon.mp3"
   );
 
-
-  /* ───────────────────────────────
-      回答ボタン（○✕）の取得
-  ─────────────────────────────── */
+  /* ボタン取得 */
   const btnO = document.getElementById("btnO");
   const btnX = document.getElementById("btnX");
 
-
-  /* ───────────────────────────────
-      回答処理（1回のみ）
-  ─────────────────────────────── */
+  /* ====================================================
+      回答（1回のみ）
+     ==================================================== */
   function answer(value) {
     if (!isOpen) {
       alert("まだ回答できません。");
@@ -56,14 +57,12 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     if (hasAnswered) {
-      alert("回答は1回のみです。");
+      alert("回答は1回です。");
       return;
     }
 
-    // 回答を Firebase に push
     push(answersRef, value);
 
-    // ボタンを光らせる
     if (value === "O") {
       btnO.classList.add("answered");
       btnX.classList.remove("answered");
@@ -74,42 +73,31 @@ document.addEventListener("DOMContentLoaded", () => {
 
     hasAnswered = true;
 
-    // ぽよん♪
     popSound.currentTime = 0;
     popSound.play();
   }
 
-
-  /* ───────────────────────────────
-      ボタンにイベント設定
-  ─────────────────────────────── */
   btnO.addEventListener("click", () => answer("O"));
   btnX.addEventListener("click", () => answer("X"));
 
+  /* ====================================================
+      回答開始／停止の監視
+     ==================================================== */
+  onValue(activityRef, snap => {
+    const v = snap.val() || {};
+    isOpen = (v.status === "open" && v.class === classRoom);
 
-  /* ───────────────────────────────
-      回答開始 / 終了の状態を監視
-  ─────────────────────────────── */
-  onValue(activityRef, snapshot => {
-    const val = snapshot.val() || {};
-    isOpen = (val.status === "open" && val.class === classRoom);
-
-    if (!isOpen) {
-      document.getElementById("statusText").textContent = "回答停止中";
-    } else {
-      document.getElementById("statusText").textContent = "回答できます";
-    }
+    document.getElementById("statusText").textContent =
+      isOpen ? "回答できます" : "回答停止中";
   });
 
 });
 </script>
-
 </head>
 
 <body>
 
   <div class="container">
-
     <h2 id="title">学生回答ページ</h2>
 
     <div class="room-info">
@@ -121,7 +109,6 @@ document.addEventListener("DOMContentLoaded", () => {
       <button id="btnO" class="answer-btn o">○</button>
       <button id="btnX" class="answer-btn x">✕</button>
     </div>
-
   </div>
 
 </body>
