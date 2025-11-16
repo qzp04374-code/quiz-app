@@ -3,82 +3,97 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>学生用クイズページ</title>
+<title>学生用回答ページ</title>
 <link rel="stylesheet" href="student.css">
+
 <script type="module">
-import { db, ref, onValue, update } from "./common.js";
-
-const activityRef = ref(db, "activity");
-const resultRef = ref(db, "result");
-
-let currentChoice = null; // 学生の現在の選択
+import { db, ref, set, onValue, getRoom } from "./common.js";
 
 document.addEventListener("DOMContentLoaded", () => {
+
+  /* -------------------------
+       クラス名（room）取得
+  ------------------------- */
+  const room = getRoom();
+  document.getElementById("roomName").textContent = room;
+
+  /* -------------------------
+       Firebase パス
+       rooms/{room}/activity
+       rooms/{room}/answers
+  ------------------------- */
+  const activityRef = ref(db, `rooms/${room}/activity`);
+  const answersRef  = ref(db, `rooms/${room}/answers`);
+
+  /* -------------------------
+       学生側 UI 要素
+  ------------------------- */
+  const btnO = document.getElementById("btnO");
+  const btnX = document.getElementById("btnX");
   const statusText = document.getElementById("status");
-  const buttons = document.querySelectorAll(".answer-btn");
-  const confirmBtn = document.getElementById("confirm");
-  let locked = true;
 
-  // 回答ボタンの選択
-  buttons.forEach(btn => {
-    btn.addEventListener("click", () => {
-      if (locked) return;
-      buttons.forEach(b => b.classList.remove("selected"));
-      btn.classList.add("selected");
-      currentChoice = btn.dataset.choice;
-    });
-  });
+  /* -------------------------
+       回答できるかどうか
+  ------------------------- */
+  let answeringAllowed = false;
 
-  // 回答送信
-  confirmBtn.addEventListener("click", () => {
-    if (locked) return;
-    if (!currentChoice) {
-      alert("○か×を選んでください。");
-      return;
-    }
-    update(resultRef, { [currentChoice]: increment(1) });
-    locked = true;
-    statusText.textContent = "回答を送信しました。";
-    confirmBtn.disabled = true;
-  });
+  onValue(activityRef, snapshot => {
+    const v = snapshot.val();
+    answeringAllowed = (v && v.status === "open");
 
-  // 状態監視
-  onValue(activityRef, (snapshot) => {
-    const data = snapshot.val();
-    if (!data) return;
-    if (data.status === "open") {
-      locked = false;
-      currentChoice = null;
-      buttons.forEach(b => b.classList.remove("selected"));
-      confirmBtn.disabled = false;
-      statusText.textContent = "回答受付中です";
+    if (answeringAllowed) {
+      statusText.textContent = "【回答できます】";
+      btnO.classList.remove("locked");
+      btnX.classList.remove("locked");
     } else {
-      locked = true;
-      statusText.textContent = "回答は締め切られました";
-      confirmBtn.disabled = true;
+      statusText.textContent = "【回答は締め切られています】";
+      btnO.classList.add("locked");
+      btnX.classList.add("locked");
     }
   });
-});
 
-// Firebaseの数値更新補助
-function increment(num) {
-  return { ".sv": { "increment": num } };
-}
+  /* -------------------------
+       学生の識別子
+       （ランダムIDで十分）
+  ------------------------- */
+  const myId = "user_" + Math.floor(Math.random() * 999999999);
+
+  /* -------------------------
+       回答送信（最後の1つだけ有効）
+  ------------------------- */
+  function sendAnswer(ans) {
+    if (!answeringAllowed) return;
+
+    // Firebaseに書き込む
+    set(ref(db, `rooms/${room}/answers/${myId}`), ans);
+
+    // 見た目の反転
+    btnO.classList.remove("selected");
+    btnX.classList.remove("selected");
+
+    if (ans === "O") btnO.classList.add("selected");
+    if (ans === "X") btnX.classList.add("selected");
+  }
+
+  /* -------------------------
+       ボタンイベント
+  ------------------------- */
+  btnO.addEventListener("click", () => sendAnswer("O"));
+  btnX.addEventListener("click", () => sendAnswer("X"));
+
+});
 </script>
+
 </head>
 
 <body>
-<h1>クイズ回答ページ</h1>
 
-<p id="status">回答は締め切られています</p>
+<h1>回答ページ</h1>
+<h2 id="roomName"></h2>
+<div id="status">読み込み中…</div>
 
-<div class="buttons">
-  <button class="answer-btn" data-choice="O">○</button>
-  <button class="answer-btn" data-choice="X">×</button>
-</div>
-
-<button id="confirm">回答を決定する</button>
+<button id="btnO" class="answer-btn o">○</button>
+<button id="btnX" class="answer-btn x">×</button>
 
 </body>
 </html>
-

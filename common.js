@@ -1,10 +1,8 @@
-// === Firebase 初期設定（Realtime Database 版）===
+// ----- Firebase モジュール -----
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getDatabase, ref, set, update, onValue, child, get } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
-// FirebaseのライブラリをCDNから読み込み
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-import { getDatabase, ref, set, get, onValue, update } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
-
-// あなたのFirebase設定（そのまま使えます）
+// ----- Firebase 設定 -----
 const firebaseConfig = {
   apiKey: "AIzaSyBke-wTU16skpbK8z80ddK04tE154dHERQ",
   authDomain: "satosan-41eac.firebaseapp.com",
@@ -16,12 +14,15 @@ const firebaseConfig = {
   measurementId: "G-VT9FKHN3LT"
 };
 
-// Firebaseアプリを初期化
+// ----- 初期化 -----
 const app = initializeApp(firebaseConfig);
-
-// データベースを使えるようにする
 const db = getDatabase(app);
 
-// 他のファイル（index.html / student.html）で使うためにエクスポート
-export { db, ref, set, get, onValue, update };
+// ----- URLから room を取得 -----
+export function getRoom() {
+  const params = new URLSearchParams(location.search);
+  return params.get("room") || "kyoto-01";
+}
+
+export { db, ref, set, update, onValue, child, get };
 
