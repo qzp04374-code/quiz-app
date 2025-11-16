@@ -1,115 +1,116 @@
-/* 背景グラデーション＋アニメーション */
+/* 背景：落ち着いたダークカラー */
 body {
-  font-family: "Noto Sans JP", sans-serif;
-  background: linear-gradient(135deg, #c0f0ff, #f7d0ff);
-  background-size: 200% 200%;
-  animation: gradientShift 10s ease infinite;
-  color: #333;
-  text-align: center;
   margin: 0;
-  padding: 1.5em;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
+  padding: 0;
+  background: #1b1b1d;
+  color: #ffffff;
+  font-family: "Noto Sans JP", sans-serif;
+  text-align: center;
 }
 
-@keyframes gradientShift {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
+/* コンテナ中央寄せ */
+.container {
+  margin-top: 30px;
+  padding: 1em;
 }
 
 /* タイトル */
-h1 {
-  font-size: 1.8em;
-  color: #2a3f57;
+#title {
+  font-size: 1.8rem;
   margin-bottom: 0.5em;
-  text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+  text-shadow: 0 0 6px rgba(255,255,255,0.2);
 }
 
-/* 状態テキスト */
-#status {
-  font-size: 1.1em;
-  margin-bottom: 1.2em;
-  color: #444;
+/* クラス表示 */
+.room-info p {
+  font-size: 1.1rem;
+  margin: 0.3em 0;
+  color: #ccc;
 }
 
-/* ○×ボタンコンテナ */
-.buttons {
+/* 状態表示（回答できます・回答停止中） */
+#statusText {
+  font-size: 1.2rem;
+  margin-top: 0.5em;
+  font-weight: bold;
+  color: #00eaff;
+}
+
+/* ○✕ボタンの枠 */
+.button-box {
   display: flex;
   justify-content: center;
-  gap: 2.5em;
-  margin: 1.5em 0;
+  gap: 1.5em;
+  margin-top: 35px;
+
+  /* スマホで2段にならないための指定 */
+  flex-wrap: nowrap;
 }
 
-/* ○×ボタン（立体＋光沢） */
+/* 共通ボタンデザイン */
 .answer-btn {
-  font-size: 3em;
-  width: 100px;
-  height: 100px;
-  border-radius: 50%;
+  width: 140px;
+  height: 140px;
+  border-radius: 20px;
   border: none;
+  font-size: 4.5rem;
+  color: #fff;
   cursor: pointer;
-  transition: all 0.25s ease;
-  background: radial-gradient(circle at 30% 30%, #fff, #ccc);
-  box-shadow: 0 4px 10px rgba(0,0,0,0.25), inset 0 2px 4px rgba(255,255,255,0.6);
+  transition: 0.25s ease;
+  box-shadow: 0px 0px 12px rgba(255,255,255,0.15);
 }
 
-.answer-btn:hover {
-  transform: scale(1.08);
-  box-shadow: 0 6px 12px rgba(0,0,0,0.3), inset 0 2px 6px rgba(255,255,255,0.8);
+/* ○ */
+.answer-btn.o {
+  background: #3da35a;
 }
 
-/* 選択時の光るエフェクト */
-.answer-btn.selected {
-  background: radial-gradient(circle at 40% 40%, #4dd0e1, #0097a7);
-  color: white;
-  box-shadow: 0 0 20px rgba(77,208,225,0.7);
-  transform: scale(1.12);
+.answer-btn.o:hover {
+  background: #4ec96b;
+  transform: scale(1.1);
 }
 
-/* 決定ボタン */
-#confirm {
-  margin-top: 1.5em;
-  background: linear-gradient(90deg, #4caf50, #81c784);
-  color: white;
-  font-size: 1.3em;
-  border: none;
-  border-radius: 50px;
-  padding: 0.8em 2.5em;
-  cursor: pointer;
-  transition: all 0.25s ease;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+/* ✕ */
+.answer-btn.x {
+  background: #d14848;
 }
 
-#confirm:hover {
-  background: linear-gradient(90deg, #43a047, #66bb6a);
-  transform: translateY(-2px);
+.answer-btn.x:hover {
+  background: #ff4c4c;
+  transform: scale(1.1);
 }
 
-#confirm:disabled {
-  background: #ccc;
-  cursor: not-allowed;
-  box-shadow: none;
+/* 回答後の光るエフェクト */
+.answer-btn.answered {
+  animation: glow 0.9s ease-out;
+  box-shadow: 0 0 20px #00eaff, 0 0 35px #00eaff;
+  border: 2px solid #00eaff;
+  transform: scale(1.07);
 }
 
-/* スマホ最適化 */
-@media (max-width: 600px) {
-  body {
-    padding: 1em;
+@keyframes glow {
+  from {
+    box-shadow: 0 0 0px #00eaff;
   }
-  h1 {
-    font-size: 1.4em;
+  to {
+    box-shadow: 0 0 25px #00eaff, 0 0 40px #00eaff;
   }
+}
+
+/* スマホ向け最適化 */
+@media screen and (max-width: 480px) {
   .answer-btn {
-    width: 80px;
-    height: 80px;
-    font-size: 2.2em;
+    width: 120px;
+    height: 120px;
+    font-size: 3.5rem;
   }
-  #confirm {
-    font-size: 1.1em;
-    padding: 0.7em 2em;
+
+  .button-box {
+    gap: 1em;
+  }
+
+  #title {
+    font-size: 1.5rem;
   }
 }
 
