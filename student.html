@@ -3,97 +3,238 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>学生用回答ページ</title>
+<title>学生ページ</title>
 <link rel="stylesheet" href="student.css">
-
-<script type="module">
-import { db, ref, set, onValue, getRoom } from "./common.js";
-
-document.addEventListener("DOMContentLoaded", () => {
-
-  /* -------------------------
-       クラス名（room）取得
-  ------------------------- */
-  const room = getRoom();
-  document.getElementById("roomName").textContent = room;
-
-  /* -------------------------
-       Firebase パス
-       rooms/{room}/activity
-       rooms/{room}/answers
-  ------------------------- */
-  const activityRef = ref(db, `rooms/${room}/activity`);
-  const answersRef  = ref(db, `rooms/${room}/answers`);
-
-  /* -------------------------
-       学生側 UI 要素
-  ------------------------- */
-  const btnO = document.getElementById("btnO");
-  const btnX = document.getElementById("btnX");
-  const statusText = document.getElementById("status");
-
-  /* -------------------------
-       回答できるかどうか
-  ------------------------- */
-  let answeringAllowed = false;
-
-  onValue(activityRef, snapshot => {
-    const v = snapshot.val();
-    answeringAllowed = (v && v.status === "open");
-
-    if (answeringAllowed) {
-      statusText.textContent = "【回答できます】";
-      btnO.classList.remove("locked");
-      btnX.classList.remove("locked");
-    } else {
-      statusText.textContent = "【回答は締め切られています】";
-      btnO.classList.add("locked");
-      btnX.classList.add("locked");
-    }
-  });
-
-  /* -------------------------
-       学生の識別子
-       （ランダムIDで十分）
-  ------------------------- */
-  const myId = "user_" + Math.floor(Math.random() * 999999999);
-
-  /* -------------------------
-       回答送信（最後の1つだけ有効）
-  ------------------------- */
-  function sendAnswer(ans) {
-    if (!answeringAllowed) return;
-
-    // Firebaseに書き込む
-    set(ref(db, `rooms/${room}/answers/${myId}`), ans);
-
-    // 見た目の反転
-    btnO.classList.remove("selected");
-    btnX.classList.remove("selected");
-
-    if (ans === "O") btnO.classList.add("selected");
-    if (ans === "X") btnX.classList.add("selected");
-  }
-
-  /* -------------------------
-       ボタンイベント
-  ------------------------- */
-  btnO.addEventListener("click", () => sendAnswer("O"));
-  btnX.addEventListener("click", () => sendAnswer("X"));
-
-});
-</script>
-
 </head>
 
 <body>
 
 <h1>回答ページ</h1>
-<h2 id="roomName"></h2>
-<div id="status">読み込み中…</div>
+<div id="classDisplay">クラス：読み込み中…</div>
+<div id="status">回答可能になるまでお待ちください</div>
 
-<button id="btnO" class="answer-btn o">○</button>
-<button id="btnX" class="answer-btn x">×</button>
+<!-- ○×ボタン -->
+<div class="buttons">
+  <button id="btnO" class="answer-btn">○</button>
+  <button id="btnX" class="answer-btn">×</button>
+</div>
+
+<!-- 決定ボタン -->
+<button id="confirm" disabled>この回答で決定</button>
+
+<!-- 音 -->
+<audio id="popSound" src="https://soundeffect-lab.info/sound/anime/mp3/decision1.mp3"></audio>
+
+<script type="module">
+import { db, ref, onValue, set, update, child, get } from "./common.js";
+
+let currentClass = null;
+let selectedAnswer = null; // "O" or "X"
+let locked = true;
+
+// HTML要素
+const statusText = document.getElementById("status");
+const btnO = document.getElementById("btnO");
+const btnX = document.getElementById("btnX");
+const confirmBtn = document.getElementById("confirm");
+const classDisplay = document.getElementById("classDisplay");
+const popSound = document.getElementById("popSound");
+
+// 教員が選択した class_room を監視
+onValue(ref(db, "class_room"), (snap) => {
+  currentClass = snap.val();
+  classDisplay.textContent = "クラス：" + currentClass;
+  setupStatusListener();
+});
+
+// 現在のクラスの status を監視
+function setupStatusListener() {
+  if (!currentClass) return;
+
+  const statusRef = ref(db, `status/${currentClass}`);
+  onValue(statusRef, (snap) => {
+    const state = snap.val();
+
+    if (state === "open") {
+      locked = false;
+      statusText.textContent = "回答できます";
+      confirmBtn.disabled = false;
+      btnO.disabled = false;
+      btnX.disabled = false;
+    } else {
+      locked = true;
+      statusText.textContent = "回答終了しました";
+      confirmBtn.disabled = true;
+      btnO.disabled = true;
+      btnX.disabled = true;
+    }
+  });
+}
+
+// ○×ボタン選択
+function selectAnswer(answer) {
+  if (locked) return;
+
+  selectedAnswer = answer;
+
+  btnO.classList.remove("selected");
+  btnX.classList.remove("selected");
+
+  if (answer === "O") btnO.classList.add("selected");
+  if (answer === "X") btnX.classList.add("selected");
+
+  popSound.currentTime = 0;
+  popSound.play();
+}
+
+btnO.addEventListener("click", () => selectAnswer("O"));
+btnX.addEventListener("click", () => selectAnswer("X"));
+
+// 決定ボタン
+confirmBtn.addEventListener("click", async () => {
+  if (!currentClass || !selectedAnswer) {
+    alert("○ か × を選んでください");
+    return;
+  }
+
+  const userID = "user-" + Math.random().toString(36).substring(2, 10);
+  const answerPath = ref(db, `answers/${currentClass}/${userID}`);
+
+  await set(answerPath, selectedAnswer);
+
+  // resultへ加算
+  const resultPath = ref(db, `result/${currentClass}`);
+  const snap = await get(resultPath);
+  const result = snap.val() || { O: 0, X: 0 };
+
+  result[selectedAnswer] = (result[selectedAnswer] || 0) + 1;
+
+  await set(resultPath, result);
+
+  statusText.textContent = "回答が送信されました！";
+  confirmBtn.disabled = true;
+});
+</script>
+
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>学生ページ</title>
+<link rel="stylesheet" href="student.css">
+</head>
+
+<body>
+
+<h1>回答ページ</h1>
+<div id="classDisplay">クラス：読み込み中…</div>
+<div id="status">回答可能になるまでお待ちください</div>
+
+<!-- ○×ボタン -->
+<div class="buttons">
+  <button id="btnO" class="answer-btn">○</button>
+  <button id="btnX" class="answer-btn">×</button>
+</div>
+
+<!-- 決定ボタン -->
+<button id="confirm" disabled>この回答で決定</button>
+
+<!-- 音 -->
+<audio id="popSound" src="https://soundeffect-lab.info/sound/anime/mp3/decision1.mp3"></audio>
+
+<script type="module">
+import { db, ref, onValue, set, update, child, get } from "./common.js";
+
+let currentClass = null;
+let selectedAnswer = null; // "O" or "X"
+let locked = true;
+
+// HTML要素
+const statusText = document.getElementById("status");
+const btnO = document.getElementById("btnO");
+const btnX = document.getElementById("btnX");
+const confirmBtn = document.getElementById("confirm");
+const classDisplay = document.getElementById("classDisplay");
+const popSound = document.getElementById("popSound");
+
+// 教員が選択した class_room を監視
+onValue(ref(db, "class_room"), (snap) => {
+  currentClass = snap.val();
+  classDisplay.textContent = "クラス：" + currentClass;
+  setupStatusListener();
+});
+
+// 現在のクラスの status を監視
+function setupStatusListener() {
+  if (!currentClass) return;
+
+  const statusRef = ref(db, `status/${currentClass}`);
+  onValue(statusRef, (snap) => {
+    const state = snap.val();
+
+    if (state === "open") {
+      locked = false;
+      statusText.textContent = "回答できます";
+      confirmBtn.disabled = false;
+      btnO.disabled = false;
+      btnX.disabled = false;
+    } else {
+      locked = true;
+      statusText.textContent = "回答終了しました";
+      confirmBtn.disabled = true;
+      btnO.disabled = true;
+      btnX.disabled = true;
+    }
+  });
+}
+
+// ○×ボタン選択
+function selectAnswer(answer) {
+  if (locked) return;
+
+  selectedAnswer = answer;
+
+  btnO.classList.remove("selected");
+  btnX.classList.remove("selected");
+
+  if (answer === "O") btnO.classList.add("selected");
+  if (answer === "X") btnX.classList.add("selected");
+
+  popSound.currentTime = 0;
+  popSound.play();
+}
+
+btnO.addEventListener("click", () => selectAnswer("O"));
+btnX.addEventListener("click", () => selectAnswer("X"));
+
+// 決定ボタン
+confirmBtn.addEventListener("click", async () => {
+  if (!currentClass || !selectedAnswer) {
+    alert("○ か × を選んでください");
+    return;
+  }
+
+  const userID = "user-" + Math.random().toString(36).substring(2, 10);
+  const answerPath = ref(db, `answers/${currentClass}/${userID}`);
+
+  await set(answerPath, selectedAnswer);
+
+  // resultへ加算
+  const resultPath = ref(db, `result/${currentClass}`);
+  const snap = await get(resultPath);
+  const result = snap.val() || { O: 0, X: 0 };
+
+  result[selectedAnswer] = (result[selectedAnswer] || 0) + 1;
+
+  await set(resultPath, result);
+
+  statusText.textContent = "回答が送信されました！";
+  confirmBtn.disabled = true;
+});
+</script>
 
 </body>
 </html>

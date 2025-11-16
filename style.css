@@ -1,159 +1,105 @@
-/* ===================================
-   教員ページ：スタイリッシュ暗色テーマ
-   =================================== */
-
+/* 背景：暗めで上品。グラデーション＋微アニメーション */
 body {
   font-family: "Noto Sans JP", sans-serif;
-  background: linear-gradient(145deg, #0d1117, #1a1f29);
-  color: #e0e0e0;
-  text-align: center;
   margin: 0;
-  padding: 1.5em;
+  padding: 2em;
+  text-align: center;
+  color: #fff;
+  background: linear-gradient(135deg, #1c1c1c, #2d2f33);
   min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
 }
 
+/* タイトル */
 h1 {
-  font-size: 1.8em;
+  font-size: 2rem;
   margin-bottom: 1em;
-  color: #80d8ff;
-  text-shadow: 0 0 8px rgba(128, 216, 255, 0.7);
+  color: #f0f0f0;
+  text-shadow: 0px 0px 6px rgba(255,255,255,0.2);
 }
 
-/* ----- コントロールボタン群 ----- */
+/* クラスセレクタ */
+.class-selector {
+  margin-bottom: 1.5em;
+  font-size: 1.2rem;
+}
+
+select {
+  font-size: 1.1rem;
+  padding: 0.4em 1em;
+  border-radius: 6px;
+  border: none;
+  outline: none;
+  background: #444;
+  color: white;
+  box-shadow: 0 0 8px rgba(255,255,255,0.1);
+}
+
+/* ボタン群 */
 .controls {
-  margin: 1.2em auto;
   display: flex;
   justify-content: center;
+  gap: 1em;
   flex-wrap: wrap;
-  gap: 0.8em;
+  margin-bottom: 2em;
 }
 
-/* ベーススタイル */
+/* ボタンの基本デザイン */
 button {
+  background: #444;
+  color: white;
   border: none;
-  color: #fff;
-  padding: 0.8em 1.4em;
-  font-size: 1em;
-  border-radius: 10px;
+  padding: 0.7em 1.6em;
+  font-size: 1rem;
+  border-radius: 8px;
   cursor: pointer;
-  position: relative;
-  overflow: hidden;
-  background: #222;
-  box-shadow: 0 0 6px rgba(255, 255, 255, 0.1);
   transition: all 0.25s ease;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.4);
 }
 
-/* ホバー時に少し浮く */
+/* ホバー時 */
 button:hover {
+  background: #666;
   transform: translateY(-2px);
 }
 
-/* アクティブ時に発光 */
+/* 発光エフェクト（active クラス時） */
 button.active {
-  transform: scale(1.06);
-  box-shadow: 0 0 15px 4px rgba(255,255,255,0.4);
+  background: #00e8ff;
+  color: #000;
+  box-shadow: 0 0 15px #00e8ff, 0 0 30px #00e8ff;
+  transform: scale(1.05);
 }
 
-/* ---- ボタンごとの色分け ---- */
-#unlock.active {
-  box-shadow: 0 0 20px 6px rgba(0, 255, 100, 0.9);
-  background: linear-gradient(90deg, #00e676, #1de9b6);
-}
-
-#lock.active {
-  box-shadow: 0 0 20px 6px rgba(255, 0, 80, 0.9);
-  background: linear-gradient(90deg, #f44336, #ff1744);
-}
-
-#reset.active {
-  box-shadow: 0 0 20px 6px rgba(120, 200, 255, 0.9);
-  background: linear-gradient(90deg, #607d8b, #90a4ae);
-}
-
-#showQR.active {
-  box-shadow: 0 0 20px 6px rgba(33, 150, 243, 0.9);
-  background: linear-gradient(90deg, #1976d2, #03a9f4);
-}
-
-#backBtn.active {
-  box-shadow: 0 0 20px 6px rgba(156, 39, 176, 0.9);
-  background: linear-gradient(90deg, #8e24aa, #ba68c8);
-}
-
-/* ---- グラフ部分 ---- */
+/* グラフのエリア */
 #chart-section {
-  width: 300px;
-  height: 300px;
-  margin: 2em auto;
-  background: #161b22;
-  border-radius: 16px;
-  box-shadow: 0 0 20px rgba(0,0,0,0.6);
-  padding: 1.2em;
+  margin-top: 2em;
 }
 
 canvas {
-  width: 100%;
-  height: 100%;
+  background: rgba(255,255,255,0.05);
+  padding: 1em;
+  border-radius: 18px;
+  box-shadow: 0 0 20px rgba(0,0,0,0.5);
 }
 
-/* ---- QRコード部分 ---- */
+/* QRコードエリア */
 #qr-section {
   display: none;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  text-align: center;
-  background: #161b22;
-  border-radius: 16px;
-  box-shadow: 0 0 20px rgba(0,0,0,0.6);
-  padding: 1.5em;
-  width: 320px;
-  margin: 2em auto;
-}
-
-#qr-section h2 {
-  color: #80d8ff;
-  margin-bottom: 0.8em;
-  text-shadow: 0 0 6px rgba(128,216,255,0.6);
+  margin-top: 2em;
 }
 
 #qrcode {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  width: 220px;
-  height: 220px;
-  margin: 1em auto;
-  border: 2px solid #2c2c2c;
-  border-radius: 8px;
-  background: #fff;
+  margin: 1em;
+  padding: 1em;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 0 18px rgba(255,255,255,0.2);
 }
 
-a {
-  color: #80d8ff;
+#qr-section a {
+  color: #00e8ff;
   text-decoration: none;
-  word-break: break-all;
-}
-
-a:hover {
-  text-decoration: underline;
-}
-
-/* スマホ対応 */
-@media (max-width: 600px) {
-  h1 {
-    font-size: 1.4em;
-  }
-  button {
-    font-size: 0.9em;
-    padding: 0.6em 1em;
-  }
-  #chart-section, #qr-section {
-    width: 260px;
-    height: auto;
-  }
 }
 
