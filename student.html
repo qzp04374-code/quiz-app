@@ -8,12 +8,9 @@
 
 <!-- Firebase -->
 <script type="module">
-import { db, ref, onValue, set, update } from "./common.js";
+import { db, ref, onValue, update } from "./common.js";
 
 document.addEventListener("DOMContentLoaded", () => {
-    /* -------------------------
-       URL から room を取得
-    ------------------------- */
     const params = new URLSearchParams(window.location.search);
     const room = params.get("room");
 
@@ -21,96 +18,99 @@ document.addEventListener("DOMContentLoaded", () => {
     const statusLabel = document.getElementById("statusLabel");
     const btnO = document.getElementById("btnO");
     const btnX = document.getElementById("btnX");
+    const btnSend = document.getElementById("btnSend");
 
     roomLabel.textContent = room ? `ルーム：${room}` : "ルーム未設定";
 
-    if (!room) {
-        statusLabel.textContent = "エラー：roomが設定されていません";
-        btnO.disabled = true;
-        btnX.disabled = true;
-        return;
-    }
+    if (!room) return;
 
-    /* -------------------------
-       Firebase パス設定
-    ------------------------- */
     const activityRef = ref(db, `rooms/${room}/activity`);
     const answersRef  = ref(db, `rooms/${room}/answers`);
-    const resultRef   = ref(db, `rooms/${room}/result`);
 
-    /* -------------------------
-       回答開始 / 終了の監視
-    ------------------------- */
-    onValue(activityRef, (snapshot) => {
-        const data = snapshot.val();
-        const status = data?.status || "closed";
+    let choice = null;
+    let locked = true;
 
-        if (status === "open") {
-            statusLabel.textContent = "回答できます";
-            btnO.disabled = false;
-            btnX.disabled = false;
-        } else {
+    // 回答開始／終了
+    onValue(activityRef, (snap) => {
+        const status = snap.val()?.status || "closed";
+        locked = (status !== "open");
+
+        if (locked) {
             statusLabel.textContent = "回答終了";
-            btnO.disabled = true;
-            btnX.disabled = true;
+            disableAll();
+        } else {
+            statusLabel.textContent = "回答できます";
+            enableChoices();
         }
     });
 
-    /* -------------------------
-       回答送信（1回のみ）
-    ------------------------- */
-    function sendAnswer(choice) {
-        const user = `user_${Math.random().toString(36).substring(2,8)}`;
-
-        // 個人回答（answers）に登録
-        update(answersRef, { [user]: choice });
-
-        // 集計用 result をカウントアップ
-        set(resultRef, {
-            O: choice === "O" ? incrementCount("O") : incrementCount("O", 0),
-            X: choice === "X" ? incrementCount("X") : incrementCount("X", 0)
-        });
-
-        btnO.disabled = true;
-        btnX.disabled = true;
-        statusLabel.textContent = "回答しました";
-    }
-
-    /* Local カウンタ（Firebase読み込み後に更新する） */
-    let currentOK = 0;
-    let currentX = 0;
-
-    // Firebase result を監視してローカル値へ反映
-    onValue(resultRef, (snap) => {
-        const v = snap.val() || { O: 0, X: 0 };
-        currentOK = v.O;
-        currentX = v.X;
+    // 〇 × 選択
+    btnO.addEventListener("click", () => {
+        if (locked) return;
+        choice = "O";
+        highlightChoice("O");
     });
 
-    function incrementCount(type, add = 1) {
-        return type === "O" ? currentOK + add : currentX + add;
+    btnX.addEventListener("click", () => {
+        if (locked) return;
+        choice = "X";
+        highlightChoice("X");
+    });
+
+    // 決定 → Firebaseへ送信
+    btnSend.addEventListener("click", () => {
+        if (locked || !choice) return;
+
+        const user = `user_${Math.random().toString(36).substring(2,8)}`;
+
+        update(answersRef, { [user]: choice });
+
+        // 決定後ロック
+        disableAll();
+        statusLabel.textContent = "回答しました";
+
+        // 音（決定時のみ）
+        const audio = new Audio("poyon.mp3");
+        audio.play();
+    });
+
+    // UI 管理
+    function disableAll() {
+        btnO.disabled = true;
+        btnX.disabled = true;
+        btnSend.disabled = true;
     }
 
-    btnO.addEventListener("click", () => sendAnswer("O"));
-    btnX.addEventListener("click", () => sendAnswer("X"));
+    function enableChoices() {
+        btnO.disabled = false;
+        btnX.disabled = false;
+        btnSend.disabled = false;
+        choice = null;
+        highlightChoice(null);
+    }
+
+    function highlightChoice(c) {
+        btnO.classList.toggle("selected", c === "O");
+        btnX.classList.toggle("selected", c === "X");
+    }
 });
 </script>
 
 </head>
 <body>
-
 <div class="container">
 
-    <h2 id="roomLabel">ルーム：---</h2>
+    <h2 id="roomLabel">ルーム</h2>
     <p id="statusLabel" class="status">読み込み中...</p>
 
-    <div class="button-box">
-        <button id="btnO" class="btn-o" disabled>○</button>
-        <button id="btnX" class="btn-x" disabled>✕</button>
+    <div class="choice-box">
+        <button id="btnO" class="btn-o">○</button>
+        <button id="btnX" class="btn-x">×</button>
     </div>
 
-</div>
+    <button id="btnSend" class="btn-send">決定</button>
 
+</div>
 </body>
 </html>
 
