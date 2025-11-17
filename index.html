@@ -18,7 +18,7 @@ import { db, ref, set, onValue } from "./common.js";
 
 document.addEventListener("DOMContentLoaded", () => {
 
-  /* ===== 要素取得 ===== */
+  /* ========== 要素 ========== */
   const classSelect = document.getElementById("classSelect");
   const unlockBtn = document.getElementById("unlock");
   const lockBtn = document.getElementById("lock");
@@ -39,29 +39,25 @@ document.addEventListener("DOMContentLoaded", () => {
 
   let currentRoom = null;
 
-
-  /* ===== ルーム選択 ===== */
+  /* ========== ルーム選択 ========== */
   classSelect.addEventListener("change", () => {
     currentRoom = classSelect.value;
     loadResultListener();
   });
 
-  /* ===== Firebase 結果反映 ===== */
+  /* ========== Firebaseからグラフ更新 ========== */
   function loadResultListener() {
     if (!currentRoom) return;
 
     const resultRef = ref(db, `rooms/${currentRoom}/result`);
     const answersRef = ref(db, `rooms/${currentRoom}/answers`);
 
-    // 結果変更 → 横棒グラフ更新
     onValue(resultRef, (snapshot) => {
       const data = snapshot.val() || { O: 0, X: 0 };
-
       const o = data.O || 0;
       const x = data.X || 0;
 
-      // 棒の長さ（最大 200px）
-      const maxWidth = 200;
+      const maxWidth = 450; // ★ プロジェクター向けの巨大表示
       const total = o + x;
 
       barOK.style.width = total === 0 ? "0px" : `${(o / total) * maxWidth}px`;
@@ -71,15 +67,14 @@ document.addEventListener("DOMContentLoaded", () => {
       countX.textContent  = `${x}人`;
     });
 
-    // 回答が来たらぽよん♪
+    // 回答が入ったら音を鳴らす
     onValue(answersRef, () => {
       poyon.currentTime = 0;
-      poyon.play().catch(() => {});
+      poyon.play().catch(()=>{});
     });
   }
 
-
-  /* ===== 回答開始（集計リセット込み） ===== */
+  /* ========== 回答開始（リセット付き） ========== */
   unlockBtn.addEventListener("click", async () => {
     if (!currentRoom) return alert("ルームを選択してください");
 
@@ -90,49 +85,45 @@ document.addEventListener("DOMContentLoaded", () => {
     glow(unlockBtn);
   });
 
-  /* ===== 回答終了 ===== */
+  /* ========== 回答終了 ========== */
   lockBtn.addEventListener("click", () => {
     if (!currentRoom) return;
     set(ref(db, `rooms/${currentRoom}/activity`), { status: "closed" });
     glow(lockBtn);
   });
 
-  /* ===== 集計リセット ===== */
+  /* ========== リセットのみ ========== */
   resetBtn.addEventListener("click", () => {
     if (!currentRoom) return;
-
     set(ref(db, `rooms/${currentRoom}/answers`), {});
     set(ref(db, `rooms/${currentRoom}/result`), { O: 0, X: 0 });
-
     glow(resetBtn);
   });
 
-  /* ===== QRコード表示 ===== */
+  /* ========== QRコード表示 ========== */
   showQRBtn.addEventListener("click", () => {
     if (!currentRoom) return alert("ルームを選択してください");
 
     chartSection.style.display = "none";
     qrSection.style.display = "flex";
-
     glow(showQRBtn);
 
     qrBox.innerHTML = "";
     new QRCode(qrBox, {
       text: `https://qzp04374-code.github.io/quiz-app/student.html?room=${currentRoom}`,
-      width: 220,
-      height: 220
+      width: 260,
+      height: 260
     });
   });
 
-  /* ===== グラフへ戻る ===== */
+  /* ========== グラフに戻る ========== */
   backBtn.addEventListener("click", () => {
     qrSection.style.display = "none";
     chartSection.style.display = "block";
-
     glow(backBtn);
   });
 
-  /* ===== ボタン光エフェクト ===== */
+  /* ========== ボタン発光 ========== */
   function glow(btn) {
     document.querySelectorAll("button").forEach(b => b.classList.remove("active"));
     btn.classList.add("active");
@@ -142,13 +133,13 @@ document.addEventListener("DOMContentLoaded", () => {
 </script>
 
 </head>
-
 <body>
 
 <h1>教員用コントロールパネル</h1>
 
+<!-- ───── ボタン（横並び） ───── -->
 <div class="controls">
-  <label>ルーム選択：</label>
+  <label>ルーム：</label>
   <select id="classSelect">
     <option value="">選択してください</option>
     <option value="kyoto-01">kyoto-01</option>
@@ -162,28 +153,30 @@ document.addEventListener("DOMContentLoaded", () => {
   <button id="unlock">回答開始</button>
   <button id="lock">回答終了</button>
   <button id="reset">集計リセット</button>
-  <button id="showQR">QRコード表示</button>
-  <button id="backBtn">グラフに戻る</button>
+  <button id="showQR">QR表示</button>
+  <button id="backBtn">グラフ</button>
 </div>
 
-<!-- ===== グラフ表示 ===== -->
+
+<!-- ───── 横棒グラフ（プロジェクター用巨大版） ───── -->
 <div id="chart-section">
 
   <div class="bar-row">
-    <label>○</label>
+    <label class="large-label">○</label>
     <div class="bar ok-bar"><div id="barOK"></div></div>
-    <span id="countOK">0人</span>
+    <span class="count-text" id="countOK">0人</span>
   </div>
 
   <div class="bar-row">
-    <label>✕</label>
+    <label class="large-label">✕</label>
     <div class="bar x-bar"><div id="barX"></div></div>
-    <span id="countX">0人</span>
+    <span class="count-text" id="countX">0人</span>
   </div>
 
 </div>
 
-<!-- ===== QRコード ===== -->
+
+<!-- ───── QRコード表示 ───── -->
 <div id="qr-section" style="display:none;">
   <h2>学生アクセス用 QRコード</h2>
   <div id="qrcode"></div>
