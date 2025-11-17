@@ -6,11 +6,12 @@
 <title>学生用回答ページ</title>
 <link rel="stylesheet" href="student.css">
 
-<!-- Firebase -->
 <script type="module">
 import { db, ref, onValue, update } from "./common.js";
 
 document.addEventListener("DOMContentLoaded", () => {
+
+    /* --- ルーム取得 --- */
     const params = new URLSearchParams(window.location.search);
     const room = params.get("room");
 
@@ -21,8 +22,14 @@ document.addEventListener("DOMContentLoaded", () => {
     const btnSend = document.getElementById("btnSend");
 
     roomLabel.textContent = room ? `ルーム：${room}` : "ルーム未設定";
-
     if (!room) return;
+
+    /* --- 固定ユーザーID --- */
+    let userId = localStorage.getItem("quizUserId");
+    if (!userId) {
+        userId = "user_" + Math.random().toString(36).substring(2, 10);
+        localStorage.setItem("quizUserId", userId);
+    }
 
     const activityRef = ref(db, `rooms/${room}/activity`);
     const answersRef  = ref(db, `rooms/${room}/answers`);
@@ -30,9 +37,10 @@ document.addEventListener("DOMContentLoaded", () => {
     let choice = null;
     let locked = true;
 
-    // 回答開始／終了
+    /* --- 回答開始・終了の監視 --- */
     onValue(activityRef, (snap) => {
         const status = snap.val()?.status || "closed";
+
         locked = (status !== "open");
 
         if (locked) {
@@ -44,7 +52,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // 〇 × 選択
+    /* --- 選択処理 --- */
     btnO.addEventListener("click", () => {
         if (locked) return;
         choice = "O";
@@ -57,24 +65,20 @@ document.addEventListener("DOMContentLoaded", () => {
         highlightChoice("X");
     });
 
-    // 決定 → Firebaseへ送信
+    /* --- 決定ボタン --- */
     btnSend.addEventListener("click", () => {
         if (locked || !choice) return;
 
-        const user = `user_${Math.random().toString(36).substring(2,8)}`;
+        update(answersRef, { [userId]: choice });
 
-        update(answersRef, { [user]: choice });
-
-        // 決定後ロック
         disableAll();
         statusLabel.textContent = "回答しました";
 
-        // 音（決定時のみ）
         const audio = new Audio("poyon.mp3");
         audio.play();
     });
 
-    // UI 管理
+    /* --- UI管理 --- */
     function disableAll() {
         btnO.disabled = true;
         btnX.disabled = true;
@@ -95,11 +99,10 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 });
 </script>
-
 </head>
+
 <body>
 <div class="container">
-
     <h2 id="roomLabel">ルーム</h2>
     <p id="statusLabel" class="status">読み込み中...</p>
 
@@ -109,7 +112,6 @@ document.addEventListener("DOMContentLoaded", () => {
     </div>
 
     <button id="btnSend" class="btn-send">決定</button>
-
 </div>
 </body>
 </html>
