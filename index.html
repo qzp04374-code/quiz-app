@@ -20,57 +20,71 @@ document.addEventListener("DOMContentLoaded", () => {
 
   /* ========== 要素 ========== */
   const classSelect = document.getElementById("classSelect");
-  const unlockBtn = document.getElementById("unlock");
-  const lockBtn = document.getElementById("lock");
-  const resetBtn = document.getElementById("reset");
-  const showQRBtn = document.getElementById("showQR");
-  const backBtn = document.getElementById("backBtn");
+  const unlockBtn   = document.getElementById("unlock");
+  const lockBtn     = document.getElementById("lock");
+  const resetBtn    = document.getElementById("reset");
+  const showQRBtn   = document.getElementById("showQR");
+  const backBtn     = document.getElementById("backBtn");
 
-  const qrSection = document.getElementById("qr-section");
-  const chartSection = document.getElementById("chart-section");
-  const qrBox = document.getElementById("qrcode");
+  const qrSection   = document.getElementById("qr-section");
+  const chartSection= document.getElementById("chart-section");
+  const qrBox       = document.getElementById("qrcode");
 
-  const barOK = document.getElementById("barOK");
-  const barX = document.getElementById("barX");
+  const barOK   = document.getElementById("barOK");
+  const barX    = document.getElementById("barX");
   const countOK = document.getElementById("countOK");
-  const countX = document.getElementById("countX");
+  const countX  = document.getElementById("countX");
 
-  const poyon = document.getElementById("poyonSound");
+  const poyon   = document.getElementById("poyonSound");
 
   let currentRoom = null;
+  let previousTotal = 0;  // 票数の前回値（ぽよん制御用）
 
   /* ========== ルーム選択 ========== */
   classSelect.addEventListener("change", () => {
     currentRoom = classSelect.value;
+    previousTotal = 0;  // ルーム切り替え時にリセット
     loadResultListener();
   });
 
-  /* ========== Firebaseからグラフ更新 ========== */
+  /* ========== Firebaseから集計＆グラフ更新 ========== */
   function loadResultListener() {
     if (!currentRoom) return;
 
-    const resultRef = ref(db, `rooms/${currentRoom}/result`);
     const answersRef = ref(db, `rooms/${currentRoom}/answers`);
+    const resultRef  = ref(db, `rooms/${currentRoom}/result`);
 
-    onValue(resultRef, (snapshot) => {
-      const data = snapshot.val() || { O: 0, X: 0 };
-      const o = data.O || 0;
-      const x = data.X || 0;
+    onValue(answersRef, (snapshot) => {
+      const answers = snapshot.val() || {};
 
-      const maxWidth = 450; // ★ プロジェクター向けの巨大表示
+      // O / X を集計
+      let o = 0;
+      let x = 0;
+      Object.values(answers).forEach(v => {
+        if (v === "O") o++;
+        if (v === "X") x++;
+      });
+
       const total = o + x;
+      const maxWidth = 450; // プロジェクター向け表示
 
+      // 横棒グラフを更新
       barOK.style.width = total === 0 ? "0px" : `${(o / total) * maxWidth}px`;
       barX.style.width  = total === 0 ? "0px" : `${(x / total) * maxWidth}px`;
 
+      // 人数表示
       countOK.textContent = `${o}人`;
       countX.textContent  = `${x}人`;
-    });
 
-    // 回答が入ったら音を鳴らす
-    onValue(answersRef, () => {
-      poyon.currentTime = 0;
-      poyon.play().catch(()=>{});
+      // result ノードにも反映（他画面からも見られるように）
+      set(resultRef, { O: o, X: x });
+
+      // 票数が増えたときだけ ぽよん
+      if (total > previousTotal) {
+        poyon.currentTime = 0;
+        poyon.play().catch(() => {});
+      }
+      previousTotal = total;
     });
   }
 
@@ -82,6 +96,7 @@ document.addEventListener("DOMContentLoaded", () => {
     await set(ref(db, `rooms/${currentRoom}/result`), { O: 0, X: 0 });
     await set(ref(db, `rooms/${currentRoom}/activity`), { status: "open" });
 
+    previousTotal = 0; // 新しい設問としてカウントをリセット
     glow(unlockBtn);
   });
 
@@ -97,6 +112,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!currentRoom) return;
     set(ref(db, `rooms/${currentRoom}/answers`), {});
     set(ref(db, `rooms/${currentRoom}/result`), { O: 0, X: 0 });
+    previousTotal = 0;
     glow(resetBtn);
   });
 
@@ -157,7 +173,6 @@ document.addEventListener("DOMContentLoaded", () => {
   <button id="backBtn">グラフ</button>
 </div>
 
-
 <!-- ───── 横棒グラフ（プロジェクター用巨大版） ───── -->
 <div id="chart-section">
 
@@ -174,7 +189,6 @@ document.addEventListener("DOMContentLoaded", () => {
   </div>
 
 </div>
-
 
 <!-- ───── QRコード表示 ───── -->
 <div id="qr-section" style="display:none;">
