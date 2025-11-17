@@ -5,17 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>学生回答ページ</title>
 
-<!-- iPhone風デザイン -->
 <style>
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto;
-  text-align: center;
-  margin: 0;
-  padding: 30px 10px;
   background: #f2f2f7;
+  padding: 30px 10px;
+  text-align: center;
 }
 
-/* コンテナ */
 .container {
   max-width: 420px;
   margin: auto;
@@ -25,11 +22,9 @@ body {
   box-shadow: 0 10px 25px rgba(0,0,0,0.08);
 }
 
-/* 見出し */
 h1 {
   font-size: 1.4rem;
   margin-bottom: 5px;
-  color: #222;
 }
 #room-name {
   font-size: 0.9rem;
@@ -37,44 +32,49 @@ h1 {
   color: #666;
 }
 
-/* ボタン */
-.answer-btn {
+.choice-btn {
   width: 80%;
   padding: 18px;
   font-size: 1.4rem;
-  border: none;
   border-radius: 18px;
+  border: none;
   margin: 15px auto;
   cursor: pointer;
   color: white;
   transition: 0.2s;
+  opacity: 0.6;
 }
-.answer-btn:active {
+
+.choice-active {
+  opacity: 1 !important;
+  transform: scale(1.05);
+}
+
+.btn-o { background: #34c759; }
+.btn-x { background: #ff3b30; }
+
+#sendBtn {
+  width: 80%;
+  padding: 16px;
+  font-size: 1.2rem;
+  margin-top: 20px;
+  border: none;
+  background: #007aff;
+  color: white;
+  border-radius: 14px;
+  cursor: pointer;
+  opacity: 0.9;
+}
+#sendBtn:active {
   transform: scale(0.97);
-  filter: brightness(0.9);
 }
 
-/* ○ */
-.btn-o {
-  background: linear-gradient(135deg, #34c759, #28a745);
-  box-shadow: 0 6px 16px rgba(52,199,89,0.4);
-}
-
-/* × */
-.btn-x {
-  background: linear-gradient(135deg, #ff3b30, #d93025);
-  box-shadow: 0 6px 16px rgba(255,59,48,0.4);
-}
-
-/* 送信完了表示 */
 #status-msg {
   margin-top: 20px;
   font-size: 1.1rem;
   font-weight: bold;
-  color: #444;
 }
 
-/* 待機中 */
 .waiting {
   color: #888;
   font-size: 1.2rem;
@@ -82,100 +82,108 @@ h1 {
 }
 </style>
 
-<!-- Firebase -->
 <script type="module">
 import { db, ref, onValue, set } from "./common.js";
 
 document.addEventListener("DOMContentLoaded", () => {
 
-  /* -------------------------------
-     URL からルーム取得
-  --------------------------------*/
+  // ---- ルーム名取得 ----
   const url = new URL(window.location.href);
   const room = url.searchParams.get("room");
-
   document.getElementById("room-name").textContent = `ルーム：${room}`;
 
+  // ---- Firebase参照 ----
   const activityRef = ref(db, `rooms/${room}/activity`);
   const answersRef = ref(db, `rooms/${room}/answers`);
   const resultRef = ref(db, `rooms/${room}/result`);
 
-  let myId = null;
-
-  /* -------------------------------
-     端末ごとに固有IDを作成
-  --------------------------------*/
+  // ---- 端末ごとのID ----
   if (!localStorage.getItem("stu_id")) {
     localStorage.setItem("stu_id", "stu_" + Math.random().toString(36).slice(2, 10));
   }
-  myId = localStorage.getItem("stu_id");
+  const myId = localStorage.getItem("stu_id");
 
+  // ---- ボタン状態 ----
+  let selected = null;
+  const btnO = document.getElementById("btn-o");
+  const btnX = document.getElementById("btn-x");
 
-  /* -------------------------------
-     回答開始 / 終了 監視
-  --------------------------------*/
+  btnO.addEventListener("click", () => select("O"));
+  btnX.addEventListener("click", () => select("X"));
+
+  function select(ans) {
+    selected = ans;
+
+    btnO.classList.remove("choice-active");
+    btnX.classList.remove("choice-active");
+
+    if (ans === "O") btnO.classList.add("choice-active");
+    if (ans === "X") btnX.classList.add("choice-active");
+
+    document.getElementById("status-msg").textContent = `選択中： ${ans}`;
+  }
+
+  // ---- 回答開始/終了 ----
   onValue(activityRef, (snapshot) => {
     const data = snapshot.val();
     const status = data ? data.status : "closed";
 
     if (status === "open") {
+      enable(true);
       document.getElementById("wait").textContent = "";
-      enableButtons(true);
     } else {
+      enable(false);
       document.getElementById("wait").textContent = "回答は終了しました";
-      enableButtons(false);
     }
   });
 
-  function enableButtons(enable) {
-    document.getElementById("btn-o").disabled = !enable;
-    document.getElementById("btn-x").disabled = !enable;
-    document.getElementById("btn-o").style.opacity = enable ? 1 : 0.4;
-    document.getElementById("btn-x").style.opacity = enable ? 1 : 0.4;
+  function enable(flag) {
+    btnO.disabled = !flag;
+    btnX.disabled = !flag;
+    document.getElementById("sendBtn").disabled = !flag;
+
+    btnO.style.opacity = flag ? 0.6 : 0.2;
+    btnX.style.opacity = flag ? 0.6 : 0.2;
   }
 
-  /* -------------------------------
-     ○× の送信
-  --------------------------------*/
-  async function sendAnswer(ans) {
-    // 自分の回答登録
-    await set(ref(db, `rooms/${room}/answers/${myId}`), ans);
+  // ---- 送信ボタン ----
+  document.getElementById("sendBtn").addEventListener("click", async () => {
+    if (!selected) {
+      alert("○ か ✕ を選んでください");
+      return;
+    }
 
-    // 集計更新
-    const resSnap = (await import("firebase/database")).get(ref(db, `rooms/${room}/result`));
+    // 生徒ごとの回答登録
+    await set(ref(db, `rooms/${room}/answers/${myId}`), selected);
 
-    onValue(ref(db, `rooms/${room}/result`), async (snapshot) => {
-      const current = snapshot.val() || { O: 0, X: 0 };
-      const newData = { ...current };
+    // 集計取得 → 更新
+    onValue(resultRef, async (snap) => {
+      const current = snap.val() || { O: 0, X: 0 };
+      const newValue = { ...current };
 
-      // 上書きではなく、自分の既存回答があれば調整可能だが
-      // 今回は単純に加算（教師側で reset → start を毎回実施する前提）
-      if (ans === "O") newData.O++;
-      if (ans === "X") newData.X++;
+      if (selected === "O") newValue.O++;
+      if (selected === "X") newValue.X++;
 
-      await set(ref(db, `rooms/${room}/result`), newData);
+      await set(resultRef, newValue);
     });
 
-    document.getElementById("status-msg").textContent = `送信しました：${ans}`;
-  }
-
-  document.getElementById("btn-o").addEventListener("click", () => sendAnswer("O"));
-  document.getElementById("btn-x").addEventListener("click", () => sendAnswer("X"));
+    document.getElementById("status-msg").textContent = `送信しました：${selected}`;
+  });
 
 });
 </script>
 
 </head>
-
 <body>
 
 <div class="container">
   <h1>回答ページ</h1>
   <div id="room-name"></div>
 
-  <!-- ボタン -->
-  <button id="btn-o" class="answer-btn btn-o">◯</button>
-  <button id="btn-x" class="answer-btn btn-x">✕</button>
+  <button id="btn-o" class="choice-btn btn-o">◯</button>
+  <button id="btn-x" class="choice-btn btn-x">✕</button>
+
+  <button id="sendBtn">送信する</button>
 
   <div id="status-msg"></div>
   <div id="wait" class="waiting"></div>
