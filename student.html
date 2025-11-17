@@ -83,28 +83,25 @@ h1 {
 </style>
 
 <script type="module">
-import { db, ref, onValue, set } from "./common.js";
+import { db, ref, onValue, set, get } from "./common.js";
 
 document.addEventListener("DOMContentLoaded", () => {
 
-  // ---- ルーム名取得 ----
   const url = new URL(window.location.href);
   const room = url.searchParams.get("room");
   document.getElementById("room-name").textContent = `ルーム：${room}`;
 
-  // ---- Firebase参照 ----
   const activityRef = ref(db, `rooms/${room}/activity`);
   const answersRef = ref(db, `rooms/${room}/answers`);
   const resultRef = ref(db, `rooms/${room}/result`);
 
-  // ---- 端末ごとのID ----
   if (!localStorage.getItem("stu_id")) {
     localStorage.setItem("stu_id", "stu_" + Math.random().toString(36).slice(2, 10));
   }
   const myId = localStorage.getItem("stu_id");
 
-  // ---- ボタン状態 ----
   let selected = null;
+
   const btnO = document.getElementById("btn-o");
   const btnX = document.getElementById("btn-x");
 
@@ -123,7 +120,6 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("status-msg").textContent = `選択中： ${ans}`;
   }
 
-  // ---- 回答開始/終了 ----
   onValue(activityRef, (snapshot) => {
     const data = snapshot.val();
     const status = data ? data.status : "closed";
@@ -146,26 +142,24 @@ document.addEventListener("DOMContentLoaded", () => {
     btnX.style.opacity = flag ? 0.6 : 0.2;
   }
 
-  // ---- 送信ボタン ----
   document.getElementById("sendBtn").addEventListener("click", async () => {
     if (!selected) {
-      alert("○ か ✕ を選んでください");
+      alert("○ か ✕ を選択してください");
       return;
     }
 
-    // 生徒ごとの回答登録
     await set(ref(db, `rooms/${room}/answers/${myId}`), selected);
 
-    // 集計取得 → 更新
-    onValue(resultRef, async (snap) => {
-      const current = snap.val() || { O: 0, X: 0 };
-      const newValue = { ...current };
+    // ---- ここを修正：get() で一度だけ取得 ----
+    const snap = await get(resultRef);
+    const current = snap.val() || { O: 0, X: 0 };
 
-      if (selected === "O") newValue.O++;
-      if (selected === "X") newValue.X++;
+    const newValue = {
+      O: current.O + (selected === "O" ? 1 : 0),
+      X: current.X + (selected === "X" ? 1 : 0)
+    };
 
-      await set(resultRef, newValue);
-    });
+    await set(resultRef, newValue);
 
     document.getElementById("status-msg").textContent = `送信しました：${selected}`;
   });
