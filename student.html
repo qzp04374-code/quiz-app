@@ -1,188 +1,97 @@
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>学生回答ページ</title>
-
-<style>
+/* iPhone風 全体スタイル */
 body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto;
+  margin: 0;
   background: #f2f2f7;
-  padding: 30px 10px;
-  text-align: center;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
 .container {
-  max-width: 420px;
-  margin: auto;
-  background: white;
-  padding: 35px 25px;
-  border-radius: 22px;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 30px 20px;
+  text-align: center;
 }
 
-h1 {
-  font-size: 1.4rem;
-  margin-bottom: 5px;
-}
-#room-name {
-  font-size: 0.9rem;
+.title {
+  font-size: 26px;
+  font-weight: 700;
   margin-bottom: 25px;
-  color: #666;
+  color: #111;
+}
+
+/* ステータス表示 */
+.status {
+  font-size: 18px;
+  padding: 12px 20px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+  margin-bottom: 30px;
+}
+
+/* ○✕ ボタン */
+.buttons {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 35px;
 }
 
 .choice-btn {
-  width: 80%;
-  padding: 18px;
-  font-size: 1.4rem;
+  flex: 1;
+  font-size: 40px;
+  padding: 20px 0;
   border-radius: 18px;
   border: none;
-  margin: 15px auto;
-  cursor: pointer;
+  background: white;
+  color: black;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  transition: all 0.2s ease;
+}
+
+.choice-btn:active {
+  transform: scale(0.95);
+}
+
+/* 選択されているときの強調 */
+.choice-btn.selected {
+  background: #007aff;
   color: white;
-  transition: 0.2s;
-  opacity: 0.6;
+  font-weight: 700;
 }
 
-.choice-active {
-  opacity: 1 !important;
-  transform: scale(1.05);
-}
+/* ○と✕の色味 */
+.o-btn { color: #34c759; }
+.x-btn { color: #ff3b30; }
+.o-btn.selected { background: #34c759; }
+.x-btn.selected { background: #ff3b30; }
 
-.btn-o { background: #34c759; }
-.btn-x { background: #ff3b30; }
-
-#sendBtn {
-  width: 80%;
+/* 送信ボタン */
+.send-btn {
+  width: 100%;
   padding: 16px;
-  font-size: 1.2rem;
-  margin-top: 20px;
+  font-size: 20px;
+  font-weight: 600;
+  border-radius: 14px;
   border: none;
   background: #007aff;
   color: white;
-  border-radius: 14px;
-  cursor: pointer;
-  opacity: 0.9;
+  box-shadow: 0 4px 14px rgba(0,122,255,0.4);
+  transition: all 0.2s ease;
 }
-#sendBtn:active {
+
+.send-btn:disabled {
+  opacity: 0.5;
+  box-shadow: none;
+}
+
+.send-btn:active {
   transform: scale(0.97);
 }
 
-#status-msg {
-  margin-top: 20px;
-  font-size: 1.1rem;
-  font-weight: bold;
+/* 送信後アニメーション */
+.send-btn.sent {
+  background: #34c759 !important;
+  box-shadow: 0 4px 14px rgba(52,199,89,0.4);
 }
-
-.waiting {
-  color: #888;
-  font-size: 1.2rem;
-  margin-top: 20px;
-}
-</style>
-
-<script type="module">
-import { db, ref, onValue, set, get } from "./common.js";
-
-document.addEventListener("DOMContentLoaded", () => {
-
-  const url = new URL(window.location.href);
-  const room = url.searchParams.get("room");
-  document.getElementById("room-name").textContent = `ルーム：${room}`;
-
-  const activityRef = ref(db, `rooms/${room}/activity`);
-  const answersRef = ref(db, `rooms/${room}/answers`);
-  const resultRef = ref(db, `rooms/${room}/result`);
-
-  if (!localStorage.getItem("stu_id")) {
-    localStorage.setItem("stu_id", "stu_" + Math.random().toString(36).slice(2, 10));
-  }
-  const myId = localStorage.getItem("stu_id");
-
-  let selected = null;
-
-  const btnO = document.getElementById("btn-o");
-  const btnX = document.getElementById("btn-x");
-
-  btnO.addEventListener("click", () => select("O"));
-  btnX.addEventListener("click", () => select("X"));
-
-  function select(ans) {
-    selected = ans;
-
-    btnO.classList.remove("choice-active");
-    btnX.classList.remove("choice-active");
-
-    if (ans === "O") btnO.classList.add("choice-active");
-    if (ans === "X") btnX.classList.add("choice-active");
-
-    document.getElementById("status-msg").textContent = `選択中： ${ans}`;
-  }
-
-  onValue(activityRef, (snapshot) => {
-    const data = snapshot.val();
-    const status = data ? data.status : "closed";
-
-    if (status === "open") {
-      enable(true);
-      document.getElementById("wait").textContent = "";
-    } else {
-      enable(false);
-      document.getElementById("wait").textContent = "回答は終了しました";
-    }
-  });
-
-  function enable(flag) {
-    btnO.disabled = !flag;
-    btnX.disabled = !flag;
-    document.getElementById("sendBtn").disabled = !flag;
-
-    btnO.style.opacity = flag ? 0.6 : 0.2;
-    btnX.style.opacity = flag ? 0.6 : 0.2;
-  }
-
-  document.getElementById("sendBtn").addEventListener("click", async () => {
-    if (!selected) {
-      alert("○ か ✕ を選択してください");
-      return;
-    }
-
-    await set(ref(db, `rooms/${room}/answers/${myId}`), selected);
-
-    // ---- ここを修正：get() で一度だけ取得 ----
-    const snap = await get(resultRef);
-    const current = snap.val() || { O: 0, X: 0 };
-
-    const newValue = {
-      O: current.O + (selected === "O" ? 1 : 0),
-      X: current.X + (selected === "X" ? 1 : 0)
-    };
-
-    await set(resultRef, newValue);
-
-    document.getElementById("status-msg").textContent = `送信しました：${selected}`;
-  });
-
-});
-</script>
-
-</head>
-<body>
-
-<div class="container">
-  <h1>回答ページ</h1>
-  <div id="room-name"></div>
-
-  <button id="btn-o" class="choice-btn btn-o">◯</button>
-  <button id="btn-x" class="choice-btn btn-x">✕</button>
-
-  <button id="sendBtn">送信する</button>
-
-  <div id="status-msg"></div>
-  <div id="wait" class="waiting"></div>
-</div>
-
-</body>
-</html>
 
