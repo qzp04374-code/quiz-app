@@ -3,99 +3,118 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>学生用回答ページ</title>
+<link rel="stylesheet" href="student.css">
 
-<title>学生ページ</title>
-
-<!-- キャッシュ対策（iPhone用） -->
+<!-- キャッシュ防止（スマホ対策） -->
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
 
-<link rel="stylesheet" href="student.css?v=20251117">
-
 <script type="module">
-import { db, ref, set, onValue } from "./common.js?v=20251117";
+import { db, ref, onValue, set } from "./common.js";
+
+/* -------------------------
+   URLからルーム名を取得
+------------------------- */
+function getRoomName() {
+  const url = new URL(window.location.href);
+  const r = url.searchParams.get("room");
+  if (!r) {
+    alert("room が指定されていません");
+    return null;
+  }
+  return r;
+}
+
+const room = getRoomName();
+if (!room) throw new Error("Room not found");
 
 document.addEventListener("DOMContentLoaded", () => {
-
-  /* ---------------------------------------------------
-     ① room を確実に URL から取得（Safari対策）
-  --------------------------------------------------- */
-  const url = new URL(location.href);
-  let room = url.searchParams.get("room");
-
-  if (!room) {
-    alert("ルーム情報がありません（room=???）");
-    room = "default";
-  }
-
-  /* ---------------------------------------------------
-     ② Firebase パスを rooms/{room}/... に統一
-  --------------------------------------------------- */
-  const activityRef = ref(db, `rooms/${room}/activity`);
-  const answersRef  = ref(db, `rooms/${room}/answers`);
-
-  const btnO = document.getElementById("btnO");
-  const btnX = document.getElementById("btnX");
-  const statusText = document.getElementById("statusText");
-
-  /* ---------------------------------------------------
-     ③ 学生ごとに固定の userId を発行（1 回だけ）
-        → 毎回回答IDが変わる問題を完全修正
-  --------------------------------------------------- */
-  let userId = localStorage.getItem("quiz_userId");
-  if (!userId) {
-    userId = "u_" + Math.random().toString(36).slice(2, 10);
-    localStorage.setItem("quiz_userId", userId);
-  }
-
-  /* ---------------------------------------------------
-     ④ 回答開始/終了のリアルタイム監視
-  --------------------------------------------------- */
-  onValue(activityRef, (snap) => {
-    const data = snap.val();
-
-    if (!data || data.status !== "open") {
-      statusText.textContent = "【回答終了】";
-      btnO.disabled = true;
-      btnX.disabled = true;
-    } else {
-      statusText.textContent = "【回答受付中】";
-      btnO.disabled = false;
-      btnX.disabled = false;
-    }
-  });
-
-  /* ---------------------------------------------------
-     ⑤ 回答送信（1 回だけ上書き可能）
-  --------------------------------------------------- */
-  const send = (val) => {
-    set(ref(db, `rooms/${room}/answers/${userId}`), val);
-    document.getElementById("pop").play();
-  };
-
-  btnO.onclick = () => send("O");
-  btnX.onclick = () => send("X");
-
+  document.getElementById("roomName").textContent = room;
 });
+
+/* -------------------------
+   Firebase 参照
+------------------------- */
+const activityRef = ref(db, `rooms/${room}/activity`);
+const answersRef  = ref(db, `rooms/${room}/answers`);
+
+/* 学生IDを生成 */
+let userId = localStorage.getItem("studentUserId");
+if (!userId) {
+  userId = "u" + Math.random().toString(36).substring(2, 10);
+  localStorage.setItem("studentUserId", userId);
+}
+
+/* -------------------------
+   回答送信
+------------------------- */
+function sendAnswer(val) {
+  set(ref(db, `rooms/${room}/answers/${userId}`), val)
+    .then(() => {
+      glowButton(val);
+      playPoyo();
+    });
+}
+
+/* ボタン光らせる */
+function glowButton(val) {
+  document.getElementById("btnO").classList.remove("selected");
+  document.getElementById("btnX").classList.remove("selected");
+
+  if (val === "O") document.getElementById("btnO").classList.add("selected");
+  if (val === "X") document.getElementById("btnX").classList.add("selected");
+}
+
+/* ぽよん音 */
+function playPoyo() {
+  const audio = new Audio("poyo.mp3");
+  audio.play();
+}
+
+/* -------------------------
+   回答開始・終了を監視
+------------------------- */
+onValue(activityRef, (snapshot) => {
+  const data = snapshot.val() || {};
+  const open = data.status === "open";
+
+  const msg = document.getElementById("statusText");
+
+  if (open) {
+    msg.textContent = "回答できます";
+    msg.classList.remove("closed");
+    msg.classList.add("open");
+
+    document.getElementById("btnO").disabled = false;
+    document.getElementById("btnX").disabled = false;
+
+  } else {
+    msg.textContent = "回答できません（待機中）";
+    msg.classList.remove("open");
+    msg.classList.add("closed");
+
+    document.getElementById("btnO").disabled = true;
+    document.getElementById("btnX").disabled = true;
+  }
+});
+
+/* HTMLボタンを JS と接続 */
+window.sendO = () => sendAnswer("O");
+window.sendX = () => sendAnswer("X");
+
 </script>
 </head>
 
 <body>
-<h1>回答ページ</h1>
+  <h2>学生回答ページ</h2>
+  <p>ルーム：<span id="roomName"></span></p>
 
-<div id="statusText">状態確認中…</div>
+  <p id="statusText" class="closed">回答できません（待機中）</p>
 
-<div class="btn-area">
-  <button id="btnO" class="answer-btn o" disabled>○</button>
-  <button id="btnX" class="answer-btn x" disabled>✕</button>
-</div>
-
-<!-- かわいい音：ぽよん♪ -->
-<audio id="pop">
-  <source src="pop.mp3">
-</audio>
-
+  <button id="btnO" onclick="sendO()" disabled>○</button>
+  <button id="btnX" onclick="sendX()" disabled>×</button>
 </body>
 </html>
 
