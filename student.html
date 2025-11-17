@@ -3,118 +3,184 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>学生用回答ページ</title>
-<link rel="stylesheet" href="student.css">
+<title>学生回答ページ</title>
 
-<!-- キャッシュ防止（スマホ対策） -->
-<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-<meta http-equiv="Pragma" content="no-cache" />
-<meta http-equiv="Expires" content="0" />
+<!-- iPhone風デザイン -->
+<style>
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto;
+  text-align: center;
+  margin: 0;
+  padding: 30px 10px;
+  background: #f2f2f7;
+}
 
+/* コンテナ */
+.container {
+  max-width: 420px;
+  margin: auto;
+  background: white;
+  padding: 35px 25px;
+  border-radius: 22px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+}
+
+/* 見出し */
+h1 {
+  font-size: 1.4rem;
+  margin-bottom: 5px;
+  color: #222;
+}
+#room-name {
+  font-size: 0.9rem;
+  margin-bottom: 25px;
+  color: #666;
+}
+
+/* ボタン */
+.answer-btn {
+  width: 80%;
+  padding: 18px;
+  font-size: 1.4rem;
+  border: none;
+  border-radius: 18px;
+  margin: 15px auto;
+  cursor: pointer;
+  color: white;
+  transition: 0.2s;
+}
+.answer-btn:active {
+  transform: scale(0.97);
+  filter: brightness(0.9);
+}
+
+/* ○ */
+.btn-o {
+  background: linear-gradient(135deg, #34c759, #28a745);
+  box-shadow: 0 6px 16px rgba(52,199,89,0.4);
+}
+
+/* × */
+.btn-x {
+  background: linear-gradient(135deg, #ff3b30, #d93025);
+  box-shadow: 0 6px 16px rgba(255,59,48,0.4);
+}
+
+/* 送信完了表示 */
+#status-msg {
+  margin-top: 20px;
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: #444;
+}
+
+/* 待機中 */
+.waiting {
+  color: #888;
+  font-size: 1.2rem;
+  margin-top: 20px;
+}
+</style>
+
+<!-- Firebase -->
 <script type="module">
 import { db, ref, onValue, set } from "./common.js";
 
-/* -------------------------
-   URLからルーム名を取得
-------------------------- */
-function getRoomName() {
-  const url = new URL(window.location.href);
-  const r = url.searchParams.get("room");
-  if (!r) {
-    alert("room が指定されていません");
-    return null;
-  }
-  return r;
-}
-
-const room = getRoomName();
-if (!room) throw new Error("Room not found");
-
 document.addEventListener("DOMContentLoaded", () => {
-  document.getElementById("roomName").textContent = room;
-});
 
-/* -------------------------
-   Firebase 参照
-------------------------- */
-const activityRef = ref(db, `rooms/${room}/activity`);
-const answersRef  = ref(db, `rooms/${room}/answers`);
+  /* -------------------------------
+     URL からルーム取得
+  --------------------------------*/
+  const url = new URL(window.location.href);
+  const room = url.searchParams.get("room");
 
-/* 学生IDを生成 */
-let userId = localStorage.getItem("studentUserId");
-if (!userId) {
-  userId = "u" + Math.random().toString(36).substring(2, 10);
-  localStorage.setItem("studentUserId", userId);
-}
+  document.getElementById("room-name").textContent = `ルーム：${room}`;
 
-/* -------------------------
-   回答送信
-------------------------- */
-function sendAnswer(val) {
-  set(ref(db, `rooms/${room}/answers/${userId}`), val)
-    .then(() => {
-      glowButton(val);
-      playPoyo();
-    });
-}
+  const activityRef = ref(db, `rooms/${room}/activity`);
+  const answersRef = ref(db, `rooms/${room}/answers`);
+  const resultRef = ref(db, `rooms/${room}/result`);
 
-/* ボタン光らせる */
-function glowButton(val) {
-  document.getElementById("btnO").classList.remove("selected");
-  document.getElementById("btnX").classList.remove("selected");
+  let myId = null;
 
-  if (val === "O") document.getElementById("btnO").classList.add("selected");
-  if (val === "X") document.getElementById("btnX").classList.add("selected");
-}
-
-/* ぽよん音 */
-function playPoyo() {
-  const audio = new Audio("poyo.mp3");
-  audio.play();
-}
-
-/* -------------------------
-   回答開始・終了を監視
-------------------------- */
-onValue(activityRef, (snapshot) => {
-  const data = snapshot.val() || {};
-  const open = data.status === "open";
-
-  const msg = document.getElementById("statusText");
-
-  if (open) {
-    msg.textContent = "回答できます";
-    msg.classList.remove("closed");
-    msg.classList.add("open");
-
-    document.getElementById("btnO").disabled = false;
-    document.getElementById("btnX").disabled = false;
-
-  } else {
-    msg.textContent = "回答できません（待機中）";
-    msg.classList.remove("open");
-    msg.classList.add("closed");
-
-    document.getElementById("btnO").disabled = true;
-    document.getElementById("btnX").disabled = true;
+  /* -------------------------------
+     端末ごとに固有IDを作成
+  --------------------------------*/
+  if (!localStorage.getItem("stu_id")) {
+    localStorage.setItem("stu_id", "stu_" + Math.random().toString(36).slice(2, 10));
   }
+  myId = localStorage.getItem("stu_id");
+
+
+  /* -------------------------------
+     回答開始 / 終了 監視
+  --------------------------------*/
+  onValue(activityRef, (snapshot) => {
+    const data = snapshot.val();
+    const status = data ? data.status : "closed";
+
+    if (status === "open") {
+      document.getElementById("wait").textContent = "";
+      enableButtons(true);
+    } else {
+      document.getElementById("wait").textContent = "回答は終了しました";
+      enableButtons(false);
+    }
+  });
+
+  function enableButtons(enable) {
+    document.getElementById("btn-o").disabled = !enable;
+    document.getElementById("btn-x").disabled = !enable;
+    document.getElementById("btn-o").style.opacity = enable ? 1 : 0.4;
+    document.getElementById("btn-x").style.opacity = enable ? 1 : 0.4;
+  }
+
+  /* -------------------------------
+     ○× の送信
+  --------------------------------*/
+  async function sendAnswer(ans) {
+    // 自分の回答登録
+    await set(ref(db, `rooms/${room}/answers/${myId}`), ans);
+
+    // 集計更新
+    const resSnap = (await import("firebase/database")).get(ref(db, `rooms/${room}/result`));
+
+    onValue(ref(db, `rooms/${room}/result`), async (snapshot) => {
+      const current = snapshot.val() || { O: 0, X: 0 };
+      const newData = { ...current };
+
+      // 上書きではなく、自分の既存回答があれば調整可能だが
+      // 今回は単純に加算（教師側で reset → start を毎回実施する前提）
+      if (ans === "O") newData.O++;
+      if (ans === "X") newData.X++;
+
+      await set(ref(db, `rooms/${room}/result`), newData);
+    });
+
+    document.getElementById("status-msg").textContent = `送信しました：${ans}`;
+  }
+
+  document.getElementById("btn-o").addEventListener("click", () => sendAnswer("O"));
+  document.getElementById("btn-x").addEventListener("click", () => sendAnswer("X"));
+
 });
-
-/* HTMLボタンを JS と接続 */
-window.sendO = () => sendAnswer("O");
-window.sendX = () => sendAnswer("X");
-
 </script>
+
 </head>
 
 <body>
-  <h2>学生回答ページ</h2>
-  <p>ルーム：<span id="roomName"></span></p>
 
-  <p id="statusText" class="closed">回答できません（待機中）</p>
+<div class="container">
+  <h1>回答ページ</h1>
+  <div id="room-name"></div>
 
-  <button id="btnO" onclick="sendO()" disabled>○</button>
-  <button id="btnX" onclick="sendX()" disabled>×</button>
+  <!-- ボタン -->
+  <button id="btn-o" class="answer-btn btn-o">◯</button>
+  <button id="btn-x" class="answer-btn btn-x">✕</button>
+
+  <div id="status-msg"></div>
+  <div id="wait" class="waiting"></div>
+</div>
+
 </body>
 </html>
 
