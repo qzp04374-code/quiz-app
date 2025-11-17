@@ -3,94 +3,114 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>クイズ回答ページ</title>
-
+<title>学生用回答ページ</title>
 <link rel="stylesheet" href="student.css">
 
 <!-- Firebase -->
 <script type="module">
-import { db, ref, set, onValue } from "./common.js";
+import { db, ref, onValue, set, update } from "./common.js";
 
 document.addEventListener("DOMContentLoaded", () => {
+    /* -------------------------
+       URL から room を取得
+    ------------------------- */
+    const params = new URLSearchParams(window.location.search);
+    const room = params.get("room");
 
-  /* ---------- URLからroom取得 ---------- */
-  const params = new URLSearchParams(window.location.search);
-  const room = params.get("room");
+    const roomLabel = document.getElementById("roomLabel");
+    const statusLabel = document.getElementById("statusLabel");
+    const btnO = document.getElementById("btnO");
+    const btnX = document.getElementById("btnX");
 
-  const statusText = document.getElementById("statusText");
-  const sendBtn = document.getElementById("sendBtn");
-  const choiceBtns = document.querySelectorAll(".choice-btn");
+    roomLabel.textContent = room ? `ルーム：${room}` : "ルーム未設定";
 
-  let selected = null;
-
-  if (!room) {
-    statusText.textContent = "ルームが指定されていません。";
-    return;
-  }
-
-  /* ---------- ルームのステータス監視 ---------- */
-  const activityRef = ref(db, `rooms/${room}/activity/status`);
-
-  onValue(activityRef, (snapshot) => {
-    const status = snapshot.val();
-
-    if (status === "open") {
-      statusText.textContent = "回答できます。";
-      sendBtn.disabled = false;
-    } else {
-      statusText.textContent = "待機中...";
-      sendBtn.disabled = true;
+    if (!room) {
+        statusLabel.textContent = "エラー：roomが設定されていません";
+        btnO.disabled = true;
+        btnX.disabled = true;
+        return;
     }
-  });
 
-  /* ---------- ○✕ ボタン選択 ---------- */
-  choiceBtns.forEach(btn => {
-    btn.addEventListener("click", () => {
-      choiceBtns.forEach(b => b.classList.remove("selected"));
-      btn.classList.add("selected");
-      selected = btn.dataset.value;
+    /* -------------------------
+       Firebase パス設定
+    ------------------------- */
+    const activityRef = ref(db, `rooms/${room}/activity`);
+    const answersRef  = ref(db, `rooms/${room}/answers`);
+    const resultRef   = ref(db, `rooms/${room}/result`);
+
+    /* -------------------------
+       回答開始 / 終了の監視
+    ------------------------- */
+    onValue(activityRef, (snapshot) => {
+        const data = snapshot.val();
+        const status = data?.status || "closed";
+
+        if (status === "open") {
+            statusLabel.textContent = "回答できます";
+            btnO.disabled = false;
+            btnX.disabled = false;
+        } else {
+            statusLabel.textContent = "回答終了";
+            btnO.disabled = true;
+            btnX.disabled = true;
+        }
     });
-  });
 
-  /* ---------- 送信 ---------- */
-  sendBtn.addEventListener("click", async () => {
-    if (!selected) {
-      alert("○ か ✕ を選択してください。");
-      return;
+    /* -------------------------
+       回答送信（1回のみ）
+    ------------------------- */
+    function sendAnswer(choice) {
+        const user = `user_${Math.random().toString(36).substring(2,8)}`;
+
+        // 個人回答（answers）に登録
+        update(answersRef, { [user]: choice });
+
+        // 集計用 result をカウントアップ
+        set(resultRef, {
+            O: choice === "O" ? incrementCount("O") : incrementCount("O", 0),
+            X: choice === "X" ? incrementCount("X") : incrementCount("X", 0)
+        });
+
+        btnO.disabled = true;
+        btnX.disabled = true;
+        statusLabel.textContent = "回答しました";
     }
 
-    const userId = `stu_${Math.random().toString(36).substring(2, 10)}`;
-    await set(ref(db, `rooms/${room}/answers/${userId}`), selected);
+    /* Local カウンタ（Firebase読み込み後に更新する） */
+    let currentOK = 0;
+    let currentX = 0;
 
-    sendBtn.classList.add("sent");
-    sendBtn.textContent = "送信しました ✓";
+    // Firebase result を監視してローカル値へ反映
+    onValue(resultRef, (snap) => {
+        const v = snap.val() || { O: 0, X: 0 };
+        currentOK = v.O;
+        currentX = v.X;
+    });
 
-    setTimeout(() => {
-      sendBtn.classList.remove("sent");
-      sendBtn.textContent = "送信";
-    }, 2000);
-  });
+    function incrementCount(type, add = 1) {
+        return type === "O" ? currentOK + add : currentX + add;
+    }
 
+    btnO.addEventListener("click", () => sendAnswer("O"));
+    btnX.addEventListener("click", () => sendAnswer("X"));
 });
 </script>
+
 </head>
-
 <body>
-  <div class="container">
 
-    <h1 class="title">クイズ回答</h1>
+<div class="container">
 
-    <div id="statusText" class="status">読み込み中...</div>
+    <h2 id="roomLabel">ルーム：---</h2>
+    <p id="statusLabel" class="status">読み込み中...</p>
 
-    <div class="buttons">
-      <button class="choice-btn o-btn" data-value="O">○</button>
-      <button class="choice-btn x-btn" data-value="X">✕</button>
+    <div class="button-box">
+        <button id="btnO" class="btn-o" disabled>○</button>
+        <button id="btnX" class="btn-x" disabled>✕</button>
     </div>
 
-    <button id="sendBtn" class="send-btn" disabled>送信</button>
+</div>
 
-  </div>
 </body>
 </html>
 
