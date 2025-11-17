@@ -1,134 +1,169 @@
 /* ===============================
-   全体デザイン（ダークテーマ）
-================================= */
+   全体レイアウト（iPhone風）
+=============================== */
+
 body {
-  font-family: "Noto Sans JP", sans-serif;
   margin: 0;
-  padding: 2em;
+  padding: 0;
+  background: #f2f2f7;  /* iOSの薄いグレー */
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   text-align: center;
-  color: #fff;
-  background: linear-gradient(135deg, #1c1c1c, #2d2f33);
-  min-height: 100vh;
 }
 
-/* タイトル */
 h1 {
-  font-size: 2rem;
-  margin-bottom: 1em;
-  color: #f0f0f0;
-  text-shadow: 0px 0px 6px rgba(255,255,255,0.2);
+  margin-top: 20px;
+  font-size: 26px;
+  color: #111;
+  font-weight: 700;
 }
 
 /* ===============================
-   クラス選択
-================================= */
-.classbox {
-  margin-bottom: 1.5em;
-  font-size: 1.2rem;
-}
+   コントロールボタン
+=============================== */
 
-.classbox select {
-  font-size: 1.1rem;
-  padding: 0.4em 1em;
-  border-radius: 6px;
-  border: none;
-  outline: none;
-  background: #444;
-  color: white;
-  box-shadow: 0 0 8px rgba(255,255,255,0.1);
-}
-
-/* ===============================
-   ボタン
-================================= */
 .controls {
-  display: flex;
-  justify-content: center;
-  gap: 1em;
-  flex-wrap: wrap;
-  margin-bottom: 2em;
+  margin: 20px auto;
+  padding: 15px;
+  max-width: 480px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 18px rgba(0,0,0,0.1);
 }
 
-button {
-  background: #444;
-  color: white;
+.controls select {
+  padding: 10px;
+  font-size: 16px;
+  border-radius: 12px;
+  border: 1px solid #ccc;
+  margin-bottom: 15px;
+  width: 70%;
+}
+
+.controls button {
+  width: 90%;
+  padding: 14px;
+  margin: 8px 0;
+  font-size: 17px;
+  border-radius: 14px;
   border: none;
-  padding: 0.7em 1.6em;
-  font-size: 1rem;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.25s ease;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.4);
-}
-
-button:hover {
-  background: #666;
-  transform: translateY(-2px);
+  background: #e5e5ea;
+  color: #111;
+  transition: 0.25s;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.08);
 }
 
 /* 発光エフェクト */
 button.active {
-  background: #00e8ff;
-  color: #000;
-  box-shadow: 0 0 15px #00e8ff, 0 0 30px #00e8ff;
-  transform: scale(1.05);
+  background: #007aff !important;
+  color: white !important;
+  box-shadow: 0 0 18px rgba(0,122,255,0.6);
+}
+
+/* ボタンを押した瞬間の縮み */
+.controls button:active {
+  transform: scale(0.96);
 }
 
 /* ===============================
-   グラフ
-================================= */
+   横棒グラフ部分（iPhone設定風）
+=============================== */
+
 #chart-section {
-  margin-top: 2em;
-}
-
-canvas {
-  width: 200px !important;
-  height: 200px !important;
-  background: rgba(255,255,255,0.05);
-  padding: 1em;
-  border-radius: 18px;
-  margin: 0 auto;
-  box-shadow: 0 0 20px rgba(0,0,0,0.5);
-}
-
-/* ===============================
-   ○✕人数表示
-================================= */
-#countDisplay {
-  font-size: 1.3rem;
-  margin-bottom: 0.5em;
-  color: #fff;
-}
-
-#countDisplay p {
-  margin: 0.2em;
-  text-shadow: 0 0 4px rgba(255,255,255,0.3);
-}
-
-/* ===============================
-   QRコード表示セクション
-================================= */
-#qr-section {
-  display: none;
-  flex-direction: column;
-  align-items: center;  
-  justify-content: center;
-  margin-top: 2em;
-}
-
-/* QRコード自体 */
-#qrcode {
-  margin: 1em;
-  padding: 1em;
+  margin: 25px auto;
+  padding: 20px;
+  max-width: 500px;
   background: white;
-  border-radius: 12px;
-  box-shadow: 0 0 18px rgba(255,255,255,0.2);
+  border-radius: 16px;
+  box-shadow: 0 4px 18px rgba(0,0,0,0.1);
 }
 
-/* URLリンク */
-#qr-section a {
-  color: #00e8ff;
-  text-decoration: none;
-  font-size: 1rem;
+.bar-row {
+  display: flex;
+  align-items: center;
+  margin: 20px 0;
 }
 
+.bar-row label {
+  font-size: 22px;
+  width: 40px;
+  text-align: right;
+  margin-right: 10px;
+}
+
+.bar {
+  flex: 1;
+  height: 18px;
+  background: #e5e5ea;  /* iOS標準の薄グレー */
+  border-radius: 10px;
+  overflow: hidden;
+  position: relative;
+}
+
+#barOK, #barX {
+  height: 100%;
+  border-radius: 10px;
+  transition: width 0.3s ease-out;
+}
+
+#barOK {
+  background: #34c759; /* iOS緑（○） */
+}
+
+#barX {
+  background: #ff3b30; /* iOS赤（✕） */
+}
+
+.bar-row span {
+  width: 70px;
+  font-size: 18px;
+  margin-left: 10px;
+  text-align: left;
+}
+
+/* ===============================
+   QRコード表示
+=============================== */
+
+#qr-section {
+  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  padding-top: 20px;
+}
+
+#qr-section h2 {
+  font-size: 22px;
+  margin-bottom: 10px;
+}
+
+#qrcode {
+  margin: 0 auto;
+  width: 220px;
+  height: 220px;
+}
+
+/* ===============================
+   スマホ用レスポンシブ
+=============================== */
+
+@media(max-width: 480px) {
+
+  .controls {
+    width: 90%;
+  }
+
+  #chart-section {
+    width: 92%;
+  }
+
+  .bar-row label {
+    font-size: 20px;
+    width: 30px;
+  }
+
+  .bar-row span {
+    width: 60px;
+    font-size: 16px;
+  }
+}

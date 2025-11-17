@@ -6,8 +6,7 @@
 <title>教員用コントロールパネル</title>
 <link rel="stylesheet" href="style.css">
 
-<!-- Chart.js & QRCode.js -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- QRコード -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
 <!-- ぽよん音 -->
@@ -19,9 +18,7 @@ import { db, ref, set, onValue } from "./common.js";
 
 document.addEventListener("DOMContentLoaded", () => {
 
-  /* ----------------------
-      要素参照
-  -----------------------*/
+  /* ===== 要素取得 ===== */
   const classSelect = document.getElementById("classSelect");
   const unlockBtn = document.getElementById("unlock");
   const lockBtn = document.getElementById("lock");
@@ -31,142 +28,112 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const qrSection = document.getElementById("qr-section");
   const chartSection = document.getElementById("chart-section");
-  const ctx = document.getElementById("resultChart").getContext("2d");
+  const qrBox = document.getElementById("qrcode");
+
+  const barOK = document.getElementById("barOK");
+  const barX = document.getElementById("barX");
+  const countOK = document.getElementById("countOK");
+  const countX = document.getElementById("countX");
+
   const poyon = document.getElementById("poyonSound");
 
   let currentRoom = null;
 
-  /* ----------------------
-      ルーム選択
-  -----------------------*/
+
+  /* ===== ルーム選択 ===== */
   classSelect.addEventListener("change", () => {
     currentRoom = classSelect.value;
-    loadChartListener();
+    loadResultListener();
   });
 
-  /* ----------------------
-      グラフ初期化
-  -----------------------*/
-  let chart = new Chart(ctx, {
-    type: "doughnut",
-    data: {
-      labels: ["○", "×"],
-      datasets: [{
-        data: [0, 0],
-        backgroundColor: ["#4caf50", "#f44336"],
-        borderWidth: 0
-      }]
-    },
-    options: {
-      plugins: {
-        legend: { display: true, position: "bottom" }
-      },
-      cutout: "55%"
-    }
-  });
-
-  /* ----------------------
-      Firebase リスナー
-  -----------------------*/
-  function loadChartListener() {
+  /* ===== Firebase 結果反映 ===== */
+  function loadResultListener() {
     if (!currentRoom) return;
 
     const resultRef = ref(db, `rooms/${currentRoom}/result`);
+    const answersRef = ref(db, `rooms/${currentRoom}/answers`);
 
+    // 結果変更 → 横棒グラフ更新
     onValue(resultRef, (snapshot) => {
       const data = snapshot.val() || { O: 0, X: 0 };
 
-      chart.data.datasets[0].data = [data.O || 0, data.X || 0];
-      chart.update();
+      const o = data.O || 0;
+      const x = data.X || 0;
+
+      // 棒の長さ（最大 200px）
+      const maxWidth = 200;
+      const total = o + x;
+
+      barOK.style.width = total === 0 ? "0px" : `${(o / total) * maxWidth}px`;
+      barX.style.width  = total === 0 ? "0px" : `${(x / total) * maxWidth}px`;
+
+      countOK.textContent = `${o}人`;
+      countX.textContent  = `${x}人`;
     });
 
-    // 回答が送信されたら「ぽよん♪」
-    const answersRef = ref(db, `rooms/${currentRoom}/answers`);
-    onValue(answersRef, (snapshot) => {
-      if (snapshot.exists()) {
-        poyon.currentTime = 0;
-        poyon.play().catch(() => {});
-      }
+    // 回答が来たらぽよん♪
+    onValue(answersRef, () => {
+      poyon.currentTime = 0;
+      poyon.play().catch(() => {});
     });
   }
 
-  /* ----------------------
-      回答開始（集計リセット＋開始）
-  -----------------------*/
+
+  /* ===== 回答開始（集計リセット込み） ===== */
   unlockBtn.addEventListener("click", async () => {
-    if (!currentRoom) {
-      alert("ルームを選択してください");
-      return;
-    }
-
-    const roomActivityRef = ref(db, `rooms/${currentRoom}/activity`);
-    const roomResultRef = ref(db, `rooms/${currentRoom}/result`);
-    const roomAnswersRef = ref(db, `rooms/${currentRoom}/answers`);
-
-    await set(roomAnswersRef, {});
-    await set(roomResultRef, { O: 0, X: 0 });
-    await set(roomActivityRef, { status: "open" });
-
-    glowButton(unlockBtn);
-  });
-
-  /* ----------------------
-      回答終了
-  -----------------------*/
-  lockBtn.addEventListener("click", async () => {
-    if (!currentRoom) return;
-    const refAct = ref(db, `rooms/${currentRoom}/activity`);
-    await set(refAct, { status: "closed" });
-
-    glowButton(lockBtn);
-  });
-
-  /* ----------------------
-      集計リセットのみ
-  -----------------------*/
-  resetBtn.addEventListener("click", async () => {
-    if (!currentRoom) return;
+    if (!currentRoom) return alert("ルームを選択してください");
 
     await set(ref(db, `rooms/${currentRoom}/answers`), {});
     await set(ref(db, `rooms/${currentRoom}/result`), { O: 0, X: 0 });
+    await set(ref(db, `rooms/${currentRoom}/activity`), { status: "open" });
 
-    glowButton(resetBtn);
+    glow(unlockBtn);
   });
 
-  /* ----------------------
-      QR表示
-  -----------------------*/
+  /* ===== 回答終了 ===== */
+  lockBtn.addEventListener("click", () => {
+    if (!currentRoom) return;
+    set(ref(db, `rooms/${currentRoom}/activity`), { status: "closed" });
+    glow(lockBtn);
+  });
+
+  /* ===== 集計リセット ===== */
+  resetBtn.addEventListener("click", () => {
+    if (!currentRoom) return;
+
+    set(ref(db, `rooms/${currentRoom}/answers`), {});
+    set(ref(db, `rooms/${currentRoom}/result`), { O: 0, X: 0 });
+
+    glow(resetBtn);
+  });
+
+  /* ===== QRコード表示 ===== */
   showQRBtn.addEventListener("click", () => {
-    if (!currentRoom) {
-      alert("ルームを選択してください");
-      return;
-    }
+    if (!currentRoom) return alert("ルームを選択してください");
 
     chartSection.style.display = "none";
     qrSection.style.display = "flex";
 
-    glowButton(showQRBtn);
+    glow(showQRBtn);
 
-    const qrDiv = document.getElementById("qrcode");
-    qrDiv.innerHTML = "";
-
-    new QRCode(qrDiv, {
+    qrBox.innerHTML = "";
+    new QRCode(qrBox, {
       text: `https://qzp04374-code.github.io/quiz-app/student.html?room=${currentRoom}`,
       width: 220,
       height: 220
     });
   });
 
+  /* ===== グラフへ戻る ===== */
   backBtn.addEventListener("click", () => {
     qrSection.style.display = "none";
     chartSection.style.display = "block";
-    glowButton(backBtn);
+
+    glow(backBtn);
   });
 
-  /* ----------------------
-      ボタン発光
-  -----------------------*/
-  function glowButton(btn) {
+  /* ===== ボタン光エフェクト ===== */
+  function glow(btn) {
     document.querySelectorAll("button").forEach(b => b.classList.remove("active"));
     btn.classList.add("active");
   }
@@ -175,38 +142,53 @@ document.addEventListener("DOMContentLoaded", () => {
 </script>
 
 </head>
+
 <body>
-  <h1>教員用コントロールパネル</h1>
 
-  <div class="controls">
-    <label>ルーム選択：</label>
-    <select id="classSelect">
-      <option value="">選択してください</option>
-      <option value="kyoto-01">kyoto-01</option>
-      <option value="kyoto-02">kyoto-02</option>
-      <option value="sendai-01">sendai-01</option>
-      <option value="sendai-02">sendai-02</option>
-      <option value="nagoya-01">nagoya-01</option>
-      <option value="nagoya-02">nagoya-02</option>
-    </select>
+<h1>教員用コントロールパネル</h1>
 
-    <button id="unlock">回答開始</button>
-    <button id="lock">回答終了</button>
-    <button id="reset">集計リセット</button>
-    <button id="showQR">QRコード表示</button>
-    <button id="backBtn">グラフに戻る</button>
+<div class="controls">
+  <label>ルーム選択：</label>
+  <select id="classSelect">
+    <option value="">選択してください</option>
+    <option value="kyoto-01">kyoto-01</option>
+    <option value="kyoto-02">kyoto-02</option>
+    <option value="sendai-01">sendai-01</option>
+    <option value="sendai-02">sendai-02</option>
+    <option value="nagoya-01">nagoya-01</option>
+    <option value="nagoya-02">nagoya-02</option>
+  </select>
+
+  <button id="unlock">回答開始</button>
+  <button id="lock">回答終了</button>
+  <button id="reset">集計リセット</button>
+  <button id="showQR">QRコード表示</button>
+  <button id="backBtn">グラフに戻る</button>
+</div>
+
+<!-- ===== グラフ表示 ===== -->
+<div id="chart-section">
+
+  <div class="bar-row">
+    <label>○</label>
+    <div class="bar ok-bar"><div id="barOK"></div></div>
+    <span id="countOK">0人</span>
   </div>
 
-  <!-- グラフ -->
-  <div id="chart-section">
-    <canvas id="resultChart" width="260" height="260"></canvas>
+  <div class="bar-row">
+    <label>✕</label>
+    <div class="bar x-bar"><div id="barX"></div></div>
+    <span id="countX">0人</span>
   </div>
 
-  <!-- QRコード -->
-  <div id="qr-section" style="display:none;">
-    <h2>学生アクセス用 QRコード</h2>
-    <div id="qrcode"></div>
-  </div>
+</div>
+
+<!-- ===== QRコード ===== -->
+<div id="qr-section" style="display:none;">
+  <h2>学生アクセス用 QRコード</h2>
+  <div id="qrcode"></div>
+</div>
+
 </body>
 </html>
 
