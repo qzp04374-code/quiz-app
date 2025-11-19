@@ -89,7 +89,7 @@
     </div>
   </div>
 
-  <!-- QRコード生成ライブラリ -->
+  <!-- QRコード生成ライブラリ（グローバルに QRCode クラスを提供）-->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
   <script type="module">
@@ -166,7 +166,7 @@
       renderGraph({});
     };
 
-    // === QRコード生成（GitHub Pages /quiz-app/ 対応） ===
+    // === QRコード生成（現在の index.html と同じ階層の student.html を指す） ===
     const qrModal = document.getElementById("qrModal");
     const qrDiv   = document.getElementById("qrcode");
     const closeQR = document.getElementById("closeQR");
@@ -207,7 +207,7 @@
       if (e.target === qrModal) qrModal.style.display = "none";
     });
 
-    // === Firebase 監視 ===
+    // === Firebase 監視（activity / answers） ===
     function attachListeners() {
       if (unsubscribeAct) unsubscribeAct();
       if (unsubscribeAns) unsubscribeAns();
@@ -230,7 +230,7 @@
         let counts = {};
 
         if (currentMode === "text") {
-          // 文字記入：回答数のみ
+          // 文字記入：回答数のみ表示
           counts["回答数"] = keys.length;
         } else {
           // ○×・5択：文字でカウント（新旧両フォーマット対応）
