@@ -82,18 +82,21 @@
   <div id="qrModal">
     <div id="qrModalInner">
       <h3>学生用QRコード</h3>
-      <img id="qrImage" alt="QR Code" />
+      <div id="qrcode"></div>
       <div style="margin-top:16px;">
         <button id="closeQR">閉じる</button>
       </div>
     </div>
   </div>
 
+  <!-- QRコード生成ライブラリ（グローバルに QRCode クラスを提供） -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getDatabase, ref, set, update, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-    // === Firebase 設定（そのまま利用） ===
+    // === Firebase 設定 ===
     const firebaseConfig = {
       apiKey: "AIzaSyBke-wTU16skpbK8z80ddK04tE154dHERQ",
       authDomain: "satosan-41eac.firebaseapp.com",
@@ -111,10 +114,10 @@
     const roomSelect = document.getElementById("roomSelect");
     const graph      = document.getElementById("graph");
 
-    let currentRoom       = roomSelect.value;
-    let unsubscribeAct    = null;
-    let unsubscribeAns    = null;
-    let currentMode       = null;
+    let currentRoom    = roomSelect.value;
+    let unsubscribeAct = null;
+    let unsubscribeAns = null;
+    let currentMode    = null;
 
     function actRef() { return ref(db, `rooms/${currentRoom}/activity`); }
     function ansRef() { return ref(db, `rooms/${currentRoom}/answers`); }
@@ -128,27 +131,22 @@
 
     // モード開始（○× / 5択 / 文字記入）
     async function startMode(mode, choices) {
-      // 回答リセット
       await set(ansRef(), {});
 
-      // result 初期化（OX/5択のみ）
       if (mode === "ox" || mode === "five") {
         const resultObj = {};
         choices.forEach(c => resultObj[c] = 0);
         await set(resRef(), resultObj);
       } else {
-        // 文字記入モード：とりあえず空
         await set(resRef(), {});
       }
 
       const data = { status: "open", mode };
-
       if (mode === "text") {
         data.config = { placeholder: "自由に記入してください" };
       } else {
         data.config = { choices };
       }
-
       await update(actRef(), data);
     }
 
@@ -165,18 +163,32 @@
       renderGraph({});
     };
 
-    // === QRコード表示（Google Chart API 利用） ===
-    const qrModal = document.getElementById("qrModal");
-    const qrImage = document.getElementById("qrImage");
+    // === QRコード表示（ローカル生成） ===
+    const qrModal   = document.getElementById("qrModal");
+    const qrDiv     = document.getElementById("qrcode");
+    const closeQR   = document.getElementById("closeQR");
+    const qrBtn     = document.getElementById("qrBtn");
 
-    document.getElementById("qrBtn").onclick = () => {
-      const url   = `${location.origin}/student.html?room=${encodeURIComponent(currentRoom)}`;
-      const qrURL = "https://chart.googleapis.com/chart?cht=qr&chs=280x280&chl=" + encodeURIComponent(url);
-      qrImage.src = qrURL;
+    qrBtn.onclick = () => {
+      // 表示するURL（とりあえず origin/student.html?room=...）
+      const url = `${location.origin}/student.html?room=${encodeURIComponent(currentRoom)}`;
+
+      // 既存のQRを消去
+      qrDiv.innerHTML = "";
+
+      // グローバルの QRCode クラスを使って生成
+      // （先頭の script タグで読み込んでいる）
+      // eslint-disable-next-line no-undef
+      new QRCode(qrDiv, {
+        text: url,
+        width: 280,
+        height: 280
+      });
+
       qrModal.style.display = "flex";
     };
 
-    document.getElementById("closeQR").onclick = () => {
+    closeQR.onclick = () => {
       qrModal.style.display = "none";
     };
 
@@ -184,19 +196,16 @@
       if (e.target === qrModal) qrModal.style.display = "none";
     });
 
-    // === リスナー登録（activity, answers） ===
+    // === Firebase からのデータ監視 ===
     function attachListeners() {
-      // 旧リスナー解除
       if (unsubscribeAct) unsubscribeAct();
       if (unsubscribeAns) unsubscribeAns();
 
-      // activity 監視（mode を把握）
       unsubscribeAct = onValue(actRef(), snap => {
         const data = snap.val() || {};
         currentMode = data.mode || null;
       });
 
-      // answers 監視 → 集計 & グラフ更新
       unsubscribeAns = onValue(ansRef(), snap => {
         const answers = snap.val() || {};
         if (!currentMode) {
@@ -204,23 +213,21 @@
           return;
         }
 
-        const keys = Object.keys(answers);
-        let counts = {};
+        const keys   = Object.keys(answers);
+        let counts   = {};
 
         if (currentMode === "text") {
-          // 文字記入モード：回答数のみ表示
           counts["回答数"] = keys.length;
         } else {
-          // ○×・5択：value（=文字）でカウント
           keys.forEach(uid => {
             const v = answers[uid];
+            // student.html が文字列で set している前提
             if (typeof v === "string" && v) {
               counts[v] = (counts[v] || 0) + 1;
             }
           });
         }
 
-        // result にも保存（必要なら他クライアントからも参照可）
         set(resRef(), counts);
         renderGraph(counts);
       });
