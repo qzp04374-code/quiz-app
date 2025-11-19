@@ -24,8 +24,11 @@
       min-height: 100vh;
       background: #f5f5f7;
       display: flex;
-      justify-content: center;
-      align-items: center;
+      flex-direction: column;
+      align-items: center;         /* 左右中央 */
+      justify-content: flex-start; /* 上寄せ */
+      padding-top: 32px;
+      box-sizing: border-box;
     }
 
     .card {
@@ -33,7 +36,7 @@
       border-radius: 24px;
       box-shadow: 0 12px 30px rgba(0,0,0,0.12);
       padding: 24px 20px 28px;
-      max-width: 520px;
+      max-width: 720px;
       width: 100%;
       box-sizing: border-box;
       text-align: center;
@@ -58,11 +61,15 @@
 
     .button-row {
       display: flex;
-      flex-wrap: wrap;
+      flex-direction: row;
+      flex-wrap: nowrap;              /* ★ 6つを横一列に */
       justify-content: center;
+      align-items: center;
       gap: 8px;
       margin-top: 8px;
       margin-bottom: 10px;
+      overflow-x: auto;               /* 画面が狭いときは横スクロール */
+      padding-bottom: 4px;
     }
 
     button {
@@ -73,6 +80,7 @@
       font-size: 14px;
       cursor: pointer;
       min-width: 96px;
+      white-space: nowrap;
       transition: transform 0.12s ease, box-shadow 0.12s ease, filter 0.12s ease;
     }
 
@@ -90,9 +98,14 @@
     .mode-five { background: #34c759; } /* グリーン */
     .mode-text { background: #af52de; } /* パープル */
 
+    /* ★選択中のモードボタン：くっきり光らせて「押されっぱなし」状態に */
     .mode-btn.active {
-      filter: brightness(1.1);
-      box-shadow: 0 0 0 3px rgba(0,122,255,0.2);
+      filter: brightness(1.12);
+      box-shadow:
+        0 0 0 3px rgba(255,255,255,0.9),
+        0 0 0 6px rgba(0,122,255,0.25),
+        0 10px 24px rgba(0,0,0,0.35);
+      transform: translateY(-1px);
     }
 
     #stopBtn {
@@ -181,8 +194,8 @@
 
     @media (max-width: 600px) {
       .card {
-        margin: 12px;
-        padding: 20px 14px 24px;
+        margin: 0 8px 24px;
+        padding: 20px 12px 24px;
       }
       .bar-label {
         width: 56px;
@@ -210,7 +223,7 @@
     </div>
 
     <div class="button-row">
-      <button id="oxBtn" class="mode-btn mode-ox">○×モード</button>
+      <button id="oxBtn"   class="mode-btn mode-ox">○×モード</button>
       <button id="fiveBtn" class="mode-btn mode-five">5択モード</button>
       <button id="textBtn" class="mode-btn mode-text">文字記入</button>
       <button id="stopBtn">回答終了</button>
@@ -240,7 +253,6 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getDatabase, ref, set, update, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-    // === Firebase 設定 ===
     const firebaseConfig = {
       apiKey: "AIzaSyBke-wTU16skpbK8z80ddK04tE154dHERQ",
       authDomain: "satosan-41eac.firebaseapp.com",
@@ -273,13 +285,11 @@
     function ansRef() { return ref(db, `rooms/${currentRoom}/answers`); }
     function resRef() { return ref(db, `rooms/${currentRoom}/result`); }
 
-    // ルーム切替
     roomSelect.addEventListener("change", () => {
       currentRoom = roomSelect.value;
       attachListeners();
     });
 
-    // アクティブモードボタン表示
     function setActiveModeButton(mode) {
       [oxBtn, fiveBtn, textBtn].forEach(b => b.classList.remove("active"));
       if (mode === "ox")   oxBtn.classList.add("active");
@@ -287,7 +297,6 @@
       if (mode === "text") textBtn.classList.add("active");
     }
 
-    // モード開始（○× / 5択 / 文字記入）
     async function startMode(mode, choices) {
       await set(ansRef(), {});
 
@@ -315,7 +324,6 @@
 
     stopBtn.onclick = () => {
       update(actRef(), { status: "closed" });
-      // 赤ボタンは常に赤なので特別な見た目変更は不要
     };
 
     document.getElementById("resetBtn").onclick = () => {
@@ -324,7 +332,6 @@
       textList.innerHTML = "";
     };
 
-    // === QRコード生成 ===
     const qrModal = document.getElementById("qrModal");
     const qrDiv   = document.getElementById("qrcode");
     const closeQR = document.getElementById("closeQR");
@@ -332,8 +339,8 @@
 
     qrBtn.onclick = () => {
       const here    = new URL(location.href);
-      const dirPath = here.pathname.replace(/[^/]*$/, ""); // /quiz-app/index.html → /quiz-app/
-      const base    = here.origin + dirPath;               // https://.../quiz-app/
+      const dirPath = here.pathname.replace(/[^/]*$/, "");
+      const base    = here.origin + dirPath;
 
       const v = here.searchParams.get("v") || "20251117";
 
@@ -365,7 +372,6 @@
       if (e.target === qrModal) qrModal.style.display = "none";
     });
 
-    // === Firebase 監視 ===
     function attachListeners() {
       if (unsubscribeAct) unsubscribeAct();
       if (unsubscribeAns) unsubscribeAns();
@@ -413,7 +419,6 @@
       });
     }
 
-    // 文字回答一覧
     function renderTextList(answers) {
       textList.innerHTML = "";
       const keys = Object.keys(answers);
@@ -449,17 +454,17 @@
       textList.appendChild(ul);
     }
 
-    // ラベルに応じた色
     function getBarColor(label) {
-      switch (label) {
-        case "O": return getComputedStyle(document.documentElement).getPropertyValue("--color-o");
-        case "X": return getComputedStyle(document.documentElement).getPropertyValue("--color-x");
-        case "A": return getComputedStyle(document.documentElement).getPropertyValue("--color-a");
-        case "B": return getComputedStyle(document.documentElement).getPropertyValue("--color-b");
-        case "C": return getComputedStyle(document.documentElement).getPropertyValue("--color-c");
-        case "D": return getComputedStyle(document.documentElement).getPropertyValue("--color-d");
-        case "E": return getComputedStyle(document.documentElement).getPropertyValue("--color-e");
-        case "回答数": return getComputedStyle(document.documentElement).getPropertyValue("--color-count");
+      const css = getComputedStyle(document.documentElement);
+      switch (label.trim()) {
+        case "O": return css.getPropertyValue("--color-o");
+        case "X": return css.getPropertyValue("--color-x");
+        case "A": return css.getPropertyValue("--color-a");
+        case "B": return css.getPropertyValue("--color-b");
+        case "C": return css.getPropertyValue("--color-c");
+        case "D": return css.getPropertyValue("--color-d");
+        case "E": return css.getPropertyValue("--color-e");
+        case "回答数": return css.getPropertyValue("--color-count");
         default: return "#d1d1d6";
       }
     }
@@ -483,9 +488,9 @@
 
         const bar  = document.createElement("div");
         bar.className = "bar";
-        const width = Math.max(6, count * 28); // 最小幅を少し確保
+        const width = Math.max(6, count * 28);
         bar.style.width = width + "px";
-        bar.style.background = getBarColor(label.trim());
+        bar.style.background = getBarColor(label);
 
         row.appendChild(lbl);
         row.appendChild(bar);
