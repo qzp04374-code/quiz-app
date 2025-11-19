@@ -65,7 +65,7 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-    // === Firebase 設定（教師と同じ） ===
+    // === Firebase 設定 ===
     const firebaseConfig = {
       apiKey: "AIzaSyBke-wTU16skpbK8z80ddK04tE154dHERQ",
       authDomain: "satosan-41eac.firebaseapp.com",
@@ -145,7 +145,6 @@
 
       submit.onclick = async () => {
         if (!isOpen || !selected) return;
-
         await set(ref(db, `rooms/${room}/answers/${userId}`), selected);
         lockUI();
       };
@@ -181,7 +180,6 @@
 
       submit.onclick = async () => {
         if (!isOpen || !selected) return;
-
         await set(ref(db, `rooms/${room}/answers/${userId}`), selected);
         lockUI();
       };

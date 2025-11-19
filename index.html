@@ -89,7 +89,7 @@
     </div>
   </div>
 
-  <!-- QRコード生成ライブラリ（グローバルに QRCode クラスを提供） -->
+  <!-- QRコード生成ライブラリ -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
   <script type="module">
@@ -137,7 +137,7 @@
       // 結果初期化
       if (mode === "ox" || mode === "five") {
         const resultObj = {};
-        choices.forEach(c => resultObj[c] = 0);
+        choices.forEach(c => (resultObj[c] = 0));
         await set(resRef(), resultObj);
       } else {
         await set(resRef(), {});
@@ -166,7 +166,7 @@
       renderGraph({});
     };
 
-    // === QRコード表示（/quiz-app/student.html?v=...&room=... を生成） ===
+    // === QRコード生成（GitHub Pages /quiz-app/ 対応） ===
     const qrModal = document.getElementById("qrModal");
     const qrDiv   = document.getElementById("qrcode");
     const closeQR = document.getElementById("closeQR");
@@ -174,8 +174,8 @@
 
     qrBtn.onclick = () => {
       const here    = new URL(location.href);
-      const dirPath = here.pathname.replace(/[^/]*$/, "");   // 最後の要素(index.htmlなど)を削って /quiz-app/ を残す
-      const base    = here.origin + dirPath;                 // https://qzp04374-code.github.io/quiz-app/
+      const dirPath = here.pathname.replace(/[^/]*$/, ""); // /quiz-app/index.html → /quiz-app/
+      const base    = here.origin + dirPath;               // https://qzp04374-code.github.io/quiz-app/
 
       const v = here.searchParams.get("v") || "20251117";
 
@@ -188,7 +188,6 @@
 
       const url = `${base}student.html${query}`;
 
-      // 既存QRをクリアしてから生成
       qrDiv.innerHTML = "";
       // eslint-disable-next-line no-undef
       new QRCode(qrDiv, {
@@ -208,7 +207,7 @@
       if (e.target === qrModal) qrModal.style.display = "none";
     });
 
-    // === Firebase からのデータ監視 ===
+    // === Firebase 監視 ===
     function attachListeners() {
       if (unsubscribeAct) unsubscribeAct();
       if (unsubscribeAns) unsubscribeAns();
@@ -227,14 +226,14 @@
           return;
         }
 
-        const keys   = Object.keys(answers);
-        let counts   = {};
+        const keys = Object.keys(answers);
+        let counts = {};
 
         if (currentMode === "text") {
-          // 文字記入モード：回答数だけ
+          // 文字記入：回答数のみ
           counts["回答数"] = keys.length;
         } else {
-          // ○×・5択：文字でカウント
+          // ○×・5択：文字でカウント（新旧両フォーマット対応）
           keys.forEach(uid => {
             const v = answers[uid];
             let val = null;
@@ -242,7 +241,6 @@
             if (typeof v === "string") {
               val = v;
             } else if (v && typeof v === "object" && typeof v.value === "string") {
-              // 旧形式 { value: "O" } にも対応
               val = v.value;
             }
 
