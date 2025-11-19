@@ -1,118 +1,236 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>学生用回答ページ</title>
-<link rel="stylesheet" href="student.css">
-
-<script type="module">
-import { db, ref, onValue, update } from "./common.js";
-
-document.addEventListener("DOMContentLoaded", () => {
-
-    /* --- ルーム取得 --- */
-    const params = new URLSearchParams(window.location.search);
-    const room = params.get("room");
-
-    const roomLabel = document.getElementById("roomLabel");
-    const statusLabel = document.getElementById("statusLabel");
-    const btnO = document.getElementById("btnO");
-    const btnX = document.getElementById("btnX");
-    const btnSend = document.getElementById("btnSend");
-
-    roomLabel.textContent = room ? `ルーム：${room}` : "ルーム未設定";
-    if (!room) return;
-
-    /* --- 固定ユーザーID --- */
-    let userId = localStorage.getItem("quizUserId");
-    if (!userId) {
-        userId = "user_" + Math.random().toString(36).substring(2, 10);
-        localStorage.setItem("quizUserId", userId);
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ClassSync Student</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+      text-align: center;
+      padding: 30px;
     }
-
-    const activityRef = ref(db, `rooms/${room}/activity`);
-    const answersRef  = ref(db, `rooms/${room}/answers`);
-
-    let choice = null;
-    let locked = true;
-
-    /* --- 回答開始・終了の監視 --- */
-    onValue(activityRef, (snap) => {
-        const status = snap.val()?.status || "closed";
-
-        locked = (status !== "open");
-
-        if (locked) {
-            statusLabel.textContent = "回答終了";
-            disableAll();
-        } else {
-            statusLabel.textContent = "回答できます";
-            enableChoices();
-        }
-    });
-
-    /* --- 選択処理 --- */
-    btnO.addEventListener("click", () => {
-        if (locked) return;
-        choice = "O";
-        highlightChoice("O");
-    });
-
-    btnX.addEventListener("click", () => {
-        if (locked) return;
-        choice = "X";
-        highlightChoice("X");
-    });
-
-    /* --- 決定ボタン --- */
-    btnSend.addEventListener("click", () => {
-        if (locked || !choice) return;
-
-        update(answersRef, { [userId]: choice });
-
-        disableAll();
-        statusLabel.textContent = "回答しました";
-
-        const audio = new Audio("poyon.mp3");
-        audio.play();
-    });
-
-    /* --- UI管理 --- */
-    function disableAll() {
-        btnO.disabled = true;
-        btnX.disabled = true;
-        btnSend.disabled = true;
+    #answer-container {
+      margin-top: 24px;
     }
-
-    function enableChoices() {
-        btnO.disabled = false;
-        btnX.disabled = false;
-        btnSend.disabled = false;
-        choice = null;
-        highlightChoice(null);
+    .choice-btn {
+      width: 70px;
+      height: 70px;
+      margin: 10px;
+      font-size: 28px;
+      border-radius: 50%;
+      border: none;
+      background-color: #f1f1f4;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+      transition: 0.15s;
+      cursor: pointer;
     }
-
-    function highlightChoice(c) {
-        btnO.classList.toggle("selected", c === "O");
-        btnX.classList.toggle("selected", c === "X");
+    .choice-btn.selected {
+      background-color: #007aff;
+      color: white;
+      transform: scale(1.07);
     }
-});
-</script>
+    .submit-btn {
+      margin-top: 25px;
+      padding: 14px 34px;
+      font-size: 22px;
+      border-radius: 16px;
+      border: none;
+      background-color: #007aff;
+      color: white;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+      cursor: pointer;
+    }
+    .locked {
+      opacity: 0.5;
+      pointer-events: none;
+    }
+    textarea {
+      width: 80%;
+      height: 150px;
+      font-size: 18px;
+      padding: 12px;
+      border-radius: 12px;
+      border: 1px solid #ccc;
+      resize: vertical;
+    }
+  </style>
 </head>
-
 <body>
-<div class="container">
-    <h2 id="roomLabel">ルーム</h2>
-    <p id="statusLabel" class="status">読み込み中...</p>
+  <h2>回答画面</h2>
+  <div id="answer-container"></div>
 
-    <div class="choice-box">
-        <button id="btnO" class="btn-o">○</button>
-        <button id="btnX" class="btn-x">×</button>
-    </div>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-    <button id="btnSend" class="btn-send">決定</button>
-</div>
+    // ★あなたの Firebase 設定を書いてください
+    const firebaseConfig = {
+      // apiKey: "...",
+      // authDomain: "...",
+      // databaseURL: "...",
+      // projectId: "...",
+      // storageBucket: "...",
+      // messagingSenderId: "...",
+      // appId: "..."
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    // room 取得
+    const url = new URL(window.location.href);
+    const room = url.searchParams.get("room") || "kyoto-01";
+
+    // userId 永続化
+    let userId = localStorage.getItem("student_user_id");
+    if (!userId) {
+      userId = "user_" + Math.random().toString(36).slice(2, 8);
+      localStorage.setItem("student_user_id", userId);
+    }
+
+    let isOpen = false;
+
+    const container = document.getElementById("answer-container");
+
+    // activity 監視（mode / config / status）
+    const activityRef = ref(db, `rooms/${room}/activity`);
+    onValue(activityRef, snap => {
+      const data = snap.val();
+      if (!data) return;
+
+      isOpen = (data.status === "open");
+      const mode = data.mode;
+      const config = data.config || {};
+
+      if (mode === "ox") {
+        renderOX(config.choices || ["O","X"]);
+      } else if (mode === "five") {
+        renderFiveChoice(config.choices || ["A","B","C","D","E"]);
+      } else if (mode === "text") {
+        renderTextInput(config.placeholder || "自由に入力してください");
+      } else {
+        container.innerHTML = "現在回答できる問題はありません。";
+      }
+    });
+
+    // ○× UI
+    function renderOX(choices) {
+      container.innerHTML = "";
+      container.classList.remove("locked");
+
+      let selected = null;
+
+      choices.forEach(ch => {
+        const btn = document.createElement("button");
+        btn.className = "choice-btn";
+        btn.textContent = ch;
+
+        btn.onclick = () => {
+          if (!isOpen) return;
+          selected = ch;
+          document.querySelectorAll(".choice-btn").forEach(b => b.classList.remove("selected"));
+          btn.classList.add("selected");
+        };
+
+        container.appendChild(btn);
+      });
+
+      const submit = document.createElement("button");
+      submit.className = "submit-btn";
+      submit.textContent = "決定";
+
+      submit.onclick = async () => {
+        if (!isOpen || !selected) return;
+
+        const answerRef = ref(db, `rooms/${room}/answers/${userId}`);
+        await set(answerRef, {
+          value: selected,
+          timestamp: Date.now()
+        });
+
+        lockUI();
+      };
+
+      container.appendChild(submit);
+    }
+
+    // 5択 UI
+    function renderFiveChoice(choices) {
+      container.innerHTML = "";
+      container.classList.remove("locked");
+
+      let selected = null;
+
+      choices.forEach(ch => {
+        const btn = document.createElement("button");
+        btn.className = "choice-btn";
+        btn.textContent = ch;
+
+        btn.onclick = () => {
+          if (!isOpen) return;
+          selected = ch;
+          document.querySelectorAll(".choice-btn").forEach(b => b.classList.remove("selected"));
+          btn.classList.add("selected");
+        };
+
+        container.appendChild(btn);
+      });
+
+      const submit = document.createElement("button");
+      submit.className = "submit-btn";
+      submit.textContent = "決定";
+
+      submit.onclick = async () => {
+        if (!isOpen || !selected) return;
+
+        const answerRef = ref(db, `rooms/${room}/answers/${userId}`);
+        await set(answerRef, {
+          value: selected,
+          timestamp: Date.now()
+        });
+
+        lockUI();
+      };
+
+      container.appendChild(submit);
+    }
+
+    // 文字記入 UI
+    function renderTextInput(placeholder) {
+      container.innerHTML = "";
+      container.classList.remove("locked");
+
+      const textarea = document.createElement("textarea");
+      textarea.placeholder = placeholder;
+      container.appendChild(textarea);
+
+      const submit = document.createElement("button");
+      submit.className = "submit-btn";
+      submit.textContent = "決定";
+
+      submit.onclick = async () => {
+        if (!isOpen) return;
+        const text = textarea.value.trim();
+        if (!text) return;
+
+        const answerRef = ref(db, `rooms/${room}/answers/${userId}`);
+        await set(answerRef, {
+          value: text,
+          timestamp: Date.now()
+        });
+
+        lockUI();
+      };
+
+      container.appendChild(submit);
+    }
+
+    // UIロック
+    function lockUI() {
+      container.classList.add("locked");
+    }
+  </script>
 </body>
 </html>
 
