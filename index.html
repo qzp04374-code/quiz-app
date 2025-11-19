@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ClassSync Teacher</title>
+
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
@@ -32,6 +33,7 @@
       margin: 8px 0;
       border-radius: 8px;
     }
+    /* QRモーダル */
     #qrModal {
       display: none;
       position: fixed;
@@ -54,7 +56,7 @@
   <h2>教員画面</h2>
 
   <label>
-    ルーム選択：
+    ルーム：
     <select id="roomSelect">
       <option value="kyoto-01">kyoto-01</option>
       <option value="kyoto-02">kyoto-02</option>
@@ -91,118 +93,136 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getDatabase, ref, set, update, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-    // ★ここを「Firebase コンソールの設定」で置き換えてください（コメントにしないこと）
-const firebaseConfig = {
-  apiKey: "AIzaSyBke-wTU16skpbK8z80ddK04tE154dHERQ",
-  authDomain: "satosan-41eac.firebaseapp.com",
-  databaseURL: "https://satosan-41eac-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "satosan-41eac",
-  storageBucket: "satosan-41eac.firebasestorage.app",
-  messagingSenderId: "992482993229",
-  appId: "1:992482993229:web:e2c59b078233b0ed16e804",
-  measurementId: "G-VT9FKHN3LT"
-}; 
+    // === Firebase 設定（そのまま利用） ===
+    const firebaseConfig = {
+      apiKey: "AIzaSyBke-wTU16skpbK8z80ddK04tE154dHERQ",
+      authDomain: "satosan-41eac.firebaseapp.com",
+      databaseURL: "https://satosan-41eac-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "satosan-41eac",
+      storageBucket: "satosan-41eac.firebasestorage.app",
+      messagingSenderId: "992482993229",
+      appId: "1:992482993229:web:e2c59b078233b0ed16e804",
+      measurementId: "G-VT9FKHN3LT"
+    };
 
-    // --- Firebase 初期化 ---
     const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
+    const db  = getDatabase(app);
 
     const roomSelect = document.getElementById("roomSelect");
-    const graph = document.getElementById("graph");
+    const graph      = document.getElementById("graph");
 
-    let currentRoom = roomSelect.value;
-    let unsubscribeResult = null;
+    let currentRoom       = roomSelect.value;
+    let unsubscribeAct    = null;
+    let unsubscribeAns    = null;
+    let currentMode       = null;
 
+    function actRef() { return ref(db, `rooms/${currentRoom}/activity`); }
+    function ansRef() { return ref(db, `rooms/${currentRoom}/answers`); }
+    function resRef() { return ref(db, `rooms/${currentRoom}/result`); }
+
+    // ルーム切替
     roomSelect.addEventListener("change", () => {
       currentRoom = roomSelect.value;
-      attachResultListener();
+      attachListeners();
     });
 
-    // 参照をまとめるヘルパ
-    const activityRef = () => ref(db, `rooms/${currentRoom}/activity`);
-    const answersRef  = () => ref(db, `rooms/${currentRoom}/answers`);
-    const resultRef   = () => ref(db, `rooms/${currentRoom}/result`);
-
-    // 共通：モード開始
+    // モード開始（○× / 5択 / 文字記入）
     async function startMode(mode, choices) {
-      const actRef = activityRef();
-      const ansRef = answersRef();
-      const resRef = resultRef();
+      // 回答リセット
+      await set(ansRef(), {});
 
-      // answers リセット
-      await set(ansRef, {});
-
-      // result 初期化
-      let resultData = {};
-      if (Array.isArray(choices) && choices.length > 0) {
-        choices.forEach(c => { resultData[c] = 0; });
+      // result 初期化（OX/5択のみ）
+      if (mode === "ox" || mode === "five") {
+        const resultObj = {};
+        choices.forEach(c => resultObj[c] = 0);
+        await set(resRef(), resultObj);
+      } else {
+        // 文字記入モード：とりあえず空
+        await set(resRef(), {});
       }
-      await set(resRef, resultData);
 
-      // activity 設定
-      const updateData = {
-        status: "open",
-        mode: mode
-      };
+      const data = { status: "open", mode };
 
       if (mode === "text") {
-        updateData.config = {
-          placeholder: "自由に記入してください"
-        };
+        data.config = { placeholder: "自由に記入してください" };
       } else {
-        updateData.config = { choices };
+        data.config = { choices };
       }
 
-      await update(actRef, updateData);
+      await update(actRef(), data);
     }
 
-    // ボタンイベント
     document.getElementById("oxBtn").onclick   = () => startMode("ox",   ["O","X"]);
     document.getElementById("fiveBtn").onclick = () => startMode("five", ["A","B","C","D","E"]);
-    document.getElementById("textBtn").onclick = () => startMode("text", null);
+    document.getElementById("textBtn").onclick = () => startMode("text");
 
     document.getElementById("stopBtn").onclick = () => {
-      update(activityRef(), { status: "closed" });
+      update(actRef(), { status: "closed" });
     };
 
     document.getElementById("resetBtn").onclick = () => {
-      set(resultRef(), {});
+      set(resRef(), {});
+      renderGraph({});
     };
 
-    // QRコード表示（Google Chart API を利用）
+    // === QRコード表示（Google Chart API 利用） ===
     const qrModal = document.getElementById("qrModal");
     const qrImage = document.getElementById("qrImage");
 
     document.getElementById("qrBtn").onclick = () => {
-      // /quiz-app/ 下で動いても student.html まで正しくたどる
-      const basePath =
-        location.origin +
-        (location.pathname.endsWith("/")
-          ? location.pathname
-          : location.pathname.replace(/index\.html$/, "/"));
-
-      const url = `${basePath}student.html?room=${encodeURIComponent(currentRoom)}`;
-      const src = "https://chart.googleapis.com/chart?cht=qr&chs=280x280&chl=" + encodeURIComponent(url);
-      qrImage.src = src;
+      const url   = `${location.origin}/student.html?room=${encodeURIComponent(currentRoom)}`;
+      const qrURL = "https://chart.googleapis.com/chart?cht=qr&chs=280x280&chl=" + encodeURIComponent(url);
+      qrImage.src = qrURL;
       qrModal.style.display = "flex";
     };
 
     document.getElementById("closeQR").onclick = () => {
       qrModal.style.display = "none";
     };
+
     qrModal.addEventListener("click", (e) => {
       if (e.target === qrModal) qrModal.style.display = "none";
     });
 
-    // グラフ監視
-    function attachResultListener() {
-      if (typeof unsubscribeResult === "function") {
-        unsubscribeResult(); // 旧ルームのリスナー解除
-      }
-      const rRef = resultRef();
-      unsubscribeResult = onValue(rRef, (snap) => {
+    // === リスナー登録（activity, answers） ===
+    function attachListeners() {
+      // 旧リスナー解除
+      if (unsubscribeAct) unsubscribeAct();
+      if (unsubscribeAns) unsubscribeAns();
+
+      // activity 監視（mode を把握）
+      unsubscribeAct = onValue(actRef(), snap => {
         const data = snap.val() || {};
-        renderGraph(data);
+        currentMode = data.mode || null;
+      });
+
+      // answers 監視 → 集計 & グラフ更新
+      unsubscribeAns = onValue(ansRef(), snap => {
+        const answers = snap.val() || {};
+        if (!currentMode) {
+          renderGraph({});
+          return;
+        }
+
+        const keys = Object.keys(answers);
+        let counts = {};
+
+        if (currentMode === "text") {
+          // 文字記入モード：回答数のみ表示
+          counts["回答数"] = keys.length;
+        } else {
+          // ○×・5択：value（=文字）でカウント
+          keys.forEach(uid => {
+            const v = answers[uid];
+            if (typeof v === "string" && v) {
+              counts[v] = (counts[v] || 0) + 1;
+            }
+          });
+        }
+
+        // result にも保存（必要なら他クライアントからも参照可）
+        set(resRef(), counts);
+        renderGraph(counts);
       });
     }
 
@@ -215,21 +235,21 @@ const firebaseConfig = {
         return;
       }
 
-      entries.forEach(([key, value]) => {
-        const label = document.createElement("div");
-        label.textContent = `${key}: ${value}`;
+      entries.forEach(([label, count]) => {
+        const div = document.createElement("div");
+        div.textContent = `${label}: ${count}`;
 
         const bar = document.createElement("div");
         bar.className = "bar";
-        bar.style.width = (value * 24) + "px";
+        bar.style.width = (count * 30) + "px";
 
-        graph.appendChild(label);
+        graph.appendChild(div);
         graph.appendChild(bar);
       });
     }
 
-    // 最初のルームの監視開始
-    attachResultListener();
+    // 初期ルームの監視開始
+    attachListeners();
   </script>
 </body>
 </html>

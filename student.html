@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ClassSync Student</title>
+
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
@@ -64,25 +65,26 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-    // ★あなたの Firebase 設定を書いてください
+    // === Firebase 設定（教師と同じ） ===
     const firebaseConfig = {
-      // apiKey: "...",
-      // authDomain: "...",
-      // databaseURL: "...",
-      // projectId: "...",
-      // storageBucket: "...",
-      // messagingSenderId: "...",
-      // appId: "..."
+      apiKey: "AIzaSyBke-wTU16skpbK8z80ddK04tE154dHERQ",
+      authDomain: "satosan-41eac.firebaseapp.com",
+      databaseURL: "https://satosan-41eac-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "satosan-41eac",
+      storageBucket: "satosan-41eac.firebasestorage.app",
+      messagingSenderId: "992482993229",
+      appId: "1:992482993229:web:e2c59b078233b0ed16e804",
+      measurementId: "G-VT9FKHN3LT"
     };
 
     const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
+    const db  = getDatabase(app);
 
-    // room 取得
-    const url = new URL(window.location.href);
+    // room を URL ?room=xxx から取得
+    const url  = new URL(window.location.href);
     const room = url.searchParams.get("room") || "kyoto-01";
 
-    // userId 永続化
+    // userId をローカルに固定
     let userId = localStorage.getItem("student_user_id");
     if (!userId) {
       userId = "user_" + Math.random().toString(36).slice(2, 8);
@@ -90,31 +92,32 @@
     }
 
     let isOpen = false;
-
     const container = document.getElementById("answer-container");
 
-    // activity 監視（mode / config / status）
-    const activityRef = ref(db, `rooms/${room}/activity`);
-    onValue(activityRef, snap => {
+    // activity 監視 → モードに応じて UI 切替
+    onValue(ref(db, `rooms/${room}/activity`), snap => {
       const data = snap.val();
-      if (!data) return;
+      if (!data) {
+        container.innerHTML = "現在回答できる問題はありません。";
+        return;
+      }
 
       isOpen = (data.status === "open");
-      const mode = data.mode;
+      const mode   = data.mode;
       const config = data.config || {};
 
       if (mode === "ox") {
         renderOX(config.choices || ["O","X"]);
       } else if (mode === "five") {
-        renderFiveChoice(config.choices || ["A","B","C","D","E"]);
+        renderFive(config.choices || ["A","B","C","D","E"]);
       } else if (mode === "text") {
-        renderTextInput(config.placeholder || "自由に入力してください");
+        renderText(config.placeholder || "自由に記入してください");
       } else {
         container.innerHTML = "現在回答できる問題はありません。";
       }
     });
 
-    // ○× UI
+    // ○×モード UI
     function renderOX(choices) {
       container.innerHTML = "";
       container.classList.remove("locked");
@@ -143,12 +146,7 @@
       submit.onclick = async () => {
         if (!isOpen || !selected) return;
 
-        const answerRef = ref(db, `rooms/${room}/answers/${userId}`);
-        await set(answerRef, {
-          value: selected,
-          timestamp: Date.now()
-        });
-
+        await set(ref(db, `rooms/${room}/answers/${userId}`), selected);
         lockUI();
       };
 
@@ -156,7 +154,7 @@
     }
 
     // 5択 UI
-    function renderFiveChoice(choices) {
+    function renderFive(choices) {
       container.innerHTML = "";
       container.classList.remove("locked");
 
@@ -184,12 +182,7 @@
       submit.onclick = async () => {
         if (!isOpen || !selected) return;
 
-        const answerRef = ref(db, `rooms/${room}/answers/${userId}`);
-        await set(answerRef, {
-          value: selected,
-          timestamp: Date.now()
-        });
-
+        await set(ref(db, `rooms/${room}/answers/${userId}`), selected);
         lockUI();
       };
 
@@ -197,7 +190,7 @@
     }
 
     // 文字記入 UI
-    function renderTextInput(placeholder) {
+    function renderText(placeholder) {
       container.innerHTML = "";
       container.classList.remove("locked");
 
@@ -214,19 +207,13 @@
         const text = textarea.value.trim();
         if (!text) return;
 
-        const answerRef = ref(db, `rooms/${room}/answers/${userId}`);
-        await set(answerRef, {
-          value: text,
-          timestamp: Date.now()
-        });
-
+        await set(ref(db, `rooms/${room}/answers/${userId}`), text);
         lockUI();
       };
 
       container.appendChild(submit);
     }
 
-    // UIロック
     function lockUI() {
       container.classList.add("locked");
     }
