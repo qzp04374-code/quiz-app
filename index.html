@@ -6,79 +6,221 @@
   <title>ClassSync Teacher</title>
 
   <style>
+    :root {
+      /* 共通カラー定義（学生側とも連動） */
+      --color-o: #34c759;     /* O → グリーン */
+      --color-x: #ff3b30;     /* X → レッド */
+      --color-a: #007aff;     /* A → ブルー */
+      --color-b: #34c759;     /* B → グリーン */
+      --color-c: #ff9500;     /* C → オレンジ */
+      --color-d: #af52de;     /* D → パープル */
+      --color-e: #ff2d55;     /* E → ピンク */
+      --color-count: #8e8e93; /* 回答数（テキストモード） */
+    }
+
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
-      padding: 20px;
+      margin: 0;
+      min-height: 100vh;
+      background: #f5f5f7;
+      display: flex;
+      justify-content: center;
+      align-items: center;
     }
+
+    .card {
+      background: #ffffff;
+      border-radius: 24px;
+      box-shadow: 0 12px 30px rgba(0,0,0,0.12);
+      padding: 24px 20px 28px;
+      max-width: 520px;
+      width: 100%;
+      box-sizing: border-box;
+      text-align: center;
+    }
+
+    h2 {
+      margin-top: 0;
+      margin-bottom: 12px;
+      font-size: 22px;
+    }
+
+    .room-row {
+      margin-bottom: 12px;
+    }
+
+    select {
+      padding: 6px 10px;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+      font-size: 14px;
+    }
+
+    .button-row {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 8px;
+      margin-bottom: 10px;
+    }
+
     button {
-      padding: 12px 20px;
-      border-radius: 12px;
+      padding: 10px 14px;
+      border-radius: 16px;
       border: none;
-      background: #007aff;
       color: white;
-      font-size: 16px;
-      margin: 4px;
+      font-size: 14px;
       cursor: pointer;
+      min-width: 96px;
+      transition: transform 0.12s ease, box-shadow 0.12s ease, filter 0.12s ease;
     }
-    button:disabled {
-      opacity: 0.5;
-      cursor: default;
+
+    button:active {
+      transform: scale(0.97);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.25);
     }
+
+    .mode-btn {
+      background: #007aff;
+      box-shadow: 0 4px 12px rgba(0,122,255,0.3);
+    }
+
+    .mode-ox { background: #007aff; }   /* ブルー */
+    .mode-five { background: #34c759; } /* グリーン */
+    .mode-text { background: #af52de; } /* パープル */
+
+    .mode-btn.active {
+      filter: brightness(1.1);
+      box-shadow: 0 0 0 3px rgba(0,122,255,0.2);
+    }
+
+    #stopBtn {
+      background: #ff3b30; /* 赤 */
+      box-shadow: 0 4px 12px rgba(255,59,48,0.3);
+    }
+
+    #resetBtn {
+      background: #8e8e93;
+      box-shadow: 0 4px 12px rgba(142,142,147,0.3);
+    }
+
+    #qrBtn {
+      background: #ff9500;
+      box-shadow: 0 4px 12px rgba(255,149,0,0.35);
+    }
+
     #graph {
-      margin-top: 30px;
+      margin-top: 18px;
+      text-align: left;
     }
+
+    .bar-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 6px;
+      font-size: 15px;
+    }
+
+    .bar-label {
+      width: 70px;
+      text-align: right;
+      font-weight: 500;
+    }
+
     .bar {
-      height: 32px;
-      background: #007aff33;
-      margin: 8px 0;
-      border-radius: 8px;
+      height: 18px;
+      border-radius: 999px;
+      background: #d1d1d6;
+      min-width: 4px;
+      transition: width 0.15s ease;
     }
-    /* QRモーダル */
+
+    #textList {
+      margin-top: 14px;
+      max-height: 180px;
+      overflow-y: auto;
+      text-align: left;
+      padding-right: 4px;
+    }
+
+    #textList ul {
+      list-style: none;
+      padding-left: 0;
+      margin: 6px 0 0 0;
+    }
+
+    #textList li {
+      margin: 4px 0;
+      font-size: 14px;
+    }
+
     #qrModal {
       display: none;
       position: fixed;
       top: 0; left: 0;
       width: 100%; height: 100%;
-      background: rgba(0,0,0,0.7);
+      background: rgba(0,0,0,0.55);
       align-items: center;
       justify-content: center;
       z-index: 1000;
     }
+
     #qrModalInner {
       background: white;
       padding: 20px;
-      border-radius: 16px;
+      border-radius: 20px;
       text-align: center;
+      box-shadow: 0 10px 28px rgba(0,0,0,0.4);
+    }
+
+    #qrcode canvas {
+      border-radius: 12px;
+    }
+
+    @media (max-width: 600px) {
+      .card {
+        margin: 12px;
+        padding: 20px 14px 24px;
+      }
+      .bar-label {
+        width: 56px;
+        font-size: 13px;
+      }
     }
   </style>
 </head>
 <body>
-  <h2>教員画面</h2>
+  <div class="card">
+    <h2>教員画面</h2>
 
-  <label>
-    ルーム：
-    <select id="roomSelect">
-      <option value="kyoto-01">kyoto-01</option>
-      <option value="kyoto-02">kyoto-02</option>
-      <option value="nagoya-01">nagoya-01</option>
-      <option value="nagoya-02">nagoya-02</option>
-      <option value="sendai-01">sendai-01</option>
-      <option value="sendai-02">sendai-02</option>
-    </select>
-  </label>
+    <div class="room-row">
+      <label>
+        ルーム：
+        <select id="roomSelect">
+          <option value="kyoto-01">kyoto-01</option>
+          <option value="kyoto-02">kyoto-02</option>
+          <option value="nagoya-01">nagoya-01</option>
+          <option value="nagoya-02">nagoya-02</option>
+          <option value="sendai-01">sendai-01</option>
+          <option value="sendai-02">sendai-02</option>
+        </select>
+      </label>
+    </div>
 
-  <div style="margin-top:16px;">
-    <button id="oxBtn">○×モード開始</button>
-    <button id="fiveBtn">5択モード開始</button>
-    <button id="textBtn">文字記入モード開始</button>
-    <button id="stopBtn">回答終了</button>
-    <button id="resetBtn">集計リセット</button>
-    <button id="qrBtn">QRコード表示</button>
+    <div class="button-row">
+      <button id="oxBtn" class="mode-btn mode-ox">○×モード</button>
+      <button id="fiveBtn" class="mode-btn mode-five">5択モード</button>
+      <button id="textBtn" class="mode-btn mode-text">文字記入</button>
+      <button id="stopBtn">回答終了</button>
+      <button id="resetBtn">集計リセット</button>
+      <button id="qrBtn">QRコード</button>
+    </div>
+
+    <div id="graph"></div>
+    <div id="textList"></div>
   </div>
-
-  <div id="graph"></div>
-  <!-- 文字記入モード用：回答一覧エリア -->
-  <div id="textList"></div>
 
   <!-- QRコード用モーダル -->
   <div id="qrModal">
@@ -117,6 +259,11 @@
     const graph      = document.getElementById("graph");
     const textList   = document.getElementById("textList");
 
+    const oxBtn   = document.getElementById("oxBtn");
+    const fiveBtn = document.getElementById("fiveBtn");
+    const textBtn = document.getElementById("textBtn");
+    const stopBtn = document.getElementById("stopBtn");
+
     let currentRoom    = roomSelect.value;
     let unsubscribeAct = null;
     let unsubscribeAns = null;
@@ -132,12 +279,18 @@
       attachListeners();
     });
 
+    // アクティブモードボタン表示
+    function setActiveModeButton(mode) {
+      [oxBtn, fiveBtn, textBtn].forEach(b => b.classList.remove("active"));
+      if (mode === "ox")   oxBtn.classList.add("active");
+      if (mode === "five") fiveBtn.classList.add("active");
+      if (mode === "text") textBtn.classList.add("active");
+    }
+
     // モード開始（○× / 5択 / 文字記入）
     async function startMode(mode, choices) {
-      // 回答リセット
       await set(ansRef(), {});
 
-      // 結果初期化
       if (mode === "ox" || mode === "five") {
         const resultObj = {};
         choices.forEach(c => (resultObj[c] = 0));
@@ -146,7 +299,6 @@
         await set(resRef(), {});
       }
 
-      // activity 更新（回答開始）
       const data = { status: "open", mode };
       if (mode === "text") {
         data.config = { placeholder: "自由に記入してください" };
@@ -154,14 +306,16 @@
         data.config = { choices };
       }
       await update(actRef(), data);
+      setActiveModeButton(mode);
     }
 
-    document.getElementById("oxBtn").onclick   = () => startMode("ox",   ["O","X"]);
-    document.getElementById("fiveBtn").onclick = () => startMode("five", ["A","B","C","D","E"]);
-    document.getElementById("textBtn").onclick = () => startMode("text");
+    oxBtn.onclick   = () => startMode("ox",   ["O","X"]);
+    fiveBtn.onclick = () => startMode("five", ["A","B","C","D","E"]);
+    textBtn.onclick = () => startMode("text");
 
-    document.getElementById("stopBtn").onclick = () => {
+    stopBtn.onclick = () => {
       update(actRef(), { status: "closed" });
+      // 赤ボタンは常に赤なので特別な見た目変更は不要
     };
 
     document.getElementById("resetBtn").onclick = () => {
@@ -179,7 +333,7 @@
     qrBtn.onclick = () => {
       const here    = new URL(location.href);
       const dirPath = here.pathname.replace(/[^/]*$/, ""); // /quiz-app/index.html → /quiz-app/
-      const base    = here.origin + dirPath;               // https://qzp04374-code.github.io/quiz-app/
+      const base    = here.origin + dirPath;               // https://.../quiz-app/
 
       const v = here.searchParams.get("v") || "20251117";
 
@@ -211,18 +365,17 @@
       if (e.target === qrModal) qrModal.style.display = "none";
     });
 
-    // === Firebase 監視（activity / answers）===
+    // === Firebase 監視 ===
     function attachListeners() {
       if (unsubscribeAct) unsubscribeAct();
       if (unsubscribeAns) unsubscribeAns();
 
-      // activity 監視（mode を把握）
       unsubscribeAct = onValue(actRef(), snap => {
         const data = snap.val() || {};
         currentMode = data.mode || null;
+        if (currentMode) setActiveModeButton(currentMode);
       });
 
-      // answers 監視 → 集計 & グラフ & テキスト一覧
       unsubscribeAns = onValue(ansRef(), snap => {
         const answers = snap.val() || {};
         if (!currentMode) {
@@ -235,11 +388,9 @@
         let counts = {};
 
         if (currentMode === "text") {
-          // 文字記入：回答数と一覧
           counts["回答数"] = keys.length;
           renderTextList(answers);
         } else {
-          // ○×・5択：文字でカウント（新旧両フォーマット対応）
           textList.innerHTML = "";
           keys.forEach(uid => {
             const v = answers[uid];
@@ -262,7 +413,7 @@
       });
     }
 
-    // 文字回答一覧を表示
+    // 文字回答一覧
     function renderTextList(answers) {
       textList.innerHTML = "";
       const keys = Object.keys(answers);
@@ -292,11 +443,25 @@
 
         const li = document.createElement("li");
         li.textContent = `${idx + 1}. ${text}`;
-        li.style.margin = "4px 0";
         ul.appendChild(li);
       });
 
       textList.appendChild(ul);
+    }
+
+    // ラベルに応じた色
+    function getBarColor(label) {
+      switch (label) {
+        case "O": return getComputedStyle(document.documentElement).getPropertyValue("--color-o");
+        case "X": return getComputedStyle(document.documentElement).getPropertyValue("--color-x");
+        case "A": return getComputedStyle(document.documentElement).getPropertyValue("--color-a");
+        case "B": return getComputedStyle(document.documentElement).getPropertyValue("--color-b");
+        case "C": return getComputedStyle(document.documentElement).getPropertyValue("--color-c");
+        case "D": return getComputedStyle(document.documentElement).getPropertyValue("--color-d");
+        case "E": return getComputedStyle(document.documentElement).getPropertyValue("--color-e");
+        case "回答数": return getComputedStyle(document.documentElement).getPropertyValue("--color-count");
+        default: return "#d1d1d6";
+      }
     }
 
     function renderGraph(data) {
@@ -309,19 +474,25 @@
       }
 
       entries.forEach(([label, count]) => {
-        const div = document.createElement("div");
-        div.textContent = `${label}: ${count}`;
+        const row  = document.createElement("div");
+        row.className = "bar-row";
 
-        const bar = document.createElement("div");
+        const lbl  = document.createElement("div");
+        lbl.className = "bar-label";
+        lbl.textContent = `${label}: ${count}`;
+
+        const bar  = document.createElement("div");
         bar.className = "bar";
-        bar.style.width = (count * 30) + "px";
+        const width = Math.max(6, count * 28); // 最小幅を少し確保
+        bar.style.width = width + "px";
+        bar.style.background = getBarColor(label.trim());
 
-        graph.appendChild(div);
-        graph.appendChild(bar);
+        row.appendChild(lbl);
+        row.appendChild(bar);
+        graph.appendChild(row);
       });
     }
 
-    // 初期ルームの監視開始
     attachListeners();
   </script>
 </body>
