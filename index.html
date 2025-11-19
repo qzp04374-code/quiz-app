@@ -77,6 +77,8 @@
   </div>
 
   <div id="graph"></div>
+  <!-- 文字記入モード用：回答一覧エリア -->
+  <div id="textList"></div>
 
   <!-- QRコード用モーダル -->
   <div id="qrModal">
@@ -89,7 +91,7 @@
     </div>
   </div>
 
-  <!-- QRコード生成ライブラリ（グローバルに QRCode クラスを提供）-->
+  <!-- QRコード生成ライブラリ -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
   <script type="module">
@@ -113,6 +115,7 @@
 
     const roomSelect = document.getElementById("roomSelect");
     const graph      = document.getElementById("graph");
+    const textList   = document.getElementById("textList");
 
     let currentRoom    = roomSelect.value;
     let unsubscribeAct = null;
@@ -143,7 +146,7 @@
         await set(resRef(), {});
       }
 
-      // activity 更新
+      // activity 更新（回答開始）
       const data = { status: "open", mode };
       if (mode === "text") {
         data.config = { placeholder: "自由に記入してください" };
@@ -164,9 +167,10 @@
     document.getElementById("resetBtn").onclick = () => {
       set(resRef(), {});
       renderGraph({});
+      textList.innerHTML = "";
     };
 
-    // === QRコード生成（現在の index.html と同じ階層の student.html を指す） ===
+    // === QRコード生成 ===
     const qrModal = document.getElementById("qrModal");
     const qrDiv   = document.getElementById("qrcode");
     const closeQR = document.getElementById("closeQR");
@@ -207,22 +211,23 @@
       if (e.target === qrModal) qrModal.style.display = "none";
     });
 
-    // === Firebase 監視（activity / answers） ===
+    // === Firebase 監視（activity / answers）===
     function attachListeners() {
       if (unsubscribeAct) unsubscribeAct();
       if (unsubscribeAns) unsubscribeAns();
 
-      // activity 監視（mode 把握）
+      // activity 監視（mode を把握）
       unsubscribeAct = onValue(actRef(), snap => {
         const data = snap.val() || {};
         currentMode = data.mode || null;
       });
 
-      // answers 監視 → 集計 & グラフ
+      // answers 監視 → 集計 & グラフ & テキスト一覧
       unsubscribeAns = onValue(ansRef(), snap => {
         const answers = snap.val() || {};
         if (!currentMode) {
           renderGraph({});
+          textList.innerHTML = "";
           return;
         }
 
@@ -230,10 +235,12 @@
         let counts = {};
 
         if (currentMode === "text") {
-          // 文字記入：回答数のみ表示
+          // 文字記入：回答数と一覧
           counts["回答数"] = keys.length;
+          renderTextList(answers);
         } else {
           // ○×・5択：文字でカウント（新旧両フォーマット対応）
+          textList.innerHTML = "";
           keys.forEach(uid => {
             const v = answers[uid];
             let val = null;
@@ -253,6 +260,43 @@
         set(resRef(), counts);
         renderGraph(counts);
       });
+    }
+
+    // 文字回答一覧を表示
+    function renderTextList(answers) {
+      textList.innerHTML = "";
+      const keys = Object.keys(answers);
+      if (keys.length === 0) {
+        textList.textContent = "まだテキスト回答はありません。";
+        return;
+      }
+
+      const title = document.createElement("div");
+      title.textContent = "テキスト回答一覧：";
+      title.style.marginTop = "16px";
+      textList.appendChild(title);
+
+      const ul = document.createElement("ul");
+      ul.style.listStyle = "none";
+      ul.style.padding = "0";
+
+      keys.forEach((uid, idx) => {
+        const v = answers[uid];
+        let text = "";
+
+        if (typeof v === "string") {
+          text = v;
+        } else if (v && typeof v === "object" && typeof v.value === "string") {
+          text = v.value;
+        }
+
+        const li = document.createElement("li");
+        li.textContent = `${idx + 1}. ${text}`;
+        li.style.margin = "4px 0";
+        ul.appendChild(li);
+      });
+
+      textList.appendChild(ul);
     }
 
     function renderGraph(data) {
