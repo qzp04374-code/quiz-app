@@ -131,8 +131,10 @@
 
     // モード開始（○× / 5択 / 文字記入）
     async function startMode(mode, choices) {
+      // 回答リセット
       await set(ansRef(), {});
 
+      // 結果初期化
       if (mode === "ox" || mode === "five") {
         const resultObj = {};
         choices.forEach(c => resultObj[c] = 0);
@@ -141,6 +143,7 @@
         await set(resRef(), {});
       }
 
+      // activity 更新
       const data = { status: "open", mode };
       if (mode === "text") {
         data.config = { placeholder: "自由に記入してください" };
@@ -163,21 +166,30 @@
       renderGraph({});
     };
 
-    // === QRコード表示（ローカル生成） ===
-    const qrModal   = document.getElementById("qrModal");
-    const qrDiv     = document.getElementById("qrcode");
-    const closeQR   = document.getElementById("closeQR");
-    const qrBtn     = document.getElementById("qrBtn");
+    // === QRコード表示（/quiz-app/student.html?v=...&room=... を生成） ===
+    const qrModal = document.getElementById("qrModal");
+    const qrDiv   = document.getElementById("qrcode");
+    const closeQR = document.getElementById("closeQR");
+    const qrBtn   = document.getElementById("qrBtn");
 
     qrBtn.onclick = () => {
-      // 表示するURL（とりあえず origin/student.html?room=...）
-      const url = `${location.origin}/student.html?room=${encodeURIComponent(currentRoom)}`;
+      const here    = new URL(location.href);
+      const dirPath = here.pathname.replace(/[^/]*$/, "");   // 最後の要素(index.htmlなど)を削って /quiz-app/ を残す
+      const base    = here.origin + dirPath;                 // https://qzp04374-code.github.io/quiz-app/
 
-      // 既存のQRを消去
+      const v = here.searchParams.get("v") || "20251117";
+
+      let query = "";
+      if (v) {
+        query = `?v=${encodeURIComponent(v)}&room=${encodeURIComponent(currentRoom)}`;
+      } else {
+        query = `?room=${encodeURIComponent(currentRoom)}`;
+      }
+
+      const url = `${base}student.html${query}`;
+
+      // 既存QRをクリアしてから生成
       qrDiv.innerHTML = "";
-
-      // グローバルの QRCode クラスを使って生成
-      // （先頭の script タグで読み込んでいる）
       // eslint-disable-next-line no-undef
       new QRCode(qrDiv, {
         text: url,
@@ -201,11 +213,13 @@
       if (unsubscribeAct) unsubscribeAct();
       if (unsubscribeAns) unsubscribeAns();
 
+      // activity 監視（mode 把握）
       unsubscribeAct = onValue(actRef(), snap => {
         const data = snap.val() || {};
         currentMode = data.mode || null;
       });
 
+      // answers 監視 → 集計 & グラフ
       unsubscribeAns = onValue(ansRef(), snap => {
         const answers = snap.val() || {};
         if (!currentMode) {
@@ -217,13 +231,23 @@
         let counts   = {};
 
         if (currentMode === "text") {
+          // 文字記入モード：回答数だけ
           counts["回答数"] = keys.length;
         } else {
+          // ○×・5択：文字でカウント
           keys.forEach(uid => {
             const v = answers[uid];
-            // student.html が文字列で set している前提
-            if (typeof v === "string" && v) {
-              counts[v] = (counts[v] || 0) + 1;
+            let val = null;
+
+            if (typeof v === "string") {
+              val = v;
+            } else if (v && typeof v === "object" && typeof v.value === "string") {
+              // 旧形式 { value: "O" } にも対応
+              val = v.value;
+            }
+
+            if (val) {
+              counts[val] = (counts[val] || 0) + 1;
             }
           });
         }
