@@ -91,17 +91,19 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getDatabase, ref, set, update, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-    // ★あなたの Firebase 設定を書いてください
-    const firebaseConfig = {
-      // apiKey: "...",
-      // authDomain: "...",
-      // databaseURL: "...",
-      // projectId: "...",
-      // storageBucket: "...",
-      // messagingSenderId: "...",
-      // appId: "..."
-    };
+    // ★ここを「Firebase コンソールの設定」で置き換えてください（コメントにしないこと）
+const firebaseConfig = {
+  apiKey: "AIzaSyBke-wTU16skpbK8z80ddK04tE154dHERQ",
+  authDomain: "satosan-41eac.firebaseapp.com",
+  databaseURL: "https://satosan-41eac-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "satosan-41eac",
+  storageBucket: "satosan-41eac.firebasestorage.app",
+  messagingSenderId: "992482993229",
+  appId: "1:992482993229:web:e2c59b078233b0ed16e804",
+  measurementId: "G-VT9FKHN3LT"
+}; 
 
+    // --- Firebase 初期化 ---
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
@@ -118,8 +120,8 @@
 
     // 参照をまとめるヘルパ
     const activityRef = () => ref(db, `rooms/${currentRoom}/activity`);
-    const answersRef = () => ref(db, `rooms/${currentRoom}/answers`);
-    const resultRef  = () => ref(db, `rooms/${currentRoom}/result`);
+    const answersRef  = () => ref(db, `rooms/${currentRoom}/answers`);
+    const resultRef   = () => ref(db, `rooms/${currentRoom}/result`);
 
     // 共通：モード開始
     async function startMode(mode, choices) {
@@ -170,12 +172,21 @@
     // QRコード表示（Google Chart API を利用）
     const qrModal = document.getElementById("qrModal");
     const qrImage = document.getElementById("qrImage");
+
     document.getElementById("qrBtn").onclick = () => {
-      const url = `${location.origin}/student.html?room=${encodeURIComponent(currentRoom)}`;
+      // /quiz-app/ 下で動いても student.html まで正しくたどる
+      const basePath =
+        location.origin +
+        (location.pathname.endsWith("/")
+          ? location.pathname
+          : location.pathname.replace(/index\.html$/, "/"));
+
+      const url = `${basePath}student.html?room=${encodeURIComponent(currentRoom)}`;
       const src = "https://chart.googleapis.com/chart?cht=qr&chs=280x280&chl=" + encodeURIComponent(url);
       qrImage.src = src;
       qrModal.style.display = "flex";
     };
+
     document.getElementById("closeQR").onclick = () => {
       qrModal.style.display = "none";
     };
