@@ -62,12 +62,12 @@
     .button-row {
       display: flex;
       flex-direction: row;
-      flex-wrap: nowrap;              /* ★ 6つを横一列に */
+      flex-wrap: nowrap;              /* 6つを横一列に */
       justify-content: center;
       align-items: center;
       gap: 8px;
-      margin-top: 8px;
-      margin-bottom: 10px;
+      margin-top: 14px;               /* 上下に少し余裕 */
+      margin-bottom: 16px;
       overflow-x: auto;               /* 画面が狭いときは横スクロール */
       padding-bottom: 4px;
     }
@@ -94,18 +94,19 @@
       box-shadow: 0 4px 12px rgba(0,122,255,0.3);
     }
 
-    .mode-ox { background: #007aff; }   /* ブルー */
-    .mode-five { background: #34c759; } /* グリーン */
-    .mode-text { background: #af52de; } /* パープル */
+    .mode-ox   { background: #007aff; }  /* ブルー */
+    .mode-five { background: #34c759; }  /* グリーン */
+    .mode-text { background: #af52de; }  /* パープル */
 
-    /* ★選択中のモードボタン：くっきり光らせて「押されっぱなし」状態に */
+    /* 選択中のモードボタン：太い白フチ＋光輪でくっきり */
     .mode-btn.active {
+      border: 2px solid #ffffff;          /* 白フチ */
       filter: brightness(1.12);
       box-shadow:
-        0 0 0 3px rgba(255,255,255,0.9),
-        0 0 0 6px rgba(0,122,255,0.25),
-        0 10px 24px rgba(0,0,0,0.35);
-      transform: translateY(-1px);
+        0 0 0 4px rgba(255,255,255,0.9),  /* 内側の白い輪 */
+        0 0 0 8px rgba(0,0,0,0.08),       /* ごく薄い外側 */
+        0 0 18px rgba(0,0,0,0.25);        /* ぼかし */
+      transform: none;                    /* 持ち上げは無し：切れて見えないように */
     }
 
     #stopBtn {
