@@ -207,7 +207,7 @@
       top: 0; left: 0;
       width: 100%; height: 100%;
       background: rgba(0,0,0,0.85);
-      align-items: center;
+      alignitems: center;
       justify-content: center;
       z-index: 1000;
     }
@@ -324,8 +324,9 @@
     let unsubscribeAct = null;
     let unsubscribeAns = null;
     let currentMode    = null;
-    let currentStatus  = "closed";       // ★ open / closed を保持
-    let autoResetTimer = null;           // ★ 自動リセット用タイマーID
+    let currentStatus  = "closed";       // open / closed
+    let autoResetTimer = null;           // 自動リセット用タイマーID
+    let latestTextAnswers = {};          // ★ 文字記入の最新回答を保持
 
     function actRef(room = currentRoom) { return ref(db, `rooms/${room}/activity`); }
     function ansRef(room = currentRoom) { return ref(db, `rooms/${room}/answers`); }
@@ -388,11 +389,12 @@
     fiveBtn.onclick = () => startMode("five", ["A","B","C","D","E"]);
     textBtn.onclick = () => startMode("text");
 
-    // ★ 回答終了 → status=closed & ハイライト解除
+    // 回答終了 → status=closed & ハイライト解除
     stopBtn.onclick = () => {
       update(actRef(), { status: "closed" });
       currentStatus = "closed";
       setActiveModeButton(null);
+      // ※ 実際の描画は activity の onValue で行う
     };
 
     document.getElementById("resetBtn").onclick = () => {
@@ -446,16 +448,26 @@
       if (unsubscribeAct) unsubscribeAct();
       if (unsubscribeAns) unsubscribeAns();
 
-      // ★ activity を監視して mode / status を保持
+      // ★ activity を監視して mode / status を保持し、
+      //    status が closed になったとき text を一斉表示
       unsubscribeAct = onValue(actRef(), snap => {
-        const data   = snap.val() || {};
-        currentMode  = data.mode || null;
+        const data = snap.val() || {};
+        currentMode = data.mode || null;
+
+        const prevStatus = currentStatus;
         currentStatus = data.status || "closed";
 
         if (currentStatus === "open") {
           setActiveModeButton(currentMode);
+          if (currentMode === "text") {
+            textList.textContent = "テキスト回答は「回答終了」ボタンを押すと表示されます。";
+          }
         } else {
           setActiveModeButton(null);
+          if (currentMode === "text" && prevStatus === "open") {
+            // ★ 回答終了した瞬間に最新回答を表示
+            renderTextList(latestTextAnswers);
+          }
         }
       });
 
@@ -472,13 +484,12 @@
         let counts = {};
 
         if (currentMode === "text") {
+          latestTextAnswers = answers;           // ★ ここで常に更新
           counts["回答数"] = keys.length;
 
-          // ★ 回答中はテキスト内容を隠す／終了後に一斉表示
+          // 回答中はメッセージのみ、終了後は activity の onValue で描画
           if (currentStatus === "open") {
             textList.textContent = "テキスト回答は「回答終了」ボタンを押すと表示されます。";
-          } else {
-            renderTextList(answers);
           }
         } else {
           textList.innerHTML = "";
@@ -572,7 +583,7 @@
 
         const bar  = document.createElement("div");
         bar.className = "bar";
-        const width = Math.max(20, count * 40);   // ★ 1票あたりの幅を少し大きめに
+        const width = Math.max(20, count * 40);
         bar.style.width = width + "px";
         bar.style.background = getBarColor(label);
 
