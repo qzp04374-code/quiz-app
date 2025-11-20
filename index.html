@@ -10,53 +10,63 @@
       /* 共通カラー定義（学生側とも連動） */
       --color-o: #34c759;     /* O → グリーン */
       --color-x: #ff3b30;     /* X → レッド */
-      --color-a: #007aff;     /* A → ブルー */
-      --color-b: #34c759;     /* B → グリーン */
-      --color-c: #ff9500;     /* C → オレンジ */
-      --color-d: #af52de;     /* D → パープル */
-      --color-e: #ff2d55;     /* E → ピンク */
-      --color-count: #8e8e93; /* 回答数（テキストモード） */
+      --color-a: #0a84ff;     /* A → ブルー */
+      --color-b: #30d158;     /* B → グリーン */
+      --color-c: #ff9f0a;     /* C → オレンジ */
+      --color-d: #bf5af2;     /* D → パープル */
+      --color-e: #ff375f;     /* E → ピンク */
+      --color-count: #d1d1d6; /* 回答数（テキストモード） */
     }
 
+    /* ===== 画面全体：黒背景ダークテーマ ===== */
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
       margin: 0;
       min-height: 100vh;
-      background: #f5f5f7;
+      background: radial-gradient(circle at top, #2a2a2a 0, #000000 45%, #000000 100%);
       display: flex;
       flex-direction: column;
       align-items: center;         /* 左右中央 */
       justify-content: flex-start; /* 上寄せ */
       padding-top: 32px;
       box-sizing: border-box;
+      color: #f9fafb;
     }
 
     .card {
-      background: #ffffff;
+      background: rgba(15,15,15,0.96);
       border-radius: 24px;
-      box-shadow: 0 12px 30px rgba(0,0,0,0.12);
+      box-shadow:
+        0 18px 60px rgba(0,0,0,0.85),
+        0 0 0 1px rgba(255,255,255,0.03);
       padding: 24px 20px 28px;
       max-width: 720px;
       width: 100%;
       box-sizing: border-box;
       text-align: center;
+      backdrop-filter: blur(12px);
     }
 
     h2 {
       margin-top: 0;
       margin-bottom: 12px;
       font-size: 22px;
+      letter-spacing: 0.08em;
     }
 
     .room-row {
       margin-bottom: 12px;
+      font-size: 15px;
     }
 
     select {
       padding: 6px 10px;
       border-radius: 10px;
-      border: 1px solid #ccc;
+      border: 1px solid #555;
       font-size: 14px;
+      background: #111827;
+      color: #e5e7eb;
+      outline: none;
     }
 
     .button-row {
@@ -66,67 +76,71 @@
       justify-content: center;
       align-items: center;
       gap: 8px;
-      margin-top: 14px;               /* 上下に少し余裕 */
-      margin-bottom: 16px;
+      margin-top: 18px;
+      margin-bottom: 18px;
       overflow-x: auto;               /* 画面が狭いときは横スクロール */
       padding-bottom: 4px;
     }
 
     button {
-      padding: 10px 14px;
-      border-radius: 16px;
+      padding: 10px 16px;
+      border-radius: 999px;
       border: none;
       color: white;
       font-size: 14px;
       cursor: pointer;
       min-width: 96px;
       white-space: nowrap;
-      transition: transform 0.12s ease, box-shadow 0.12s ease, filter 0.12s ease;
+      background: #374151;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.65);
+      transition:
+        transform 0.12s ease,
+        box-shadow 0.12s ease,
+        filter 0.12s ease,
+        background-color 0.12s ease;
     }
 
     button:active {
-      transform: scale(0.97);
-      box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+      transform: scale(0.96);
+      box-shadow: 0 4px 14px rgba(0,0,0,0.8);
     }
 
-    .mode-btn {
-      background: #007aff;
-      box-shadow: 0 4px 12px rgba(0,122,255,0.3);
-    }
+    /* モードボタンの通常色 */
+    .mode-ox   { background: var(--color-a); }
+    .mode-five { background: var(--color-b); }
+    .mode-text { background: var(--color-d); }
 
-    .mode-ox   { background: #007aff; }  /* ブルー */
-    .mode-five { background: #34c759; }  /* グリーン */
-    .mode-text { background: #af52de; }  /* パープル */
-
-    /* 選択中のモードボタン：太い白フチ＋光輪でくっきり */
+    /* === 選択中モード：黒背景で「ボワン」と光る表現 === */
     .mode-btn.active {
-      border: 2px solid #ffffff;          /* 白フチ */
-      filter: brightness(1.12);
+      position: relative;
+      filter: brightness(1.15);
       box-shadow:
-        0 0 0 4px rgba(255,255,255,0.9),  /* 内側の白い輪 */
-        0 0 0 8px rgba(0,0,0,0.08),       /* ごく薄い外側 */
-        0 0 18px rgba(0,0,0,0.25);        /* ぼかし */
-      transform: none;                    /* 持ち上げは無し：切れて見えないように */
+        0 0 0 2px rgba(255,255,255,0.75),      /* 白いふち */
+        0 0 12px rgba(255,255,255,0.55),       /* 内側の光 */
+        0 0 30px currentColor,                 /* 外側のカラー光 */
+        0 12px 30px rgba(0,0,0,0.9);
+      transform: none;
     }
 
+    /* 「回答終了」「リセット」「QR」の色 */
     #stopBtn {
-      background: #ff3b30; /* 赤 */
-      box-shadow: 0 4px 12px rgba(255,59,48,0.3);
+      background: var(--color-x);
+      box-shadow: 0 6px 18px rgba(255,59,48,0.55);
     }
-
     #resetBtn {
-      background: #8e8e93;
-      box-shadow: 0 4px 12px rgba(142,142,147,0.3);
+      background: #6b7280;
+      box-shadow: 0 6px 18px rgba(31,41,55,0.7);
     }
-
     #qrBtn {
-      background: #ff9500;
-      box-shadow: 0 4px 12px rgba(255,149,0,0.35);
+      background: var(--color-c);
+      box-shadow: 0 6px 18px rgba(249,115,22,0.6);
     }
 
     #graph {
-      margin-top: 18px;
+      margin-top: 12px;
       text-align: left;
+      color: #e5e7eb;
+      font-size: 14px;
     }
 
     .bar-row {
@@ -138,17 +152,18 @@
     }
 
     .bar-label {
-      width: 70px;
+      width: 80px;
       text-align: right;
       font-weight: 500;
+      color: #d1d5db;
     }
 
     .bar {
       height: 18px;
       border-radius: 999px;
-      background: #d1d1d6;
+      background: #1f2933;
       min-width: 4px;
-      transition: width 0.15s ease;
+      transition: width 0.15s ease, background-color 0.15s ease;
     }
 
     #textList {
@@ -157,6 +172,7 @@
       overflow-y: auto;
       text-align: left;
       padding-right: 4px;
+      color: #e5e7eb;
     }
 
     #textList ul {
@@ -175,22 +191,27 @@
       position: fixed;
       top: 0; left: 0;
       width: 100%; height: 100%;
-      background: rgba(0,0,0,0.55);
+      background: rgba(0,0,0,0.85);
       align-items: center;
       justify-content: center;
       z-index: 1000;
     }
 
     #qrModalInner {
-      background: white;
+      background: #111827;
       padding: 20px;
       border-radius: 20px;
       text-align: center;
-      box-shadow: 0 10px 28px rgba(0,0,0,0.4);
+      box-shadow: 0 14px 40px rgba(0,0,0,0.9);
+      color: #f9fafb;
     }
 
     #qrcode canvas {
       border-radius: 12px;
+    }
+
+    #closeQR {
+      background: #4b5563;
     }
 
     @media (max-width: 600px) {
@@ -199,7 +220,7 @@
         padding: 20px 12px 24px;
       }
       .bar-label {
-        width: 56px;
+        width: 64px;
         font-size: 13px;
       }
     }
@@ -466,7 +487,7 @@
         case "D": return css.getPropertyValue("--color-d");
         case "E": return css.getPropertyValue("--color-e");
         case "回答数": return css.getPropertyValue("--color-count");
-        default: return "#d1d1d6";
+        default: return "#4b5563";
       }
     }
 
