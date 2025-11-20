@@ -18,12 +18,12 @@
       --color-count: #d1d1d6; /* 回答数（テキストモード） */
     }
 
-    /* ===== 画面全体：黒背景ダークテーマ ===== */
+    /* ===== 画面全体：控えめダークテーマ ===== */
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
       margin: 0;
       min-height: 100vh;
-      background: radial-gradient(circle at top, #2a2a2a 0, #000000 45%, #000000 100%);
+      background: #050608;
       display: flex;
       flex-direction: column;
       align-items: center;         /* 左右中央 */
@@ -34,17 +34,16 @@
     }
 
     .card {
-      background: rgba(15,15,15,0.96);
+      background: #111827;
       border-radius: 24px;
       box-shadow:
-        0 18px 60px rgba(0,0,0,0.85),
+        0 18px 50px rgba(0,0,0,0.85),
         0 0 0 1px rgba(255,255,255,0.03);
       padding: 26px 22px 30px;
       max-width: 760px;
       width: 100%;
       box-sizing: border-box;
       text-align: center;
-      backdrop-filter: blur(12px);
     }
 
     h2 {
@@ -62,51 +61,52 @@
     select {
       padding: 6px 10px;
       border-radius: 10px;
-      border: 1px solid #555;
+      border: 1px solid #4b5563;
       font-size: 14px;
-      background: #111827;
+      background: #020617;
       color: #e5e7eb;
       outline: none;
     }
 
+    /* ===== ボタン行：スクロールバーを出さず、狭い画面では折り返し ===== */
     .button-row {
       display: flex;
       flex-direction: row;
-      flex-wrap: nowrap;              /* 6つを横一列に */
+      flex-wrap: wrap;             /* ★ 画面が狭ければ 2 段に折り返し */
       justify-content: center;
       align-items: center;
       gap: 10px;
       margin-top: 20px;
       margin-bottom: 20px;
-      overflow-x: auto;               /* 画面が狭いときは横スクロール */
       padding: 4px 4px 6px;
     }
 
     /* ===== ボタン共通スタイル：縦に厚みのあるカプセル型 ===== */
     button {
-      padding: 14px 22px;             /* ★縦方向をかなり厚めに */
-      border-radius: 999px;           /* カプセル */
+      padding: 12px 20px;          /* ★縦方向もしっかり確保 */
+      border-radius: 999px;        /* カプセル */
       border: none;
       color: white;
       font-size: 14px;
       cursor: pointer;
-      min-width: 110px;
+      min-width: 110px;            /* 6個×110 + 余白 ≒ 760 内に収まる */
       white-space: nowrap;
       background: #374151;
-      box-shadow: 0 8px 22px rgba(0,0,0,0.75);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.75);
       transition:
         transform 0.12s ease,
         box-shadow 0.12s ease,
         filter 0.12s ease,
-        background-color 0.12s ease;
+        background-color 0.12s ease,
+        border-color 0.12s ease;
     }
 
     button:active {
       transform: scale(0.97);
-      box-shadow: 0 6px 18px rgba(0,0,0,0.85);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.85);
     }
 
-    /* モードボタン通常色（色は前回そのまま） */
+    /* モードボタン通常色（色は今までどおり） */
     .mode-ox {
       background: linear-gradient(180deg, #1ea1ff, var(--color-a));
     }
@@ -117,30 +117,29 @@
       background: linear-gradient(180deg, #d472ff, var(--color-d));
     }
 
-    /* === 選択中モード：黒背景で「ボワン」と光る表現 === */
+    /* === 選択中モード：白フチ＋柔らかい光（上下が切れない程度のサイズ） === */
     .mode-btn.active {
-      position: relative;
+      border: 2px solid #ffffff;
       filter: brightness(1.15);
       box-shadow:
-        0 0 0 3px rgba(255,255,255,0.85),      /* 白いふち */
-        0 0 14px rgba(255,255,255,0.65),       /* 内側の光 */
-        0 0 38px currentColor,                 /* 外側のカラー光 */
-        0 14px 28px rgba(0,0,0,0.9);
+        0 0 8px rgba(255,255,255,0.7),
+        0 0 18px currentColor,
+        0 8px 22px rgba(0,0,0,0.9);
       transform: none;
     }
 
     /* 「回答終了」「リセット」「QR」の色（色は変更なし） */
     #stopBtn {
       background: linear-gradient(180deg, #ff6b60, var(--color-x));
-      box-shadow: 0 8px 22px rgba(255,59,48,0.6);
+      box-shadow: 0 6px 20px rgba(255,59,48,0.6);
     }
     #resetBtn {
       background: linear-gradient(180deg, #9ca3af, #6b7280);
-      box-shadow: 0 8px 22px rgba(31,41,55,0.8);
+      box-shadow: 0 6px 20px rgba(31,41,55,0.8);
     }
     #qrBtn {
       background: linear-gradient(180deg, #ffb347, var(--color-c));
-      box-shadow: 0 8px 22px rgba(249,115,22,0.7);
+      box-shadow: 0 6px 20px rgba(249,115,22,0.7);
     }
 
     #graph {
@@ -231,7 +230,7 @@
         font-size: 13px;
       }
       button {
-        padding: 12px 18px;
+        padding: 10px 18px;
         min-width: 100px;
       }
     }
