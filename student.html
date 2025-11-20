@@ -25,8 +25,8 @@
       min-height: 100vh;
       display: flex;
       flex-direction: column;
-      align-items: center;         /* 左右中央 */
-      justify-content: flex-start; /* 上寄せ */
+      align-items: center;
+      justify-content: flex-start;
       box-sizing: border-box;
     }
 
@@ -101,6 +101,7 @@
       box-shadow: 0 4px 12px rgba(0,0,0,0.25);
     }
 
+    /* 教員ロック or 回答済ロック時 */
     .locked {
       opacity: 0.5;
       pointer-events: none;
@@ -136,7 +137,7 @@
 <body>
   <div class="card">
     <h2>回答画面</h2>
-    <div id="answer-container"></div>
+    <div id="answer-container">現在回答できる問題はありません。</div>
   </div>
 
   <script type="module">
@@ -171,14 +172,24 @@
 
     onValue(ref(db, `rooms/${room}/activity`), snap => {
       const data = snap.val();
-      if (!data) {
+
+      // 活動自体がない・modeが未設定 → 完全待機
+      if (!data || !data.mode) {
         container.innerHTML = "現在回答できる問題はありません。";
+        container.classList.add("locked");
         return;
       }
 
       isOpen = (data.status === "open");
       const mode   = data.mode;
       const config = data.config || {};
+
+      // 教員が「開いていない」間は常にロック表示
+      if (isOpen) {
+        container.classList.remove("locked");
+      } else {
+        container.classList.add("locked");
+      }
 
       if (mode === "ox") {
         renderOX(config.choices || ["O","X"]);
@@ -188,6 +199,7 @@
         renderText(config.placeholder || "自由に記入してください");
       } else {
         container.innerHTML = "現在回答できる問題はありません。";
+        container.classList.add("locked");
       }
     });
 
@@ -205,9 +217,9 @@
       }
     }
 
+    // ○× UI
     function renderOX(choices) {
       container.innerHTML = "";
-      container.classList.remove("locked");
 
       let selected = null;
 
@@ -245,9 +257,9 @@
       container.appendChild(submit);
     }
 
+    // 5択 UI
     function renderFive(choices) {
       container.innerHTML = "";
-      container.classList.remove("locked");
 
       let selected = null;
 
@@ -285,9 +297,9 @@
       container.appendChild(submit);
     }
 
+    // 文字記入 UI
     function renderText(placeholder) {
       container.innerHTML = "";
-      container.classList.remove("locked");
 
       const textarea = document.createElement("textarea");
       textarea.placeholder = placeholder;

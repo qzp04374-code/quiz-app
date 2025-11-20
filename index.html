@@ -68,11 +68,11 @@
       outline: none;
     }
 
-    /* ===== ボタン行：スクロールバーを出さず、狭い画面では折り返し ===== */
+    /* ===== ボタン行：通常は1列、スマホ幅だけ折り返し ===== */
     .button-row {
       display: flex;
       flex-direction: row;
-      flex-wrap: wrap;             /* ★ 画面が狭ければ 2 段に折り返し */
+      flex-wrap: nowrap;           /* ★ PCでは基本1列 */
       justify-content: center;
       align-items: center;
       gap: 10px;
@@ -81,15 +81,21 @@
       padding: 4px 4px 6px;
     }
 
+    @media (max-width: 700px) {
+      .button-row {
+        flex-wrap: wrap;           /* 画面が狭いときだけ2段に */
+      }
+    }
+
     /* ===== ボタン共通スタイル：縦に厚みのあるカプセル型 ===== */
     button {
-      padding: 12px 20px;          /* ★縦方向もしっかり確保 */
-      border-radius: 999px;        /* カプセル */
+      padding: 12px 20px;
+      border-radius: 999px;
       border: none;
       color: white;
       font-size: 14px;
       cursor: pointer;
-      min-width: 110px;            /* 6個×110 + 余白 ≒ 760 内に収まる */
+      min-width: 110px;            /* 6個 × 110 + 隙間 ≒ 760内に収まる */
       white-space: nowrap;
       background: #374151;
       box-shadow: 0 6px 20px rgba(0,0,0,0.75);
@@ -106,7 +112,7 @@
       box-shadow: 0 4px 16px rgba(0,0,0,0.85);
     }
 
-    /* モードボタン通常色（色は今までどおり） */
+    /* モードボタン通常色（色は従来どおり） */
     .mode-ox {
       background: linear-gradient(180deg, #1ea1ff, var(--color-a));
     }
@@ -117,7 +123,7 @@
       background: linear-gradient(180deg, #d472ff, var(--color-d));
     }
 
-    /* === 選択中モード：白フチ＋柔らかい光（上下が切れない程度のサイズ） === */
+    /* === 選択中モード：白フチ＋柔らかい光 === */
     .mode-btn.active {
       border: 2px solid #ffffff;
       filter: brightness(1.15);
@@ -128,7 +134,7 @@
       transform: none;
     }
 
-    /* 「回答終了」「リセット」「QR」の色（色は変更なし） */
+    /* その他のボタン色 */
     #stopBtn {
       background: linear-gradient(180deg, #ff6b60, var(--color-x));
       box-shadow: 0 6px 20px rgba(255,59,48,0.6);
@@ -354,8 +360,10 @@
     fiveBtn.onclick = () => startMode("five", ["A","B","C","D","E"]);
     textBtn.onclick = () => startMode("text");
 
+    // ★ 回答終了 → status=closed & ハイライト解除
     stopBtn.onclick = () => {
       update(actRef(), { status: "closed" });
+      setActiveModeButton(null);
     };
 
     document.getElementById("resetBtn").onclick = () => {
@@ -408,10 +416,16 @@
       if (unsubscribeAct) unsubscribeAct();
       if (unsubscribeAns) unsubscribeAns();
 
+      // ★ status によって「光らせる／消す」を切り替え
       unsubscribeAct = onValue(actRef(), snap => {
-        const data = snap.val() || {};
-        currentMode = data.mode || null;
-        if (currentMode) setActiveModeButton(currentMode);
+        const data   = snap.val() || {};
+        currentMode  = data.mode || null;
+        const status = data.status || "closed";
+        if (status === "open") {
+          setActiveModeButton(currentMode);
+        } else {
+          setActiveModeButton(null);
+        }
       });
 
       unsubscribeAns = onValue(ansRef(), snap => {
