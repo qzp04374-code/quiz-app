@@ -76,8 +76,10 @@
     <div id="qr"></div>
 </div>
 
+<!-- QRコード生成 -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
+<!-- Firebase -->
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-app.js";
     import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-database.js";
@@ -101,11 +103,10 @@
     const params = new URLSearchParams(window.location.search);
     const room = params.get("room") || "kyoto-01";
 
-    /* ▼ student.html への正しいパス生成 */
+    /* ▼ student.html の正しいパス生成 */
     const here = new URL(location.href);
-    const dirPath = here.pathname.replace(/[^/]*$/, "");
-    const base = here.origin + dirPath;
-    const joinURL = `${base}student.html?room=${room}`;
+    const basePath = here.pathname.replace(/[^/]*$/, "");
+    const joinURL = `${here.origin}${basePath}student.html?room=${room}`;
 
     /* ▼ QR表示 */
     new QRCode(document.getElementById("qr"), {
@@ -114,26 +115,31 @@
         height: 300
     });
 
-    /* ▼ 集計(result)のリアルタイム監視 */
-    const resultRef = ref(db, `rooms/${room}/result`);
+    /* ▼ Firebase参照 */
     const activityRef = ref(db, `rooms/${room}/activity`);
+    const resultRef   = ref(db, `rooms/${room}/result`);
 
-    let currentMode = "ox"; // 初期値（後で上書き）
+    /* ▼ 最新データ保持用 */
+    let currentMode = "ox";
+    let latestResult = {};
 
-    /* ▼ まず activity から mode を取得 */
+    /* ▼ 先に activity（mode）を監視 */
     onValue(activityRef, snap => {
         const data = snap.val() || {};
         currentMode = data.mode || "ox";
-        console.log("現在のモード:", currentMode);
+
+        // モード変更された瞬間に現在の result を使って再描画
+        renderGraph(latestResult);
     });
 
-    /* ▼ result を受信して画面に反映 */
-    onValue(resultRef, snapshot => {
-        const data = snapshot.val() || {};
-        renderGraph(data);
+    /* ▼ 次に result を監視 */
+    onValue(resultRef, snap => {
+        latestResult = snap.val() || {};
+        renderGraph(latestResult);
     });
 
-    /* ▼ モードに応じてバーを生成 */
+
+    /* ▼ グラフ描画（モード別） */
     function renderGraph(resultData) {
         const graph = document.getElementById("graphArea");
         graph.innerHTML = "";
@@ -146,9 +152,11 @@
             labels = ["A", "B", "C", "D", "E"];
         } else if (currentMode === "text") {
             labels = ["回答数"];
+        } else {
+            graph.innerHTML = "<p>集計データはありません。</p>";
+            return;
         }
 
-        /* ▼ 棒グラフ生成 */
         labels.forEach(label => {
             const count = resultData[label] || 0;
 
@@ -159,7 +167,6 @@
             fill.className = "bar-fill";
             fill.style.background = getColor(label);
 
-            // 幅は最大100%
             const max = getMax(resultData, labels);
             fill.style.width = max === 0 ? "0%" : `${(count / max) * 100}%`;
 
@@ -178,7 +185,7 @@
         });
     }
 
-    /* ▼ 棒グラフ用カラー */
+    /* ▼ 色設定 */
     function getColor(label) {
         const colors = {
             "O": "#4CAF50",
@@ -193,7 +200,7 @@
         return colors[label] || "#888";
     }
 
-    /* ▼ 最大値を取得（バーの相対幅に使用） */
+    /* ▼ 棒の最大値（相対幅用） */
     function getMax(data, labels) {
         let max = 0;
         labels.forEach(lb => {
@@ -201,6 +208,7 @@
         });
         return max;
     }
+
 </script>
 
 </body>
