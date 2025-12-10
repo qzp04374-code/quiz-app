@@ -54,15 +54,11 @@
             font-weight: bold;
         }
 
-        /* QRコード中央配置 */
-        #qr-wrapper {
-            display: flex;
-            justify-content: center;
-            width: 100%;
-            margin-top: 30px;
+        /* QRコード枠は完全非表示のため特に装飾なし */
+        #qr-area {
+            margin-top: 40px;
         }
 
-        /* 文字記入モードの一覧 */
         #textList {
             width: 90%;
             margin: 0 auto;
@@ -82,9 +78,10 @@
 
 <div id="textList"></div>
 
-<h2 style="font-size: 34px; margin-top: 40px;">参加用QRコード</h2>
-<div id="qr-wrapper">
-    <div id="qr"></div>
+<!-- QRコード表示エリア（完全非表示可能） -->
+<div id="qr-area" style="display:none;">
+    <h2 style="font-size: 34px;">参加用QRコード</h2>
+    <div id="qr" style="margin-top:20px;"></div>
 </div>
 
 
@@ -94,7 +91,7 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-app.js";
     import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-database.js";
 
-    /* ▼ Firebase設定（共通） */
+    /* ▼ Firebase設定 */
     const firebaseConfig = {
         apiKey: "AIzaSyBke-wTU16skpbK8z80ddK04tE154dHERQ",
         authDomain: "satosan-41eac.firebaseapp.com",
@@ -113,49 +110,71 @@
     const params = new URLSearchParams(window.location.search);
     const room = params.get("room") || "kyoto-01";
 
-    /* ▼ student.html の正しいパス生成 */
+    /* ▼ student.html のパス生成 */
     const here = new URL(location.href);
     const dir = here.pathname.replace(/[^/]*$/, "");
     const joinURL = `${here.origin}${dir}student.html?room=${room}`;
 
-    /* ▼ QR表示 */
-    new QRCode(document.getElementById("qr"), {
-        text: joinURL,
-        width: 300,
-        height: 300
-    });
+    /* ▼ QR生成（最初は非表示） */
+    const qrDiv = document.getElementById("qr");
+    function createQRCode() {
+        qrDiv.innerHTML = "";
+        new QRCode(qrDiv, {
+            text: joinURL,
+            width: 300,
+            height: 300
+        });
+    }
 
+    /* ▼ Firebase参照 */
     const activityRef = ref(db, `rooms/${room}/activity`);
     const resultRef   = ref(db, `rooms/${room}/result`);
     const answersRef  = ref(db, `rooms/${room}/answers`);
 
     let currentMode = "ox";
     let currentStatus = "closed";
+    let currentQR = false;
+
     let latestResult = {};
     let latestAnswers = {};
 
-    /* ▼ activity 監視（status と mode） */
-    onValue(activityRef, snapshot => {
-        const data = snapshot.val() || {};
+    /* ▼ activity を監視（mode / status / qr） */
+    onValue(activityRef, snap => {
+        const data = snap.val() || {};
+
         currentMode = data.mode || "ox";
         currentStatus = data.status || "closed";
+        currentQR = data.qr === true;
 
+        renderAll();
+        renderQR();
+    });
+
+    /* ▼ result を監視 */
+    onValue(resultRef, snap => {
+        latestResult = snap.val() || {};
         renderAll();
     });
 
-    /* ▼ result 監視（OX・5択用） */
-    onValue(resultRef, snapshot => {
-        latestResult = snapshot.val() || {};
+    /* ▼ answers を監視（文字記入） */
+    onValue(answersRef, snap => {
+        latestAnswers = snap.val() || {};
         renderAll();
     });
 
-    /* ▼ answers 監視（文字記入用） */
-    onValue(answersRef, snapshot => {
-        latestAnswers = snapshot.val() || {};
-        renderAll();
-    });
+    /* ▼ QR表示コントロール */
+    function renderQR() {
+        const area = document.getElementById("qr-area");
 
-    /* ▼ モードに応じて描画を切り替える */
+        if (currentQR) {
+            area.style.display = "block";
+            createQRCode();
+        } else {
+            area.style.display = "none";
+        }
+    }
+
+    /* ▼ モード別描画 */
     function renderAll() {
         const graph = document.getElementById("graphArea");
         const list  = document.getElementById("textList");
@@ -178,16 +197,14 @@
         /* --- 文字記入モード --- */
         if (currentMode === "text") {
 
-            /* 回答中（open） → 回答数バーだけ表示 */
             if (currentStatus === "open") {
-                const count = Object.keys(latestAnswers).length;
-                drawBars(["回答数"], { "回答数": count });
+                drawBars(["回答数"], { "回答数": Object.keys(latestAnswers).length });
                 return;
             }
 
-            /* 回答終了（closed） → 文字本文一覧を表示 */
             if (currentStatus === "closed") {
                 const keys = Object.keys(latestAnswers);
+
                 if (keys.length === 0) {
                     list.innerHTML = "<p>回答がありません。</p>";
                     return;
@@ -201,16 +218,16 @@
                     html += `<li>${index + 1}. ${text}</li>`;
                 });
                 html += "</ul>";
+
                 list.innerHTML = html;
                 return;
             }
         }
     }
 
-    /* ▼ 共通：棒グラフ描画 */
+    /* ▼ 共通バー描画 */
     function drawBars(labels, data) {
         const graph = document.getElementById("graphArea");
-
         const max = Math.max(...labels.map(lb => data[lb] || 0));
 
         labels.forEach(label => {
@@ -224,17 +241,17 @@
             fill.style.background = barColor(label);
             fill.style.width = max === 0 ? "0%" : `${(count / max) * 100}%`;
 
-            const textL = document.createElement("div");
-            textL.className = "bar-label";
-            textL.textContent = label;
+            const labelDiv = document.createElement("div");
+            labelDiv.className = "bar-label";
+            labelDiv.textContent = label;
 
-            const textC = document.createElement("div");
-            textC.className = "bar-count";
-            textC.textContent = count;
+            const countDiv = document.createElement("div");
+            countDiv.className = "bar-count";
+            countDiv.textContent = count;
 
             bar.appendChild(fill);
-            bar.appendChild(textL);
-            bar.appendChild(textC);
+            bar.appendChild(labelDiv);
+            bar.appendChild(countDiv);
             graph.appendChild(bar);
         });
     }
