@@ -1,10 +1,9 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>集計表示（投影用）</title>
-
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>投影用 集計画面</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -48,7 +47,6 @@
             font-size: 28px;
             font-weight: bold;
         }
-
         #qr {
             margin-top: 40px;
         }
@@ -59,6 +57,7 @@
 <h1 style="font-size: 40px; margin-bottom: 10px;">集計結果</h1>
 
 <div class="graph-container">
+
     <div class="bar">
         <div class="bar-fill" id="barO" style="background:#4CAF50;"></div>
         <div class="bar-label">○</div>
@@ -70,12 +69,14 @@
         <div class="bar-label">×</div>
         <div class="bar-count" id="countX">0</div>
     </div>
+
 </div>
 
 <h2 style="font-size: 34px; margin-top: 40px;">参加用QRコード</h2>
 <div id="qr"></div>
 
-<!-- QRコード生成用 -->
+
+<!-- QRコード生成 -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
 <!-- Firebase -->
@@ -83,50 +84,56 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-app.js";
     import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-database.js";
 
-    // ★ 必ず index.html と同じ設定を記入
-const firebaseConfig = {
-  apiKey: "AIzaSyBke-wTU16skpbK8z80ddK04tE154dHERQ",
-  authDomain: "satosan-41eac.firebaseapp.com",
-  databaseURL: "https://satosan-41eac-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "satosan-41eac",
-  storageBucket: "satosan-41eac.firebasestorage.app",
-  messagingSenderId: "992482993229",
-  appId: "1:992482993229:web:e2c59b078233b0ed16e804",
-  measurementId: "G-VT9FKHN3LT"
-};
+    /* ▼ 正しい Firebase 設定（index.html / teacher-control.html と完全一致） */
+    const firebaseConfig = {
+        apiKey: "AIzaSyBke-wTU16skpbK8z80ddK04tE154dHERQ",
+        authDomain: "satosan-41eac.firebaseapp.com",
+        databaseURL: "https://satosan-41eac-default-rtdb.asia-southeast1.firebasedatabase.app",
+        projectId: "satosan-41eac",
+        storageBucket: "satosan-41eac.firebasestorage.app",
+        messagingSenderId: "992482993229",
+        appId: "1:992482993229:web:e2c59b078233b0ed16e804",
+        measurementId: "G-VT9FKHN3LT"
+    };
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
-    // URL パラメータから room を取得
+    /* ▼ URL から room=xxx を取得 */
     const params = new URLSearchParams(window.location.search);
     const room = params.get("room") || "kyoto-01";
 
-    // QRコード生成
-    const joinURL = `${location.origin}/student.html?room=${room}`;
+    /* ▼ 正しい student.html のパスを生成 */
+    const here = new URL(location.href);
+    const dirPath = here.pathname.replace(/[^/]*$/, "");
+    const base = here.origin + dirPath;
+
+    const joinURL = `${base}student.html?room=${room}`;
+
+    /* ▼ QRコード表示 */
     new QRCode(document.getElementById("qr"), {
         text: joinURL,
         width: 300,
         height: 300
     });
 
-    // 集計のリアルタイム反映
+    /* ▼ 集計のリアルタイム監視 */
     const resultRef = ref(db, `rooms/${room}/result`);
 
-    onValue(resultRef, snapshot => {
-        const data = snapshot.val();
-        if (!data) return;
+    onValue(resultRef, (snapshot) => {
+        const data = snapshot.val() || {};
 
         const O = data.O || 0;
         const X = data.X || 0;
-        const total = O + X;
 
         document.getElementById("countO").innerText = O;
         document.getElementById("countX").innerText = X;
 
+        const total = O + X;
         document.getElementById("barO").style.width = total === 0 ? "0%" : `${(O / total) * 100}%`;
         document.getElementById("barX").style.width = total === 0 ? "0%" : `${(X / total) * 100}%`;
     });
+
 </script>
 
 </body>
