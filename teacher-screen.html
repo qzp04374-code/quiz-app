@@ -1,274 +1,228 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>投影用 集計画面</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>投影画面（teacher-screen）</title>
 
-    <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-            background: #f7f7f7;
-            margin: 0;
-            padding: 20px;
-            text-align: center;
-        }
+<style>
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    margin: 0;
+    padding: 20px;
+    background: #f2f2f7;
+    text-align: center;
+  }
 
-        .graph-container {
-            width: 90%;
-            margin: 0 auto;
-            margin-top: 20px;
-        }
+  h1 {
+    font-size: 32px;
+    margin-bottom: 20px;
+  }
 
-        .bar {
-            height: 60px;
-            background: #ddd;
-            margin: 20px 0;
-            border-radius: 40px;
-            position: relative;
-            overflow: hidden;
-        }
+  .bar {
+    width: 80%;
+    height: 60px;
+    background: #ddd;
+    margin: 20px auto;
+    border-radius: 30px;
+    position: relative;
+    overflow: hidden;
+  }
 
-        .bar-fill {
-            height: 100%;
-            width: 0%;
-            border-radius: 40px;
-            transition: width 0.4s;
-        }
+  .bar-fill {
+    height: 100%;
+    width: 0%;
+    transition: width 0.3s;
+    border-radius: 30px;
+  }
 
-        .bar-label {
-            position: absolute;
-            top: 50%;
-            left: 20px;
-            transform: translateY(-50%);
-            font-size: 28px;
-            font-weight: bold;
-        }
+  .bar-label, .bar-count {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 24px;
+    font-weight: bold;
+  }
 
-        .bar-count {
-            position: absolute;
-            top: 50%;
-            right: 20px;
-            transform: translateY(-50%);
-            font-size: 28px;
-            font-weight: bold;
-        }
+  .bar-label {
+    left: 20px;
+  }
 
-        /* QRコード枠は完全非表示のため特に装飾なし */
-        #qr-area {
-            margin-top: 40px;
-        }
+  .bar-count {
+    right: 20px;
+  }
 
-        #textList {
-            width: 90%;
-            margin: 0 auto;
-            margin-top: 30px;
-            text-align: left;
-            font-size: 26px;
-            line-height: 1.7em;
-        }
-    </style>
+  #qr-area {
+    display: none;
+    margin-top: 30px;
+  }
+
+  #qr {
+    margin: 0 auto;
+  }
+
+  #textList {
+    width: 80%;
+    margin: 20px auto;
+    font-size: 26px;
+    text-align: left;
+    line-height: 1.6em;
+  }
+</style>
+
 </head>
-
 <body>
 
-<h1 style="font-size: 40px; margin-bottom: 10px;">集計結果</h1>
+<h1>集計画面</h1>
 
-<div id="graphArea" class="graph-container"></div>
-
+<div id="graphArea"></div>
 <div id="textList"></div>
 
-<!-- QRコード表示エリア（完全非表示可能） -->
-<div id="qr-area" style="display:none;">
-    <h2 style="font-size: 34px;">参加用QRコード</h2>
-    <div id="qr" style="margin-top:20px;"></div>
+<!-- QR 表示エリア -->
+<div id="qr-area">
+  <h2>参加用QRコード</h2>
+  <div id="qr"></div>
 </div>
-
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
 <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-app.js";
-    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-database.js";
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-app.js";
+  import {
+    getDatabase,
+    ref,
+    onValue
+  } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-database.js";
 
-    /* ▼ Firebase設定 */
-    const firebaseConfig = {
-        apiKey: "AIzaSyBke-wTU16skpbK8z80ddK04tE154dHERQ",
-        authDomain: "satosan-41eac.firebaseapp.com",
-        databaseURL: "https://satosan-41eac-default-rtdb.asia-southeast1.firebasedatabase.app",
-        projectId: "satosan-41eac",
-        storageBucket: "satosan-41eac.firebasestorage.app",
-        messagingSenderId: "992482993229",
-        appId: "1:992482993229:web:e2c59b078233b0ed16e804",
-        measurementId: "G-VT9FKHN3LT"
+  /* ▼ URL から room を取得 */
+  const params = new URLSearchParams(location.search);
+  const room = params.get("room") || "kyoto-01";
+
+  /* ▼ Firebase */
+  const firebaseConfig = {
+    apiKey: "AIzaSyBke-wTU16skpbK8z80ddK04tE154dHERQ",
+    authDomain: "satosan-41eac.firebaseapp.com",
+    databaseURL: "https://satosan-41eac-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "satosan-41eac",
+    storageBucket: "satosan-41eac.firebasestorage.app",
+    messagingSenderId: "992482993229",
+    appId: "1:992482993229:web:e2c59b078233b0ed16e804"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+
+  const actRef = ref(db, `rooms/${room}/activity`);
+  const ansRef = ref(db, `rooms/${room}/answers`);
+  const resRef = ref(db, `rooms/${room}/result`);
+
+  const graphArea = document.getElementById("graphArea");
+  const textList = document.getElementById("textList");
+
+  let currentMode = null;
+  let qrVisible = false;
+
+  /* ▼ 参加URL の生成（teacher-control と同じ方式） */
+  const here = new URL(location.href);
+  const dirPath = here.pathname.replace(/[^/]*$/, "");
+  const base = here.origin + dirPath;
+  const joinURL = `${base}student.html?room=${room}`;
+
+  /* ▼ QR 表示更新 */
+  function renderQR() {
+    const area = document.getElementById("qr-area");
+    if (qrVisible) {
+      area.style.display = "block";
+      const qrDiv = document.getElementById("qr");
+      qrDiv.innerHTML = "";
+      new QRCode(qrDiv, { text: joinURL, width: 300, height: 300 });
+    } else {
+      area.style.display = "none";
+    }
+  }
+
+  /* ▼ グラフ描画 */
+  function renderGraph(resultData) {
+    graphArea.innerHTML = "";
+    if (!resultData) return;
+
+    const max = Math.max(...Object.values(resultData), 1);
+
+    Object.keys(resultData).forEach(label => {
+      const count = resultData[label];
+
+      const bar = document.createElement("div");
+      bar.className = "bar";
+
+      const fill = document.createElement("div");
+      fill.className = "bar-fill";
+      fill.style.background = getColor(label);
+      fill.style.width = `${(count / max) * 100}%`;
+
+      const labelDiv = document.createElement("div");
+      labelDiv.className = "bar-label";
+      labelDiv.textContent = label;
+
+      const countDiv = document.createElement("div");
+      countDiv.className = "bar-count";
+      countDiv.textContent = count;
+
+      bar.appendChild(fill);
+      bar.appendChild(labelDiv);
+      bar.appendChild(countDiv);
+      graphArea.appendChild(bar);
+    });
+  }
+
+  function getColor(label) {
+    const colors = {
+      "O": "#4CAF50",
+      "X": "#F44336",
+      "A": "#2196F3",
+      "B": "#4CAF50",
+      "C": "#FF9800",
+      "D": "#9C27B0",
+      "E": "#E91E63"
     };
+    return colors[label] || "#888";
+  }
 
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
-
-    /* ▼ room パラメータ取得 */
-    const params = new URLSearchParams(window.location.search);
-    const room = params.get("room") || "kyoto-01";
-
-    /* ▼ student.html のパス生成 */
-    const here = new URL(location.href);
-    const dir = here.pathname.replace(/[^/]*$/, "");
-    const joinURL = `${here.origin}${dir}student.html?room=${room}`;
-
-    /* ▼ QR生成（最初は非表示） */
-    const qrDiv = document.getElementById("qr");
-    function createQRCode() {
-        qrDiv.innerHTML = "";
-        new QRCode(qrDiv, {
-            text: joinURL,
-            width: 300,
-            height: 300
-        });
-    }
-
-    /* ▼ Firebase参照 */
-    const activityRef = ref(db, `rooms/${room}/activity`);
-    const resultRef   = ref(db, `rooms/${room}/result`);
-    const answersRef  = ref(db, `rooms/${room}/answers`);
-
-    let currentMode = "ox";
-    let currentStatus = "closed";
-    let currentQR = false;
-
-    let latestResult = {};
-    let latestAnswers = {};
-
-    /* ▼ activity を監視（mode / status / qr） */
-    onValue(activityRef, snap => {
-        const data = snap.val() || {};
-
-        currentMode = data.mode || "ox";
-        currentStatus = data.status || "closed";
-        currentQR = data.qr === true;
-
-        renderAll();
-        renderQR();
+  /* ▼ 文字記入一覧表示（回答終了時） */
+  function renderTextList(answers) {
+    textList.innerHTML = "<h2>回答一覧</h2>";
+    let html = "<ul>";
+    Object.keys(answers).forEach((key, idx) => {
+      html += `<li>${idx + 1}. ${answers[key]}</li>`;
     });
+    html += "</ul>";
+    textList.innerHTML = html;
+  }
 
-    /* ▼ result を監視 */
-    onValue(resultRef, snap => {
-        latestResult = snap.val() || {};
-        renderAll();
-    });
+  /* ▼ activity 監視（mode・status・qr 表示） */
+  onValue(actRef, snap => {
+    const data = snap.val() || {};
 
-    /* ▼ answers を監視（文字記入） */
-    onValue(answersRef, snap => {
-        latestAnswers = snap.val() || {};
-        renderAll();
-    });
+    currentMode = data.mode || null;
+    const status = data.status || "open";
 
-    /* ▼ QR表示コントロール */
-    function renderQR() {
-        const area = document.getElementById("qr-area");
+    /* QR表示反映 */
+    qrVisible = data.qr === true;
+    renderQR();
 
-        if (currentQR) {
-            area.style.display = "block";
-            createQRCode();
-        } else {
-            area.style.display = "none";
-        }
+    /* 回答終了 → 文字一覧表示 */
+    if (currentMode === "text" && status === "closed") {
+      onValue(ansRef, snap2 => {
+        renderTextList(snap2.val() || {});
+      });
     }
+  });
 
-    /* ▼ モード別描画 */
-    function renderAll() {
-        const graph = document.getElementById("graphArea");
-        const list  = document.getElementById("textList");
-
-        graph.innerHTML = "";
-        list.innerHTML = "";
-
-        /* --- ○×モード --- */
-        if (currentMode === "ox") {
-            drawBars(["O","X"], latestResult);
-            return;
-        }
-
-        /* --- 5択モード --- */
-        if (currentMode === "five") {
-            drawBars(["A","B","C","D","E"], latestResult);
-            return;
-        }
-
-        /* --- 文字記入モード --- */
-        if (currentMode === "text") {
-
-            if (currentStatus === "open") {
-                drawBars(["回答数"], { "回答数": Object.keys(latestAnswers).length });
-                return;
-            }
-
-            if (currentStatus === "closed") {
-                const keys = Object.keys(latestAnswers);
-
-                if (keys.length === 0) {
-                    list.innerHTML = "<p>回答がありません。</p>";
-                    return;
-                }
-
-                let html = "<h2>回答一覧</h2><ul>";
-                keys.forEach((key, index) => {
-                    const val = latestAnswers[key];
-                    const text = typeof val === "string" ? val :
-                                (val && val.value ? val.value : "");
-                    html += `<li>${index + 1}. ${text}</li>`;
-                });
-                html += "</ul>";
-
-                list.innerHTML = html;
-                return;
-            }
-        }
+  /* ▼ result 監視してグラフ更新（OX・5択） */
+  onValue(resRef, snap => {
+    if (currentMode === "ox" || currentMode === "five") {
+      renderGraph(snap.val() || {});
     }
-
-    /* ▼ 共通バー描画 */
-    function drawBars(labels, data) {
-        const graph = document.getElementById("graphArea");
-        const max = Math.max(...labels.map(lb => data[lb] || 0));
-
-        labels.forEach(label => {
-            const count = data[label] || 0;
-
-            const bar = document.createElement("div");
-            bar.className = "bar";
-
-            const fill = document.createElement("div");
-            fill.className = "bar-fill";
-            fill.style.background = barColor(label);
-            fill.style.width = max === 0 ? "0%" : `${(count / max) * 100}%`;
-
-            const labelDiv = document.createElement("div");
-            labelDiv.className = "bar-label";
-            labelDiv.textContent = label;
-
-            const countDiv = document.createElement("div");
-            countDiv.className = "bar-count";
-            countDiv.textContent = count;
-
-            bar.appendChild(fill);
-            bar.appendChild(labelDiv);
-            bar.appendChild(countDiv);
-            graph.appendChild(bar);
-        });
-    }
-
-    function barColor(label) {
-        const colors = {
-            "O": "#4CAF50",
-            "X": "#F44336",
-            "A": "#2196F3",
-            "B": "#4CAF50",
-            "C": "#FF9800",
-            "D": "#9C27B0",
-            "E": "#E91E63",
-            "回答数": "#607D8B"
-        };
-        return colors[label] || "#888";
-    }
+  });
 
 </script>
 
