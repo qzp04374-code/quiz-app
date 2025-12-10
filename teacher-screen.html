@@ -84,15 +84,16 @@
     import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-database.js";
 
     // ★ 必ず index.html と同じ設定を記入
-    const firebaseConfig = {
-        apiKey: "YOUR_API_KEY",
-        authDomain: "YOUR_AUTH_DOMAIN",
-        databaseURL: "YOUR_DATABASE_URL",
-        projectId: "YOUR_PROJECT_ID",
-        storageBucket: "YOUR_STORAGE_BUCKET",
-        messagingSenderId: "YOUR_MSG_ID",
-        appId: "YOUR_APP_ID"
-    };
+const firebaseConfig = {
+  apiKey: "AIzaSyBke-wTU16skpbK8z80ddK04tE154dHERQ",
+  authDomain: "satosan-41eac.firebaseapp.com",
+  databaseURL: "https://satosan-41eac-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "satosan-41eac",
+  storageBucket: "satosan-41eac.firebasestorage.app",
+  messagingSenderId: "992482993229",
+  appId: "1:992482993229:web:e2c59b078233b0ed16e804",
+  measurementId: "G-VT9FKHN3LT"
+};
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
