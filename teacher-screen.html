@@ -56,8 +56,15 @@
 
         /* QRコード枠は完全非表示のため特に装飾なし */
         #qr-area {
-            margin-top: 40px;
-	    text-align: center;
+          margin-top: 40px;
+          flex-direction: column;       /* 上：タイトル、下：QR */
+          align-items: center;          /* 横方向センター */
+          justify-content: center;      /* 必要なら縦方向もセンター */
+        }
+
+/* QRコード自体の余白（お好みで） */
+#qr {
+  margin-top: 16px;
         }
 
         #textList {
@@ -168,7 +175,7 @@
         const area = document.getElementById("qr-area");
 
         if (currentQR) {
-            area.style.display = "block";
+            area.style.display = "flex";
             createQRCode();
         } else {
             area.style.display = "none";
