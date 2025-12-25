@@ -94,9 +94,13 @@
       background: linear-gradient(135deg, #22c55e, #06b6d4);
     }
 
-    /* ★ CSV投入ボタン */
     #importBtn {
       background: linear-gradient(135deg, #f59e0b, #f97316);
+    }
+
+    /* ★ 授業終了（全削除） */
+    #endClassBtn {
+      background: linear-gradient(135deg, #6b7280, #374151);
     }
 
     #graph { text-align:left; }
@@ -121,14 +125,15 @@
       <button id="oxBtn"   class="mode-ox">○×モード</button>
       <button id="fiveBtn" class="mode-five">5択モード</button>
       <button id="textBtn" class="mode-text">文字記入</button>
+
       <button id="stopBtn">回答終了</button>
       <button id="resetBtn">集計リセット</button>
-      <button id="qrBtn">QRコード</button>
-      <button id="projectionBtn">投影画面</button>
 
-      <!-- ★ 追加 -->
+      <button id="projectionBtn">投影画面</button>
       <button id="importBtn">CSV投入</button>
+
       <button id="nextQuestionBtn">次の問題 ▶</button>
+      <button id="endClassBtn">授業終了</button>
     </div>
 
     <div id="graph"></div>
@@ -152,36 +157,88 @@
     const projectionBtn   = document.getElementById("projectionBtn");
     const nextQuestionBtn = document.getElementById("nextQuestionBtn");
     const importBtn       = document.getElementById("importBtn");
+    const endClassBtn     = document.getElementById("endClassBtn");
+
+    const oxBtn   = document.getElementById("oxBtn");
+    const fiveBtn = document.getElementById("fiveBtn");
+    const textBtn = document.getElementById("textBtn");
+    const stopBtn = document.getElementById("stopBtn");
+    const resetBtn= document.getElementById("resetBtn");
 
     let currentRoom = roomSelect.value;
-
     roomSelect.onchange = () => currentRoom = roomSelect.value;
 
+    const actRef  = () => ref(db, `rooms/${currentRoom}/activity`);
+    const ansRef  = () => ref(db, `rooms/${currentRoom}/answers`);
+    const resRef  = () => ref(db, `rooms/${currentRoom}/result`);
+    const qidRef  = () => ref(db, `rooms/${currentRoom}/quiz/current_question_id`);
+    const qsRef   = () => ref(db, `rooms/${currentRoom}/questions`);
+
+    /* 投影画面 */
     projectionBtn.onclick = () => {
       const base = location.href.replace(/[^/]*$/, "");
       window.open(`${base}display.html?room=${currentRoom}`, "_blank");
     };
 
-    /* ★ CSV投入画面を開く */
+    /* CSV投入 */
     importBtn.onclick = () => {
       const base = location.href.replace(/[^/]*$/, "");
       window.open(`${base}import-csv.html`, "_blank");
     };
 
+    /* モード開始 */
+    oxBtn.onclick   = () => startMode("ox",   ["O","X"]);
+    fiveBtn.onclick = () => startMode("five", ["A","B","C","D","E"]);
+    textBtn.onclick = () => startMode("text");
+
+    async function startMode(mode, choices) {
+      await set(ansRef(), {});
+      await set(resRef(), {});
+      await update(actRef(), { status: "open", mode, qr:false });
+    }
+
+    /* 回答終了 */
+    stopBtn.onclick = () => {
+      update(actRef(), { status: "closed" });
+    };
+
+    /* 集計リセット */
+    resetBtn.onclick = async () => {
+      await set(ansRef(), {});
+      await set(resRef(), {});
+    };
+
     /* 次の問題 */
     nextQuestionBtn.onclick = async () => {
-      const qRef = ref(db, `rooms/${currentRoom}/quiz/current_question_id`);
-      onValue(qRef, async snap => {
+      onValue(qidRef(), async snap => {
         const cur = snap.val();
         if (!cur) {
-          await set(qRef, "Q01");
+          await set(qidRef(), "Q01");
           return;
         }
         const m = String(cur).match(/^Q(\d+)$/);
         if (!m) return;
-        const next = `Q${String(Number(m[1]) + 1).padStart(2, "0")}`;
-        await set(qRef, next);
-      }, { onlyOnce: true });
+        const next = `Q${String(Number(m[1]) + 1).padStart(2,"0")}`;
+        await set(qidRef(), next);
+      }, { onlyOnce:true });
+    };
+
+    /* ★ 授業終了：questions 含め全削除 */
+    endClassBtn.onclick = async () => {
+      const ok = confirm(
+        "授業を終了します。\n" +
+        "出題・回答・集計・questions（問題データ）をすべて削除します。\n" +
+        "次回はCSV再投入が必要です。"
+      );
+      if (!ok) return;
+
+      await update(actRef(), { status:"closed", mode:null, qr:false });
+      await set(ansRef(), null);
+      await set(resRef(), null);
+      await set(qidRef(), null);
+      await set(qsRef(), null);
+
+      alert("授業終了：データを削除しました。");
     };
   </script>
 </body>
