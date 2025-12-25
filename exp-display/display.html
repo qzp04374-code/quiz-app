@@ -1,1 +1,154 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ClassSync Display</title>
+
+  <style>
+    body {
+      margin: 0;
+      background: #050608;
+      color: #f9fafb;
+      font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+      height: 100vh;
+      display: flex;
+    }
+
+    /* ===== レイアウト ===== */
+    .left {
+      width: 66.6%;
+      padding: 40px;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .right {
+      width: 33.4%;
+      background: #111827;
+      padding: 32px 24px;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    /* ===== 問題表示 ===== */
+    .question {
+      font-size: 42px;
+      line-height: 1.4;
+      margin-bottom: 32px;
+    }
+
+    .choices {
+      font-size: 28px;
+      line-height: 1.8;
+    }
+
+    .choice {
+      margin-bottom: 10px;
+    }
+
+    /* ===== 集計 ===== */
+    .bar-row {
+      margin-bottom: 16px;
+    }
+
+    .bar-label {
+      font-size: 20px;
+      margin-bottom: 6px;
+    }
+
+    .bar {
+      height: 28px;
+      background: #4f46e5;
+      border-radius: 999px;
+      transition: width 0.2s ease;
+      min-width: 10px;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- 左：問題 -->
+  <div class="left">
+    <div class="question" id="question">
+      （ここに問題文が表示されます）
+    </div>
+    <div class="choices" id="choices">
+      <div class="choice">A. 選択肢A</div>
+      <div class="choice">B. 選択肢B</div>
+      <div class="choice">C. 選択肢C</div>
+      <div class="choice">D. 選択肢D</div>
+      <div class="choice">E. 選択肢E</div>
+    </div>
+  </div>
+
+  <!-- 右：集計 -->
+  <div class="right">
+    <div id="graph">
+      集計データを待っています…
+    </div>
+  </div>
+
+  <!-- Firebase -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+    /* ===== Firebase 設定（index.html と同じものをコピペ） ===== */
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_DOMAIN",
+      databaseURL: "YOUR_DB_URL",
+      projectId: "YOUR_PROJECT_ID",
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db  = getDatabase(app);
+
+    /* ===== room パラメータ ===== */
+    const url  = new URL(window.location.href);
+    const room = url.searchParams.get("room") || "kyoto-01";
+
+    /* ===== 集計表示 ===== */
+    const graph = document.getElementById("graph");
+
+    const resultRef = ref(db, `rooms/${room}/result`);
+    onValue(resultRef, snap => {
+      const data = snap.val() || {};
+      renderGraph(data);
+    });
+
+    function renderGraph(data) {
+      graph.innerHTML = "";
+      const entries = Object.entries(data);
+
+      if (entries.length === 0) {
+        graph.textContent = "まだ回答はありません";
+        return;
+      }
+
+      entries.forEach(([label, count]) => {
+        const row = document.createElement("div");
+        row.className = "bar-row";
+
+        const lbl = document.createElement("div");
+        lbl.className = "bar-label";
+        lbl.textContent = `${label}: ${count}`;
+
+        const bar = document.createElement("div");
+        bar.className = "bar";
+        bar.style.width = Math.max(20, count * 30) + "px";
+
+        row.appendChild(lbl);
+        row.appendChild(bar);
+        graph.appendChild(row);
+      });
+    }
+  </script>
+</body>
+</html>
 
