@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ClassSync Student</title>
+<style>
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+  text-align: center;
+  padding: 30px;
+}
+.choice-btn {
+  width: 70px;
+  height: 70px;
+  margin: 10px;
+  font-size: 28px;
+  border-radius: 50%;
+  border: none;
+  background-color: #f1f1f4;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+  transition: 0.15s;
+}
+.choice-btn.selected {
+  background-color: #007aff;
+  color: white;
+  transform: scale(1.07);
+}
+.submit-btn {
+  margin-top: 25px;
+  padding: 14px 34px;
+  font-size: 22px;
+  border-radius: 16px;
+  border: none;
+  background-color: #007aff;
+  color: white;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+.locked {
+  opacity: 0.5;
+  pointer-events: none;
+}
+</style>
+</head>
+<body>
+<h2>回答画面</h2>
+<div id="answer-container"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+const firebaseConfig = {
+  // ★あなたの Firebase 設定を記入★
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+// ===== URL パラメータで room を取得 =====
+const url = new URL(window.location.href);
+const room = url.searchParams.get("room") || "kyoto-01";
+
+// ===== userId を永続化 =====
+let userId = localStorage.getItem("student_user_id");
+if (!userId) {
+  userId = "user_" + Math.random().toString(36).slice(2, 8);
+  localStorage.setItem("student_user_id", userId);
+}
+
+let isOpen = false;
+
+// ===== mode / config を監視 =====
+const activityRef = ref(db, `rooms/${room}/activity`);
+onValue(activityRef, snap => {
+  const data = snap.val();
+  if (!data) return;
+
+  isOpen = (data.status === "open");
+  const mode = data.mode;
+  const config = data.config || {};
+
+  if (mode === "ox") {
+    renderOX(config.choices || ["O","X"]);
+  }
+  if (mode === "five") {
+    renderFiveChoice(config.choices || ["A","B","C","D","E"]);
+  }
+});
+
+// ===== ○× UI =====
+function renderOX(choices) {
+  const container = document.getElementById("answer-container");
+  container.innerHTML = "";
+
+  let selected = null;
+
+  choices.forEach(ch => {
+    const btn = document.createElement("button");
+    btn.className = "choice-btn";
+    btn.textContent = ch;
+
+    btn.onclick = () => {
+      if (!isOpen) return;
+      selected = ch;
+      document.querySelectorAll(".choice-btn").forEach(b => b.classList.remove("selected"));
+      btn.classList.add("selected");
+    };
+
+    container.appendChild(btn);
+  });
+
+  const submit = document.createElement("button");
+  submit.className = "submit-btn";
+  submit.textContent = "決定";
+
+  submit.onclick = async () => {
+    if (!isOpen || !selected) return;
+
+    const answerRef = ref(db, `rooms/${room}/answers/${userId}`);
+    await set(answerRef, {
+      value: selected,
+      timestamp: Date.now()
+    });
+
+    lockUI();
+  };
+
+  container.appendChild(submit);
+}
+
+// ===== 5択 UI =====
+function renderFiveChoice(choices) {
+  const container = document.getElementById("answer-container");
+  container.innerHTML = "";
+
+  let selected = null;
+
+  choices.forEach(ch => {
+    const btn = document.createElement("button");
+    btn.className = "choice-btn";
+    btn.textContent = ch;
+
+    btn.onclick = () => {
+      if (!isOpen) return;
+      selected = ch;
+      document.querySelectorAll(".choice-btn").forEach(b => b.classList.remove("selected"));
+      btn.classList.add("selected");
+    };
+
+    container.appendChild(btn);
+  });
+
+  const submit = document.createElement("button");
+  submit.className = "submit-btn";
+  submit.textContent = "決定";
+
+  submit.onclick = async () => {
+    if (!isOpen || !selected) return;
+
+    const answerRef = ref(db, `rooms/${room}/answers/${userId}`);
+    await set(answerRef, {
+      value: selected,
+      timestamp: Date.now()
+    });
+
+    lockUI();
+  };
+
+  container.appendChild(submit);
+}
+
+// ===== UI ロック =====
+function lockUI() {
+  document.getElementById("answer-container").classList.add("locked");
+}
+</script>
+</body>
+</html><!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ClassSync Student</title>
+<style>
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+  text-align: center;
+  padding: 30px;
+}
+.choice-btn {
+  width: 70px;
+  height: 70px;
+  margin: 10px;
+  font-size: 28px;
+  border-radius: 50%;
+  border: none;
+  background-color: #f1f1f4;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+  transition: 0.15s;
+}
+.choice-btn.selected {
+  background-color: #007aff;
+  color: white;
+  transform: scale(1.07);
+}
+.submit-btn {
+  margin-top: 25px;
+  padding: 14px 34px;
+  font-size: 22px;
+  border-radius: 16px;
+  border: none;
+  background-color: #007aff;
+  color: white;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+.locked {
+  opacity: 0.5;
+  pointer-events: none;
+}
+</style>
+</head>
+<body>
+<h2>回答画面</h2>
+<div id="answer-container"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+const firebaseConfig = {
+  // ★あなたの Firebase 設定を記入★
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+// ===== URL パラメータで room を取得 =====
+const url = new URL(window.location.href);
+const room = url.searchParams.get("room") || "kyoto-01";
+
+// ===== userId を永続化 =====
+let userId = localStorage.getItem("student_user_id");
+if (!userId) {
+  userId = "user_" + Math.random().toString(36).slice(2, 8);
+  localStorage.setItem("student_user_id", userId);
+}
+
+let isOpen = false;
+
+// ===== mode / config を監視 =====
+const activityRef = ref(db, `rooms/${room}/activity`);
+onValue(activityRef, snap => {
+  const data = snap.val();
+  if (!data) return;
+
+  isOpen = (data.status === "open");
+  const mode = data.mode;
+  const config = data.config || {};
+
+  if (mode === "ox") {
+    renderOX(config.choices || ["O","X"]);
+  }
+  if (mode === "five") {
+    renderFiveChoice(config.choices || ["A","B","C","D","E"]);
+  }
+});
+
+// ===== ○× UI =====
+function renderOX(choices) {
+  const container = document.getElementById("answer-container");
+  container.innerHTML = "";
+
+  let selected = null;
+
+  choices.forEach(ch => {
+    const btn = document.createElement("button");
+    btn.className = "choice-btn";
+    btn.textContent = ch;
+
+    btn.onclick = () => {
+      if (!isOpen) return;
+      selected = ch;
+      document.querySelectorAll(".choice-btn").forEach(b => b.classList.remove("selected"));
+      btn.classList.add("selected");
+    };
+
+    container.appendChild(btn);
+  });
+
+  const submit = document.createElement("button");
+  submit.className = "submit-btn";
+  submit.textContent = "決定";
+
+  submit.onclick = async () => {
+    if (!isOpen || !selected) return;
+
+    const answerRef = ref(db, `rooms/${room}/answers/${userId}`);
+    await set(answerRef, {
+      value: selected,
+      timestamp: Date.now()
+    });
+
+    lockUI();
+  };
+
+  container.appendChild(submit);
+}
+
+// ===== 5択 UI =====
+function renderFiveChoice(choices) {
+  const container = document.getElementById("answer-container");
+  container.innerHTML = "";
+
+  let selected = null;
+
+  choices.forEach(ch => {
+    const btn = document.createElement("button");
+    btn.className = "choice-btn";
+    btn.textContent = ch;
+
+    btn.onclick = () => {
+      if (!isOpen) return;
+      selected = ch;
+      document.querySelectorAll(".choice-btn").forEach(b => b.classList.remove("selected"));
+      btn.classList.add("selected");
+    };
+
+    container.appendChild(btn);
+  });
+
+  const submit = document.createElement("button");
+  submit.className = "submit-btn";
+  submit.textContent = "決定";
+
+  submit.onclick = async () => {
+    if (!isOpen || !selected) return;
+
+    const answerRef = ref(db, `rooms/${room}/answers/${userId}`);
+    await set(answerRef, {
+      value: selected,
+      timestamp: Date.now()
+    });
+
+    lockUI();
+  };
+
+  container.appendChild(submit);
+}
+
+// ===== UI ロック =====
+function lockUI() {
+  document.getElementById("answer-container").classList.add("locked");
+}
+</script>
+</body>
+</html>
