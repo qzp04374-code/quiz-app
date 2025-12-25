@@ -79,9 +79,7 @@
     }
 
     @media (max-width: 700px) {
-      .button-row {
-        flex-wrap: wrap;
-      }
+      .button-row { flex-wrap: wrap; }
     }
 
     button {
@@ -124,38 +122,25 @@
       transition: opacity 0.18s ease;
     }
 
-    .mode-btn.active::before {
-      opacity: 1;
-    }
+    .mode-btn.active::before { opacity: 1; }
 
-    .mode-ox {
-      background: linear-gradient(135deg, #10b981, #16a34a);
-    }
+    .mode-ox   { background: linear-gradient(135deg, #10b981, #16a34a); }
+    .mode-five { background: linear-gradient(135deg, #8b5cf6, #a855f7); }
+    .mode-text { background: linear-gradient(135deg, #f97316, #facc15); color: #111827; }
 
-    .mode-five {
-      background: linear-gradient(135deg, #8b5cf6, #a855f7);
-    }
-
-    .mode-text {
-      background: linear-gradient(135deg, #f97316, #facc15);
-      color: #111827;
-    }
-
-    #stopBtn {
-      background: #ef4444;
-    }
-
-    #resetBtn {
-      background: #4b5563;
-    }
-
-    #qrBtn {
-      background: #0ea5e9;
-    }
+    #stopBtn  { background: #ef4444; }
+    #resetBtn { background: #4b5563; }
+    #qrBtn    { background: #0ea5e9; }
 
     #projectionBtn {
       background: linear-gradient(135deg, #6366f1, #a855f7);
       box-shadow: 0 6px 20px rgba(139,92,246,0.5);
+    }
+
+    /* ★ 追加：次の問題ボタンの見た目 */
+    #nextQuestionBtn {
+      background: linear-gradient(135deg, #22c55e, #06b6d4);
+      box-shadow: 0 6px 20px rgba(34,197,94,0.35);
     }
 
     #graph {
@@ -274,6 +259,9 @@
       <button id="resetBtn">集計リセット</button>
       <button id="qrBtn">QRコード</button>
       <button id="projectionBtn">投影画面</button>
+
+      <!-- ★ 追加：次の問題ボタン -->
+      <button id="nextQuestionBtn">次の問題 ▶</button>
     </div>
 
     <div id="graph"></div>
@@ -313,20 +301,21 @@
     const app = initializeApp(firebaseConfig);
     const db  = getDatabase(app);
 
-    const roomSelect     = document.getElementById("roomSelect");
-    const oxBtn          = document.getElementById("oxBtn");
-    const fiveBtn        = document.getElementById("fiveBtn");
-    const textBtn        = document.getElementById("textBtn");
-    const stopBtn        = document.getElementById("stopBtn");
-    const resetBtn       = document.getElementById("resetBtn");
-    const qrBtn          = document.getElementById("qrBtn");
-    const projectionBtn  = document.getElementById("projectionBtn");
-    const graph          = document.getElementById("graph");
-    const textList       = document.getElementById("textList");
+    const roomSelect      = document.getElementById("roomSelect");
+    const oxBtn           = document.getElementById("oxBtn");
+    const fiveBtn         = document.getElementById("fiveBtn");
+    const textBtn         = document.getElementById("textBtn");
+    const stopBtn         = document.getElementById("stopBtn");
+    const resetBtn        = document.getElementById("resetBtn");
+    const qrBtn           = document.getElementById("qrBtn");
+    const projectionBtn   = document.getElementById("projectionBtn");
+    const nextQuestionBtn = document.getElementById("nextQuestionBtn"); // ★追加
+    const graph           = document.getElementById("graph");
+    const textList        = document.getElementById("textList");
 
-    const qrModal        = document.getElementById("qrModal");
-    const qrDiv          = document.getElementById("qrcode");
-    const closeQR        = document.getElementById("closeQR");
+    const qrModal = document.getElementById("qrModal");
+    const qrDiv   = document.getElementById("qrcode");
+    const closeQR = document.getElementById("closeQR");
 
     const se = new Audio("poyon.mp3");  // 同じフォルダ内に置いてください
 
@@ -337,9 +326,10 @@
     let currentStatus  = "closed";
     let lastTotalCount = 0;
 
-    function actRef() { return ref(db, `rooms/${currentRoom}/activity`); }
-    function ansRef() { return ref(db, `rooms/${currentRoom}/answers`); }
-    function resRef() { return ref(db, `rooms/${currentRoom}/result`); }
+    function actRef()  { return ref(db, `rooms/${currentRoom}/activity`); }
+    function ansRef()  { return ref(db, `rooms/${currentRoom}/answers`); }
+    function resRef()  { return ref(db, `rooms/${currentRoom}/result`); }
+    function quizQidRef(){ return ref(db, `rooms/${currentRoom}/quiz/current_question_id`); } // ★追加
 
     // ルーム切替
     roomSelect.addEventListener("change", () => {
@@ -398,12 +388,35 @@
       lastTotalCount     = 0;
     };
 
-    // ✅ 投影画面（display.html）を開く（ここが修正点）
+    // 投影画面（display.html）を開く
     projectionBtn.onclick = () => {
       const here    = new URL(location.href);
       const baseDir = here.origin + here.pathname.replace(/[^/]*$/, "");
       const url     = `${baseDir}display.html?room=${encodeURIComponent(currentRoom)}`;
       window.open(url, "_blank");
+    };
+
+    // ★追加：次の問題 ▶（Q01→Q02→Q03…）
+    nextQuestionBtn.onclick = async () => {
+      onValue(quizQidRef(), async (snap) => {
+        const current = snap.val();
+
+        if (!current) {
+          await set(quizQidRef(), "Q01");
+          return;
+        }
+
+        // Q01 / Q02 ... 形式のみ対象
+        const m = String(current).match(/^Q(\d+)$/);
+        if (!m) {
+          // 形式が違う場合は安全に何もしない
+          return;
+        }
+
+        const nextNum = Number(m[1]) + 1;
+        const nextId  = `Q${String(nextNum).padStart(2, "0")}`;
+        await set(quizQidRef(), nextId);
+      }, { onlyOnce: true });
     };
 
     // QRコードボタン
