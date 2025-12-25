@@ -15,10 +15,9 @@
       display: flex;
     }
 
-    /* ===== レイアウト ===== */
     .left {
       width: 66.6%;
-      padding: 40px;
+      padding: 48px;
       box-sizing: border-box;
       display: flex;
       flex-direction: column;
@@ -35,10 +34,9 @@
       justify-content: center;
     }
 
-    /* ===== 問題表示 ===== */
     .question {
       font-size: 42px;
-      line-height: 1.4;
+      line-height: 1.45;
       margin-bottom: 32px;
     }
 
@@ -51,7 +49,6 @@
       margin-bottom: 10px;
     }
 
-    /* ===== 集計 ===== */
     .bar-row {
       margin-bottom: 16px;
     }
@@ -65,8 +62,14 @@
       height: 28px;
       background: #4f46e5;
       border-radius: 999px;
-      transition: width 0.2s ease;
       min-width: 10px;
+      transition: width 0.2s ease;
+    }
+
+    .status {
+      opacity: 0.6;
+      font-size: 18px;
+      margin-top: 12px;
     }
   </style>
 </head>
@@ -75,59 +78,94 @@
   <!-- 左：問題 -->
   <div class="left">
     <div class="question" id="question">
-      （ここに問題文が表示されます）
+      （出題内容）
     </div>
-    <div class="choices" id="choices">
-      <div class="choice">A. 選択肢A</div>
-      <div class="choice">B. 選択肢B</div>
-      <div class="choice">C. 選択肢C</div>
-      <div class="choice">D. 選択肢D</div>
-      <div class="choice">E. 選択肢E</div>
-    </div>
+    <div class="choices" id="choices"></div>
+    <div class="status" id="status"></div>
   </div>
 
   <!-- 右：集計 -->
   <div class="right">
-    <div id="graph">
-      集計データを待っています…
-    </div>
+    <div id="graph">集計データを待っています…</div>
   </div>
 
-  <!-- Firebase -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-    /* ===== Firebase 設定（index.html と同じものをコピペ） ===== */
+    /* Firebase設定（index.htmlと同じ） */
     const firebaseConfig = {
-      apiKey: "YOUR_API_KEY",
-      authDomain: "YOUR_DOMAIN",
-      databaseURL: "YOUR_DB_URL",
-      projectId: "YOUR_PROJECT_ID",
+      apiKey: "AIzaSyBke-wTU16skpbK8z80ddK04tE154dHERQ",
+      authDomain: "satosan-41eac.firebaseapp.com",
+      databaseURL: "https://satosan-41eac-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "satosan-41eac",
+      storageBucket: "satosan-41eac.firebasestorage.app",
+      messagingSenderId: "992482993229",
+      appId: "1:992482993229:web:e2c59b078233b0ed16e804",
+      measurementId: "G-VT9FKHN3LT"
     };
 
     const app = initializeApp(firebaseConfig);
     const db  = getDatabase(app);
 
-    /* ===== room パラメータ ===== */
     const url  = new URL(window.location.href);
     const room = url.searchParams.get("room") || "kyoto-01";
 
-    /* ===== 集計表示 ===== */
-    const graph = document.getElementById("graph");
+    const questionEl = document.getElementById("question");
+    const choicesEl  = document.getElementById("choices");
+    const statusEl   = document.getElementById("status");
+    const graphEl    = document.getElementById("graph");
 
-    const resultRef = ref(db, `rooms/${room}/result`);
-    onValue(resultRef, snap => {
-      const data = snap.val() || {};
-      renderGraph(data);
+    /* activity（モード・状態） */
+    onValue(ref(db, `rooms/${room}/activity`), snap => {
+      const a = snap.val() || {};
+      renderQuestion(a.mode, a.status);
     });
 
+    /* result（集計） */
+    onValue(ref(db, `rooms/${room}/result`), snap => {
+      renderGraph(snap.val() || {});
+    });
+
+    function renderQuestion(mode, status) {
+      choicesEl.innerHTML = "";
+
+      if (!mode) {
+        questionEl.textContent = "教員の操作を待っています";
+        statusEl.textContent = "";
+        return;
+      }
+
+      questionEl.textContent = "【出題】次の問いについて考えてください";
+
+      if (mode === "ox") {
+        addChoice("O. ○");
+        addChoice("X. ×");
+      } else if (mode === "five") {
+        ["A","B","C","D","E"].forEach(l => addChoice(`${l}. 選択肢${l}`));
+      } else if (mode === "text") {
+        addChoice("自由記入で回答してください");
+      }
+
+      statusEl.textContent =
+        status === "open"
+          ? "回答受付中"
+          : "回答終了";
+    }
+
+    function addChoice(text) {
+      const div = document.createElement("div");
+      div.className = "choice";
+      div.textContent = text;
+      choicesEl.appendChild(div);
+    }
+
     function renderGraph(data) {
-      graph.innerHTML = "";
+      graphEl.innerHTML = "";
       const entries = Object.entries(data);
 
       if (entries.length === 0) {
-        graph.textContent = "まだ回答はありません";
+        graphEl.textContent = "まだ回答はありません";
         return;
       }
 
@@ -145,10 +183,9 @@
 
         row.appendChild(lbl);
         row.appendChild(bar);
-        graph.appendChild(row);
+        graphEl.appendChild(row);
       });
     }
   </script>
 </body>
 </html>
-
