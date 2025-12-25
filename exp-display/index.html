@@ -328,7 +328,7 @@
     const qrDiv          = document.getElementById("qrcode");
     const closeQR        = document.getElementById("closeQR");
 
-    const se = new Audio("poyon.mp3");  // 回答が1件増えるたびの効果音（ファイルは同じフォルダに置いてください）
+    const se = new Audio("poyon.mp3");  // 同じフォルダ内に置いてください
 
     let currentRoom    = roomSelect.value;
     let unsubscribeAct = null;
@@ -358,7 +358,6 @@
 
     // モード開始共通処理
     async function startMode(mode, choices) {
-      // answers / result をクリア
       await set(ansRef(), {});
 
       if (mode === "ox" || mode === "five") {
@@ -369,7 +368,6 @@
         await set(resRef(), {});
       }
 
-      // activity を open + モード + qr=false で更新
       const data = { status: "open", mode, qr: false };
       if (mode === "text") {
         data.config = { type: "text" };
@@ -382,27 +380,14 @@
       setActiveModeButton(mode);
     }
 
-    // 〇×
-    oxBtn.onclick = () => {
-      startMode("ox", ["O", "X"]);
-    };
+    oxBtn.onclick   = () => startMode("ox",   ["O", "X"]);
+    fiveBtn.onclick = () => startMode("five", ["A", "B", "C", "D", "E"]);
+    textBtn.onclick = () => startMode("text");
 
-    // 5択
-    fiveBtn.onclick = () => {
-      startMode("five", ["A", "B", "C", "D", "E"]);
-    };
-
-    // 文字記入
-    textBtn.onclick = () => {
-      startMode("text");
-    };
-
-    // 回答終了
     stopBtn.onclick = () => {
       update(actRef(), { status: "closed", qr: false });
     };
 
-    // 集計リセット
     resetBtn.onclick = async () => {
       await set(ansRef(), {});
       await set(resRef(), {});
@@ -413,23 +398,21 @@
       lastTotalCount     = 0;
     };
 
-    // 投影画面（teacher-screen.html）を開く
+    // ✅ 投影画面（display.html）を開く（ここが修正点）
     projectionBtn.onclick = () => {
       const here    = new URL(location.href);
       const baseDir = here.origin + here.pathname.replace(/[^/]*$/, "");
-      const url     = `${baseDir}teacher-screen.html?room=${encodeURIComponent(currentRoom)}`;
+      const url     = `${baseDir}display.html?room=${encodeURIComponent(currentRoom)}`;
       window.open(url, "_blank");
     };
 
-    // QRコードボタン：activity.qr = true にして、QRモーダルを表示
+    // QRコードボタン
     qrBtn.onclick = () => {
-      // 集計画面側に「QRを表示せよ」と通知
       update(actRef(), { qr: true });
 
       const here    = new URL(location.href);
       const baseDir = here.origin + here.pathname.replace(/[^/]*$/, "");
 
-      // バージョン管理したければここで v を固定値に
       const v = "20251117";
       const query = `?room=${encodeURIComponent(currentRoom)}&v=${encodeURIComponent(v)}`;
       const url   = `${baseDir}student.html${query}`;
@@ -444,13 +427,11 @@
       qrModal.style.display = "flex";
     };
 
-    // QRモーダルを閉じる（activity.qr も false）
     closeQR.onclick = () => {
       qrModal.style.display = "none";
       update(actRef(), { qr: false });
     };
 
-    // 背景クリックでQR閉じる
     qrModal.addEventListener("click", (e) => {
       if (e.target === qrModal) {
         qrModal.style.display = "none";
@@ -458,7 +439,6 @@
       }
     });
 
-    // Firebaseリスナーの付け替え
     function detachListeners() {
       if (unsubscribeAct) { unsubscribeAct(); unsubscribeAct = null; }
       if (unsubscribeAns) { unsubscribeAns(); unsubscribeAns = null; }
@@ -467,7 +447,6 @@
     function attachListeners() {
       detachListeners();
 
-      // activity 監視：モードとステータス
       unsubscribeAct = onValue(actRef(), snap => {
         const val = snap.val() || {};
         currentMode   = val.mode   || null;
@@ -475,7 +454,6 @@
         setActiveModeButton(currentMode);
       });
 
-      // answers 監視：result 更新＆グラフ描画＆テキスト一覧制御
       unsubscribeAns = onValue(ansRef(), snap => {
         const answers = snap.val() || {};
         const counts  = {};
@@ -508,26 +486,19 @@
 
         const total = Object.values(counts).reduce((a,b) => a + b, 0);
         if (total > lastTotalCount) {
-          // 票が1件以上増えたら音（再生失敗は無視）
           se.currentTime = 0;
           se.play().catch(() => {});
         }
         lastTotalCount = total;
 
-        // result に反映
         set(resRef(), counts);
-
-        // グラフ描画
         renderGraph(counts);
 
-        // テキスト表示部分
         if (currentMode === "text") {
           if (currentStatus === "open") {
-            // 回答受付中：人数だけ表示
             const n = Object.keys(answers).length;
             textList.innerHTML = `現在の回答数：${n} 人`;
           } else {
-            // 回答終了後：送信順に一覧表示
             renderTextList(answers);
           }
         } else {
@@ -536,7 +507,6 @@
       });
     }
 
-    // テキスト回答一覧（送信順）
     function renderTextList(answers) {
       textList.innerHTML = "";
       const keys = Object.keys(answers);
@@ -568,7 +538,6 @@
       textList.appendChild(ul);
     }
 
-    // 棒グラフの色決定
     function getBarColor(label) {
       const css = getComputedStyle(document.documentElement);
       switch (label.trim()) {
@@ -584,7 +553,6 @@
       }
     }
 
-    // 棒グラフ描画
     function renderGraph(data) {
       graph.innerHTML = "";
       const entries = Object.entries(data);
@@ -614,7 +582,6 @@
       });
     }
 
-    // 初期リスナー登録
     attachListeners();
   </script>
 </body>
