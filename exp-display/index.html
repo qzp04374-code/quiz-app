@@ -25,28 +25,22 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: flex-start;
       padding-top: 32px;
-      box-sizing: border-box;
       color: #f9fafb;
     }
 
     .card {
       background: #111827;
       border-radius: 24px;
-      box-shadow:
-        0 18px 50px rgba(0,0,0,0.85),
-        0 0 0 1px rgba(255,255,255,0.03);
+      box-shadow: 0 18px 50px rgba(0,0,0,0.85);
       padding: 26px 22px 30px;
       max-width: 760px;
       width: 100%;
-      box-sizing: border-box;
       text-align: center;
     }
 
     h2 {
-      margin-top: 0;
-      margin-bottom: 12px;
+      margin: 0 0 12px;
       font-size: 22px;
       letter-spacing: 0.08em;
     }
@@ -60,26 +54,16 @@
       padding: 6px 10px;
       border-radius: 10px;
       border: 1px solid #4b5563;
-      font-size: 14px;
       background: #020617;
       color: #e5e7eb;
-      outline: none;
     }
 
     .button-row {
       display: flex;
-      flex-direction: row;
-      flex-wrap: nowrap;
+      flex-wrap: wrap;
       justify-content: center;
-      align-items: center;
       gap: 10px;
-      margin-top: 20px;
-      margin-bottom: 20px;
-      padding: 4px 4px 6px;
-    }
-
-    @media (max-width: 700px) {
-      .button-row { flex-wrap: wrap; }
+      margin: 20px 0;
     }
 
     button {
@@ -90,146 +74,32 @@
       font-size: 14px;
       cursor: pointer;
       min-width: 110px;
-      white-space: nowrap;
       background: #374151;
       box-shadow: 0 6px 20px rgba(0,0,0,0.75);
-      transition:
-        transform 0.12s ease,
-        box-shadow 0.12s ease,
-        filter 0.12s ease,
-        background-color 0.12s ease,
-        border-color 0.12s ease;
     }
-
-    button:active {
-      transform: scale(0.96);
-      box-shadow: 0 4px 14px rgba(0,0,0,0.75);
-      filter: brightness(0.98);
-    }
-
-    .mode-btn {
-      position: relative;
-      overflow: hidden;
-    }
-
-    .mode-btn::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      border-radius: inherit;
-      background: radial-gradient(circle at 0% 0%, rgba(96,165,250,0.3), transparent 55%);
-      opacity: 0;
-      transition: opacity 0.18s ease;
-    }
-
-    .mode-btn.active::before { opacity: 1; }
 
     .mode-ox   { background: linear-gradient(135deg, #10b981, #16a34a); }
     .mode-five { background: linear-gradient(135deg, #8b5cf6, #a855f7); }
-    .mode-text { background: linear-gradient(135deg, #f97316, #facc15); color: #111827; }
+    .mode-text { background: linear-gradient(135deg, #f97316, #facc15); color:#111827; }
 
-    #stopBtn  { background: #ef4444; }
-    #resetBtn { background: #4b5563; }
-    #qrBtn    { background: #0ea5e9; }
+    #stopBtn  { background:#ef4444; }
+    #resetBtn { background:#4b5563; }
+    #qrBtn    { background:#0ea5e9; }
 
     #projectionBtn {
       background: linear-gradient(135deg, #6366f1, #a855f7);
-      box-shadow: 0 6px 20px rgba(139,92,246,0.5);
     }
 
-    /* ★ 追加：次の問題ボタンの見た目 */
     #nextQuestionBtn {
       background: linear-gradient(135deg, #22c55e, #06b6d4);
-      box-shadow: 0 6px 20px rgba(34,197,94,0.35);
     }
 
-    #graph {
-      margin-top: 4px;
-      text-align: left;
-      color: #e5e7eb;
-      font-size: 14px;
+    /* ★ CSV投入ボタン */
+    #importBtn {
+      background: linear-gradient(135deg, #f59e0b, #f97316);
     }
 
-    .bar-row {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      margin-bottom: 6px;
-      font-size: 15px;
-    }
-
-    .bar-label {
-      width: 80px;
-      text-align: right;
-      font-weight: 500;
-      color: #d1d5db;
-    }
-
-    .bar {
-      height: 18px;
-      border-radius: 999px;
-      background: #1f2933;
-      min-width: 4px;
-      transition: width 0.15s ease, background-color 0.15s ease;
-    }
-
-    #textList {
-      margin-top: 14px;
-      max-height: 180px;
-      overflow-y: auto;
-      text-align: left;
-      padding-right: 4px;
-      color: #e5e7eb;
-    }
-
-    #textList ul {
-      list-style: none;
-      padding-left: 0;
-      margin: 6px 0 0 0;
-    }
-
-    #textList li {
-      margin: 4px 0;
-      font-size: 14px;
-    }
-
-    #qrModal {
-      display: none;
-      position: fixed;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      background: rgba(0,0,0,0.85);
-      align-items: center;
-      justify-content: center;
-      z-index: 1000;
-    }
-
-    #qrModalInner {
-      background: #111827;
-      padding: 20px;
-      border-radius: 20px;
-      text-align: center;
-      box-shadow: 0 14px 40px rgba(0,0,0,0.9);
-      color: #f9fafb;
-    }
-
-    #qrcode canvas { border-radius: 12px; }
-    #closeQR { background: #4b5563; }
-
-    @media (max-width: 600px) {
-      .card {
-        margin: 0 8px 24px;
-        padding: 20px 12px 24px;
-      }
-      .bar-label {
-        width: 64px;
-        font-size: 13px;
-      }
-      button {
-        padding: 10px 18px;
-        min-width: 100px;
-      }
-    }
+    #graph { text-align:left; }
   </style>
 </head>
 
@@ -243,46 +113,27 @@
         <select id="roomSelect">
           <option value="kyoto-01">kyoto-01</option>
           <option value="kyoto-02">kyoto-02</option>
-          <option value="nagoya-01">nagoya-01</option>
-          <option value="nagoya-02">nagoya-02</option>
-          <option value="sendai-01">sendai-01</option>
-          <option value="sendai-02">sendai-02</option>
         </select>
       </label>
     </div>
 
     <div class="button-row">
-      <button id="oxBtn"   class="mode-btn mode-ox">○×モード</button>
-      <button id="fiveBtn" class="mode-btn mode-five">5択モード</button>
-      <button id="textBtn" class="mode-btn mode-text">文字記入</button>
+      <button id="oxBtn"   class="mode-ox">○×モード</button>
+      <button id="fiveBtn" class="mode-five">5択モード</button>
+      <button id="textBtn" class="mode-text">文字記入</button>
       <button id="stopBtn">回答終了</button>
       <button id="resetBtn">集計リセット</button>
       <button id="qrBtn">QRコード</button>
       <button id="projectionBtn">投影画面</button>
 
-      <!-- ★ 追加：次の問題ボタン -->
+      <!-- ★ 追加 -->
+      <button id="importBtn">CSV投入</button>
       <button id="nextQuestionBtn">次の問題 ▶</button>
     </div>
 
     <div id="graph"></div>
-    <div id="textList"></div>
   </div>
 
-  <!-- QRコードモーダル（教員PC上に表示） -->
-  <div id="qrModal">
-    <div id="qrModalInner">
-      <h3>学生用QRコード</h3>
-      <div id="qrcode"></div>
-      <div style="margin-top:16px;">
-        <button id="closeQR">閉じる</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- QRコードライブラリ -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-
-  <!-- Firebase & 制御ロジック -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getDatabase, ref, set, update, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
@@ -291,311 +142,47 @@
       apiKey: "AIzaSyBke-wTU16skpbK8z80ddK04tE154dHERQ",
       authDomain: "satosan-41eac.firebaseapp.com",
       databaseURL: "https://satosan-41eac-default-rtdb.asia-southeast1.firebasedatabase.app",
-      projectId: "satosan-41eac",
-      storageBucket: "satosan-41eac.firebasestorage.app",
-      messagingSenderId: "992482993229",
-      appId: "1:992482993229:web:e2c59b078233b0ed16e804",
-      measurementId: "G-VT9FKHN3LT"
+      projectId: "satosan-41eac"
     };
 
     const app = initializeApp(firebaseConfig);
     const db  = getDatabase(app);
 
     const roomSelect      = document.getElementById("roomSelect");
-    const oxBtn           = document.getElementById("oxBtn");
-    const fiveBtn         = document.getElementById("fiveBtn");
-    const textBtn         = document.getElementById("textBtn");
-    const stopBtn         = document.getElementById("stopBtn");
-    const resetBtn        = document.getElementById("resetBtn");
-    const qrBtn           = document.getElementById("qrBtn");
     const projectionBtn   = document.getElementById("projectionBtn");
-    const nextQuestionBtn = document.getElementById("nextQuestionBtn"); // ★追加
-    const graph           = document.getElementById("graph");
-    const textList        = document.getElementById("textList");
+    const nextQuestionBtn = document.getElementById("nextQuestionBtn");
+    const importBtn       = document.getElementById("importBtn");
 
-    const qrModal = document.getElementById("qrModal");
-    const qrDiv   = document.getElementById("qrcode");
-    const closeQR = document.getElementById("closeQR");
+    let currentRoom = roomSelect.value;
 
-    const se = new Audio("poyon.mp3");  // 同じフォルダ内に置いてください
+    roomSelect.onchange = () => currentRoom = roomSelect.value;
 
-    let currentRoom    = roomSelect.value;
-    let unsubscribeAct = null;
-    let unsubscribeAns = null;
-    let currentMode    = null;
-    let currentStatus  = "closed";
-    let lastTotalCount = 0;
-
-    function actRef()  { return ref(db, `rooms/${currentRoom}/activity`); }
-    function ansRef()  { return ref(db, `rooms/${currentRoom}/answers`); }
-    function resRef()  { return ref(db, `rooms/${currentRoom}/result`); }
-    function quizQidRef(){ return ref(db, `rooms/${currentRoom}/quiz/current_question_id`); } // ★追加
-
-    // ルーム切替
-    roomSelect.addEventListener("change", () => {
-      currentRoom    = roomSelect.value;
-      lastTotalCount = 0;
-      attachListeners();
-    });
-
-    // モードボタンの見た目
-    function setActiveModeButton(mode) {
-      [oxBtn, fiveBtn, textBtn].forEach(b => b.classList.remove("active"));
-      if (mode === "ox")   oxBtn.classList.add("active");
-      if (mode === "five") fiveBtn.classList.add("active");
-      if (mode === "text") textBtn.classList.add("active");
-    }
-
-    // モード開始共通処理
-    async function startMode(mode, choices) {
-      await set(ansRef(), {});
-
-      if (mode === "ox" || mode === "five") {
-        const init = {};
-        (choices || []).forEach(c => { init[c] = 0; });
-        await set(resRef(), init);
-      } else {
-        await set(resRef(), {});
-      }
-
-      const data = { status: "open", mode, qr: false };
-      if (mode === "text") {
-        data.config = { type: "text" };
-      } else {
-        data.config = { choices };
-      }
-      await update(actRef(), data);
-
-      lastTotalCount = 0;
-      setActiveModeButton(mode);
-    }
-
-    oxBtn.onclick   = () => startMode("ox",   ["O", "X"]);
-    fiveBtn.onclick = () => startMode("five", ["A", "B", "C", "D", "E"]);
-    textBtn.onclick = () => startMode("text");
-
-    stopBtn.onclick = () => {
-      update(actRef(), { status: "closed", qr: false });
-    };
-
-    resetBtn.onclick = async () => {
-      await set(ansRef(), {});
-      await set(resRef(), {});
-      await update(actRef(), { qr: false });
-
-      graph.innerHTML    = "";
-      textList.innerHTML = "";
-      lastTotalCount     = 0;
-    };
-
-    // 投影画面（display.html）を開く
     projectionBtn.onclick = () => {
-      const here    = new URL(location.href);
-      const baseDir = here.origin + here.pathname.replace(/[^/]*$/, "");
-      const url     = `${baseDir}display.html?room=${encodeURIComponent(currentRoom)}`;
-      window.open(url, "_blank");
+      const base = location.href.replace(/[^/]*$/, "");
+      window.open(`${base}display.html?room=${currentRoom}`, "_blank");
     };
 
-    // ★追加：次の問題 ▶（Q01→Q02→Q03…）
+    /* ★ CSV投入画面を開く */
+    importBtn.onclick = () => {
+      const base = location.href.replace(/[^/]*$/, "");
+      window.open(`${base}import-csv.html`, "_blank");
+    };
+
+    /* 次の問題 */
     nextQuestionBtn.onclick = async () => {
-      onValue(quizQidRef(), async (snap) => {
-        const current = snap.val();
-
-        if (!current) {
-          await set(quizQidRef(), "Q01");
+      const qRef = ref(db, `rooms/${currentRoom}/quiz/current_question_id`);
+      onValue(qRef, async snap => {
+        const cur = snap.val();
+        if (!cur) {
+          await set(qRef, "Q01");
           return;
         }
-
-        // Q01 / Q02 ... 形式のみ対象
-        const m = String(current).match(/^Q(\d+)$/);
-        if (!m) {
-          // 形式が違う場合は安全に何もしない
-          return;
-        }
-
-        const nextNum = Number(m[1]) + 1;
-        const nextId  = `Q${String(nextNum).padStart(2, "0")}`;
-        await set(quizQidRef(), nextId);
+        const m = String(cur).match(/^Q(\d+)$/);
+        if (!m) return;
+        const next = `Q${String(Number(m[1]) + 1).padStart(2, "0")}`;
+        await set(qRef, next);
       }, { onlyOnce: true });
     };
-
-    // QRコードボタン
-    qrBtn.onclick = () => {
-      update(actRef(), { qr: true });
-
-      const here    = new URL(location.href);
-      const baseDir = here.origin + here.pathname.replace(/[^/]*$/, "");
-
-      const v = "20251117";
-      const query = `?room=${encodeURIComponent(currentRoom)}&v=${encodeURIComponent(v)}`;
-      const url   = `${baseDir}student.html${query}`;
-
-      qrDiv.innerHTML = "";
-      new QRCode(qrDiv, {
-        text: url,
-        width: 280,
-        height: 280
-      });
-
-      qrModal.style.display = "flex";
-    };
-
-    closeQR.onclick = () => {
-      qrModal.style.display = "none";
-      update(actRef(), { qr: false });
-    };
-
-    qrModal.addEventListener("click", (e) => {
-      if (e.target === qrModal) {
-        qrModal.style.display = "none";
-        update(actRef(), { qr: false });
-      }
-    });
-
-    function detachListeners() {
-      if (unsubscribeAct) { unsubscribeAct(); unsubscribeAct = null; }
-      if (unsubscribeAns) { unsubscribeAns(); unsubscribeAns = null; }
-    }
-
-    function attachListeners() {
-      detachListeners();
-
-      unsubscribeAct = onValue(actRef(), snap => {
-        const val = snap.val() || {};
-        currentMode   = val.mode   || null;
-        currentStatus = val.status || "closed";
-        setActiveModeButton(currentMode);
-      });
-
-      unsubscribeAns = onValue(ansRef(), snap => {
-        const answers = snap.val() || {};
-        const counts  = {};
-
-        if (!currentMode) {
-          graph.textContent    = "モードが選択されていません。";
-          textList.innerHTML   = "";
-          lastTotalCount       = 0;
-          return;
-        }
-
-        if (currentMode === "ox") {
-          let o = 0, x = 0;
-          Object.values(answers).forEach(v => {
-            if (v === "O") o++;
-            else if (v === "X") x++;
-          });
-          counts["O"] = o;
-          counts["X"] = x;
-        } else if (currentMode === "five") {
-          const letters = ["A","B","C","D","E"];
-          letters.forEach(l => counts[l] = 0);
-          Object.values(answers).forEach(v => {
-            if (letters.includes(v)) counts[v]++;
-          });
-        } else if (currentMode === "text") {
-          const keys = Object.keys(answers);
-          counts["回答数"] = keys.length;
-        }
-
-        const total = Object.values(counts).reduce((a,b) => a + b, 0);
-        if (total > lastTotalCount) {
-          se.currentTime = 0;
-          se.play().catch(() => {});
-        }
-        lastTotalCount = total;
-
-        set(resRef(), counts);
-        renderGraph(counts);
-
-        if (currentMode === "text") {
-          if (currentStatus === "open") {
-            const n = Object.keys(answers).length;
-            textList.innerHTML = `現在の回答数：${n} 人`;
-          } else {
-            renderTextList(answers);
-          }
-        } else {
-          textList.innerHTML = "";
-        }
-      });
-    }
-
-    function renderTextList(answers) {
-      textList.innerHTML = "";
-      const keys = Object.keys(answers);
-      if (keys.length === 0) {
-        textList.textContent = "まだテキスト回答はありません。";
-        return;
-      }
-
-      const title = document.createElement("div");
-      title.textContent = "テキスト回答一覧：";
-      title.style.marginTop = "16px";
-      textList.appendChild(title);
-
-      const ul = document.createElement("ul");
-
-      keys.forEach((uid, idx) => {
-        const v = answers[uid];
-        let text = "";
-        if (typeof v === "string") {
-          text = v;
-        } else if (v && typeof v === "object" && typeof v.value === "string") {
-          text = v.value;
-        }
-        const li = document.createElement("li");
-        li.textContent = `${idx + 1}. ${text}`;
-        ul.appendChild(li);
-      });
-
-      textList.appendChild(ul);
-    }
-
-    function getBarColor(label) {
-      const css = getComputedStyle(document.documentElement);
-      switch (label.trim()) {
-        case "O": return css.getPropertyValue("--color-o");
-        case "X": return css.getPropertyValue("--color-x");
-        case "A": return css.getPropertyValue("--color-a");
-        case "B": return css.getPropertyValue("--color-b");
-        case "C": return css.getPropertyValue("--color-c");
-        case "D": return css.getPropertyValue("--color-d");
-        case "E": return css.getPropertyValue("--color-e");
-        case "回答数": return css.getPropertyValue("--color-count");
-        default: return "#4b5563";
-      }
-    }
-
-    function renderGraph(data) {
-      graph.innerHTML = "";
-      const entries = Object.entries(data);
-
-      if (entries.length === 0) {
-        graph.textContent = "集計データはまだありません。";
-        return;
-      }
-
-      entries.forEach(([label, count]) => {
-        const row  = document.createElement("div");
-        row.className = "bar-row";
-
-        const lbl  = document.createElement("div");
-        lbl.className = "bar-label";
-        lbl.textContent = `${label}: ${count}`;
-
-        const bar  = document.createElement("div");
-        bar.className = "bar";
-        const width = Math.max(6, count * 28);
-        bar.style.width      = width + "px";
-        bar.style.background = getBarColor(label);
-
-        row.appendChild(lbl);
-        row.appendChild(bar);
-        graph.appendChild(row);
-      });
-    }
-
-    attachListeners();
   </script>
 </body>
 </html>
