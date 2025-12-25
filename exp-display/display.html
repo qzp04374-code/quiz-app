@@ -49,15 +49,14 @@
       margin-bottom: 10px;
     }
 
-    .bar-row {
-      margin-bottom: 16px;
+    .status {
+      opacity: 0.6;
+      font-size: 18px;
+      margin-top: 12px;
     }
 
-    .bar-label {
-      font-size: 20px;
-      margin-bottom: 6px;
-    }
-
+    .bar-row { margin-bottom: 16px; }
+    .bar-label { font-size: 20px; margin-bottom: 6px; }
     .bar {
       height: 28px;
       background: #4f46e5;
@@ -65,26 +64,16 @@
       min-width: 10px;
       transition: width 0.2s ease;
     }
-
-    .status {
-      opacity: 0.6;
-      font-size: 18px;
-      margin-top: 12px;
-    }
   </style>
 </head>
 
 <body>
-  <!-- 左：問題 -->
   <div class="left">
-    <div class="question" id="question">
-      （出題内容）
-    </div>
+    <div class="question" id="question">出題を待っています</div>
     <div class="choices" id="choices"></div>
     <div class="status" id="status"></div>
   </div>
 
-  <!-- 右：集計 -->
   <div class="right">
     <div id="graph">集計データを待っています…</div>
   </div>
@@ -93,7 +82,6 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-    /* Firebase設定（index.htmlと同じ） */
     const firebaseConfig = {
       apiKey: "AIzaSyBke-wTU16skpbK8z80ddK04tE154dHERQ",
       authDomain: "satosan-41eac.firebaseapp.com",
@@ -108,62 +96,59 @@
     const app = initializeApp(firebaseConfig);
     const db  = getDatabase(app);
 
-    const url  = new URL(window.location.href);
-    const room = url.searchParams.get("room") || "kyoto-01";
+    const room = new URL(location.href).searchParams.get("room") || "kyoto-01";
 
     const questionEl = document.getElementById("question");
     const choicesEl  = document.getElementById("choices");
     const statusEl   = document.getElementById("status");
     const graphEl    = document.getElementById("graph");
 
-    /* activity（モード・状態） */
-    onValue(ref(db, `rooms/${room}/activity`), snap => {
-      const a = snap.val() || {};
-      renderQuestion(a.mode, a.status);
+    let currentQuestion = null;
+
+    /* === 現在の問題ID === */
+    onValue(ref(db, `rooms/${room}/quiz/current_question_id`), snap => {
+      const qid = snap.val();
+      if (!qid) return;
+      subscribeQuestion(qid);
     });
 
-    /* result（集計） */
+    function subscribeQuestion(qid) {
+      onValue(ref(db, `rooms/${room}/questions/${qid}`), snap => {
+        currentQuestion = snap.val();
+        renderQuestion();
+      });
+    }
+
+    /* === activity（受付状態） === */
+    onValue(ref(db, `rooms/${room}/activity`), snap => {
+      const a = snap.val() || {};
+      statusEl.textContent =
+        a.status === "open" ? "回答受付中" : "回答終了";
+    });
+
+    function renderQuestion() {
+      if (!currentQuestion) return;
+
+      questionEl.textContent = currentQuestion.question || "";
+
+      choicesEl.innerHTML = "";
+      const choices = currentQuestion.choices || {};
+      Object.entries(choices).forEach(([key, text]) => {
+        const div = document.createElement("div");
+        div.className = "choice";
+        div.textContent = `${key}. ${text}`;
+        choicesEl.appendChild(div);
+      });
+    }
+
+    /* === 集計 === */
     onValue(ref(db, `rooms/${room}/result`), snap => {
       renderGraph(snap.val() || {});
     });
 
-    function renderQuestion(mode, status) {
-      choicesEl.innerHTML = "";
-
-      if (!mode) {
-        questionEl.textContent = "教員の操作を待っています";
-        statusEl.textContent = "";
-        return;
-      }
-
-      questionEl.textContent = "【出題】次の問いについて考えてください";
-
-      if (mode === "ox") {
-        addChoice("O. ○");
-        addChoice("X. ×");
-      } else if (mode === "five") {
-        ["A","B","C","D","E"].forEach(l => addChoice(`${l}. 選択肢${l}`));
-      } else if (mode === "text") {
-        addChoice("自由記入で回答してください");
-      }
-
-      statusEl.textContent =
-        status === "open"
-          ? "回答受付中"
-          : "回答終了";
-    }
-
-    function addChoice(text) {
-      const div = document.createElement("div");
-      div.className = "choice";
-      div.textContent = text;
-      choicesEl.appendChild(div);
-    }
-
     function renderGraph(data) {
       graphEl.innerHTML = "";
       const entries = Object.entries(data);
-
       if (entries.length === 0) {
         graphEl.textContent = "まだ回答はありません";
         return;
