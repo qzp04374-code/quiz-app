@@ -37,16 +37,44 @@
     .question {
       font-size: 42px;
       line-height: 1.45;
-      margin-bottom: 32px;
+      margin-bottom: 28px;
     }
 
     .choices {
       font-size: 28px;
       line-height: 1.8;
+      margin-bottom: 20px;
     }
 
     .choice {
+      margin-bottom: 8px;
+    }
+
+    .explanation-box {
+      margin-top: 24px;
+      padding-top: 20px;
+      border-top: 1px solid rgba(255,255,255,0.15);
+      opacity: 0;
+      transform: translateY(10px);
+      transition: opacity 0.4s ease, transform 0.4s ease;
+    }
+
+    .explanation-box.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .answer {
+      font-size: 30px;
+      font-weight: 700;
+      color: #22c55e;
       margin-bottom: 10px;
+    }
+
+    .explanation {
+      font-size: 22px;
+      line-height: 1.6;
+      opacity: 0.9;
     }
 
     .status {
@@ -71,6 +99,13 @@
   <div class="left">
     <div class="question" id="question">出題を待っています</div>
     <div class="choices" id="choices"></div>
+
+    <!-- ★ 正解・解説エリア -->
+    <div class="explanation-box" id="explanationBox">
+      <div class="answer" id="answer"></div>
+      <div class="explanation" id="explanation"></div>
+    </div>
+
     <div class="status" id="status"></div>
   </div>
 
@@ -101,47 +136,67 @@
     const questionEl = document.getElementById("question");
     const choicesEl  = document.getElementById("choices");
     const statusEl   = document.getElementById("status");
-    const graphEl    = document.getElementById("graph");
+
+    const explanationBox = document.getElementById("explanationBox");
+    const answerEl       = document.getElementById("answer");
+    const explanationEl  = document.getElementById("explanation");
+
+    const graphEl = document.getElementById("graph");
 
     let currentQuestion = null;
+    let currentStatus   = "open";
 
-    /* === 現在の問題ID === */
+    /* 現在の問題ID */
     onValue(ref(db, `rooms/${room}/quiz/current_question_id`), snap => {
       const qid = snap.val();
       if (!qid) return;
-      subscribeQuestion(qid);
-    });
-
-    function subscribeQuestion(qid) {
-      onValue(ref(db, `rooms/${room}/questions/${qid}`), snap => {
-        currentQuestion = snap.val();
+      onValue(ref(db, `rooms/${room}/questions/${qid}`), s => {
+        currentQuestion = s.val();
         renderQuestion();
       });
-    }
+    });
 
-    /* === activity（受付状態） === */
+    /* 回答受付状態 */
     onValue(ref(db, `rooms/${room}/activity`), snap => {
       const a = snap.val() || {};
+      currentStatus = a.status || "open";
+      renderExplanation();
       statusEl.textContent =
-        a.status === "open" ? "回答受付中" : "回答終了";
+        currentStatus === "open" ? "回答受付中" : "回答終了";
     });
 
     function renderQuestion() {
       if (!currentQuestion) return;
 
       questionEl.textContent = currentQuestion.question || "";
-
       choicesEl.innerHTML = "";
+
       const choices = currentQuestion.choices || {};
-      Object.entries(choices).forEach(([key, text]) => {
+      Object.entries(choices).forEach(([k, v]) => {
         const div = document.createElement("div");
         div.className = "choice";
-        div.textContent = `${key}. ${text}`;
+        div.textContent = `${k}. ${v}`;
         choicesEl.appendChild(div);
       });
+
+      renderExplanation();
     }
 
-    /* === 集計 === */
+    function renderExplanation() {
+      if (!currentQuestion) return;
+
+      if (currentStatus === "closed") {
+        answerEl.textContent =
+          `正解：${currentQuestion.answer || ""}`;
+        explanationEl.textContent =
+          currentQuestion.explanation || "";
+        explanationBox.classList.add("show");
+      } else {
+        explanationBox.classList.remove("show");
+      }
+    }
+
+    /* 集計 */
     onValue(ref(db, `rooms/${room}/result`), snap => {
       renderGraph(snap.val() || {});
     });
