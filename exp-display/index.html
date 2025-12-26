@@ -21,12 +21,14 @@
       background: #111827;
       border-radius: 24px;
       padding: 26px 22px 30px;
-      max-width: 1000px;
+      max-width: 1100px;
       width: 100%;
-      text-align: center;
     }
 
-    h2 { margin-top: 0; }
+    h2 {
+      margin-top: 0;
+      text-align: center;
+    }
 
     select, button {
       padding: 10px 18px;
@@ -55,12 +57,20 @@
       margin: 20px 0;
     }
 
+    #prevQuestionBtn { background: #4b5563; }
+    #nextQuestionBtn { background: linear-gradient(135deg,#22c55e,#06b6d4); }
+    #stopBtn { background: #ef4444; }
+    #endClassBtn { background: linear-gradient(135deg,#dc2626,#991b1b); }
+    #qrBtn { background: #0ea5e9; }
+    #projectionBtn { background: linear-gradient(135deg,#6366f1,#a855f7); }
+    #importBtn { background: linear-gradient(135deg,#f59e0b,#f97316); }
+
+    /* プレビュー */
     #preview {
-      margin-top: 28px;
+      margin-top: 24px;
       padding: 20px;
       border-radius: 20px;
       background: #020617;
-      text-align: left;
     }
 
     #preview h3 {
@@ -69,30 +79,40 @@
       letter-spacing: 0.1em;
     }
 
-    .choice {
+    .pv-choice {
       margin-left: 12px;
       margin-bottom: 4px;
     }
 
-    .answer {
+    .pv-answer {
       margin-top: 12px;
       font-weight: 700;
       color: #34d399;
     }
 
-    .explanation {
+    .pv-explanation {
       margin-top: 6px;
       font-size: 14px;
       color: #d1d5db;
     }
 
-    #nextQuestionBtn { background: linear-gradient(135deg,#22c55e,#06b6d4); }
-    #prevQuestionBtn { background: #4b5563; }
-    #stopBtn { background: #ef4444; }
-    #endClassBtn { background: linear-gradient(135deg,#dc2626,#991b1b); }
-    #qrBtn { background: #0ea5e9; }
-    #projectionBtn { background: linear-gradient(135deg,#6366f1,#a855f7); }
-    #importBtn { background: linear-gradient(135deg,#f59e0b,#f97316); }
+    /* QR */
+    #qrModal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.85);
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    #qrInner {
+      background: #111827;
+      padding: 20px;
+      border-radius: 20px;
+      text-align: center;
+    }
   </style>
 </head>
 
@@ -100,10 +120,12 @@
 <div class="card">
   <h2>教員画面</h2>
 
-  ルーム：
-  <select id="roomSelect">
-    <option value="kyoto-01">kyoto-01</option>
-  </select>
+  <div style="text-align:center;">
+    ルーム：
+    <select id="roomSelect">
+      <option value="kyoto-01">kyoto-01</option>
+    </select>
+  </div>
 
   <div class="button-row">
     <button id="prevQuestionBtn">問題戻る ◀</button>
@@ -117,18 +139,31 @@
 
   <!-- プレビュー -->
   <div id="preview">
-    <h3>出題プレビュー</h3>
-    <div id="pvQuestion">問題を選択してください</div>
+    <h3>出題プレビュー（教員のみ）</h3>
+    <div id="pvQuestion">問題を待っています…</div>
     <div id="pvChoices"></div>
-    <div id="pvAnswer" class="answer"></div>
-    <div id="pvExplanation" class="explanation"></div>
+    <div id="pvAnswer" class="pv-answer"></div>
+    <div id="pvExplanation" class="pv-explanation"></div>
   </div>
 </div>
 
+<!-- QRモーダル -->
+<div id="qrModal">
+  <div id="qrInner">
+    <h3>学生用QRコード</h3>
+    <div id="qrcode"></div>
+    <br>
+    <button id="closeQR">閉じる</button>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-  import { getDatabase, ref, onValue } from
-    "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+  import {
+    getDatabase, ref, set, update, onValue, get
+  } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyBke-wTU16skpbK8z80ddK04tE154dHERQ",
@@ -147,6 +182,7 @@
   const aEl = document.getElementById("pvAnswer");
   const eEl = document.getElementById("pvExplanation");
 
+  /* 問題プレビュー */
   onValue(ref(db, `rooms/${room}/quiz/current_question_id`), snap => {
     const qid = snap.val();
     if (!qid) return;
@@ -162,10 +198,10 @@
 
       if (q.choices) {
         Object.entries(q.choices).forEach(([k,v]) => {
-          const div = document.createElement("div");
-          div.className = "choice";
-          div.textContent = `${k}. ${v}`;
-          cEl.appendChild(div);
+          const d = document.createElement("div");
+          d.className = "pv-choice";
+          d.textContent = `${k}. ${v}`;
+          cEl.appendChild(d);
         });
       }
 
