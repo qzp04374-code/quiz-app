@@ -2,19 +2,98 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>CSV → Firebase Import（mode対応）</title>
+  <title>CSV → Firebase Import（ファイル / 貼り付け対応）</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+      background: #050608;
+      color: #f9fafb;
+      padding: 24px;
+    }
+
+    h2 {
+      margin-top: 0;
+    }
+
+    label {
+      display: block;
+      margin-top: 16px;
+      font-size: 14px;
+    }
+
+    input, textarea, button {
+      font-size: 14px;
+    }
+
+    input {
+      padding: 6px 8px;
+      border-radius: 6px;
+      border: 1px solid #4b5563;
+      background: #020617;
+      color: #e5e7eb;
+    }
+
+    textarea {
+      width: 100%;
+      height: 220px;
+      margin-top: 8px;
+      padding: 10px;
+      border-radius: 10px;
+      border: 1px solid #4b5563;
+      background: #020617;
+      color: #e5e7eb;
+      box-sizing: border-box;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+
+    button {
+      margin-top: 20px;
+      padding: 10px 18px;
+      border-radius: 999px;
+      border: none;
+      cursor: pointer;
+      background: linear-gradient(135deg, #f59e0b, #f97316);
+      color: #111827;
+      font-weight: 600;
+    }
+
+    pre {
+      margin-top: 20px;
+      background: #020617;
+      padding: 12px;
+      border-radius: 10px;
+      max-height: 240px;
+      overflow-y: auto;
+      font-size: 13px;
+    }
+
+    .hint {
+      font-size: 12px;
+      opacity: 0.75;
+      margin-top: 4px;
+    }
+  </style>
 </head>
 <body>
-  <h2>CSV → questions インポート（mode対応）</h2>
+
+  <h2>CSV → questions インポート</h2>
 
   <label>
     ルーム名：
     <input id="room" value="kyoto-01">
   </label>
-  <br><br>
 
-  <input type="file" id="fileInput" accept=".csv">
-  <br><br>
+  <label>
+    CSVファイルを選択：
+    <input type="file" id="fileInput" accept=".csv">
+    <div class="hint">※ ファイルを選択した場合、下の貼り付け内容より優先されます</div>
+  </label>
+
+  <label>
+    または CSV を貼り付け：
+    <textarea id="csvText" placeholder="question,choiceA,choiceB,choiceC,choiceD,choiceE,answer,explanation,mode
+AIは万能である,はい,いいえ,,,,B,AIは目的と制約に依存する,ox"></textarea>
+  </label>
 
   <button id="importBtn">インポート実行</button>
 
@@ -34,21 +113,43 @@
     const app = initializeApp(firebaseConfig);
     const db  = getDatabase(app);
 
+    const logEl = document.getElementById("log");
     const log = msg => {
-      document.getElementById("log").textContent += msg + "\n";
+      logEl.textContent += msg + "\n";
     };
 
     document.getElementById("importBtn").onclick = async () => {
-      const file = document.getElementById("fileInput").files[0];
       const room = document.getElementById("room").value.trim();
+      const file = document.getElementById("fileInput").files[0];
+      const csvText = document.getElementById("csvText").value.trim();
 
-      if (!file || !room) {
-        alert("CSVファイルとルーム名を指定してください");
+      if (!room) {
+        alert("ルーム名を入力してください");
         return;
       }
 
-      const text = await file.text();
-      const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
+      let text = "";
+
+      if (file) {
+        text = await file.text();
+        log("CSVファイルを読み込みました");
+      } else if (csvText) {
+        text = csvText;
+        log("CSVテキスト貼り付けを使用します");
+      } else {
+        alert("CSVファイルまたは貼り付けテキストを指定してください");
+        return;
+      }
+
+      const lines = text
+        .split(/\r?\n/)
+        .map(l => l.trim())
+        .filter(Boolean);
+
+      if (lines.length < 2) {
+        alert("CSVの行数が不足しています");
+        return;
+      }
 
       const header = lines.shift().split(",");
 
@@ -74,7 +175,7 @@
           choices,
           answer: row.answer,
           explanation: row.explanation,
-          mode: row.mode || null   // ★ mode対応
+          mode: row.mode || null
         };
 
         await set(ref(db, `rooms/${room}/questions/${qid}`), data);
@@ -86,5 +187,6 @@
       alert("インポート完了！");
     };
   </script>
+
 </body>
 </html>
