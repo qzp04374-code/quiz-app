@@ -11,221 +11,67 @@
       background: #050608;
       color: #f9fafb;
       font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       height: 100vh;
-      display: flex;
     }
 
-    .left {
-      width: 66.6%;
-      padding: 48px;
-      box-sizing: border-box;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-    }
-
-    .right {
-      width: 33.4%;
-      background: #111827;
-      padding: 32px 24px;
-      box-sizing: border-box;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-    }
-
-    .question {
-      font-size: 42px;
-      line-height: 1.45;
-      margin-bottom: 28px;
-    }
-
-    .choices {
-      font-size: 28px;
-      line-height: 1.8;
-      margin-bottom: 20px;
-    }
-
-    .choice {
-      margin-bottom: 8px;
-    }
-
-    .explanation-box {
-      margin-top: 24px;
-      padding-top: 20px;
-      border-top: 1px solid rgba(255,255,255,0.15);
-      opacity: 0;
-      transform: translateY(10px);
-      transition: opacity 0.4s ease, transform 0.4s ease;
-    }
-
-    .explanation-box.show {
-      opacity: 1;
-      transform: translateY(0);
-    }
-
-    .answer {
-      font-size: 30px;
+    #message {
+      font-size: 48px;
       font-weight: 700;
-      color: #22c55e;
-      margin-bottom: 10px;
+      letter-spacing: 0.08em;
+      text-align: center;
+      opacity: 0;
+      transition: opacity 0.4s ease;
     }
 
-    .explanation {
-      font-size: 22px;
-      line-height: 1.6;
-      opacity: 0.9;
-    }
-
-    .status {
-      opacity: 0.6;
-      font-size: 18px;
-      margin-top: 12px;
-    }
-
-    .bar-row { margin-bottom: 16px; }
-    .bar-label { font-size: 20px; margin-bottom: 6px; }
-    .bar {
-      height: 28px;
-      background: #4f46e5;
-      border-radius: 999px;
-      min-width: 10px;
-      transition: width 0.2s ease;
+    #message.show {
+      opacity: 1;
     }
   </style>
 </head>
 
 <body>
-  <div class="left">
-    <div class="question" id="question">出題を待っています</div>
-    <div class="choices" id="choices"></div>
-
-    <!-- ★ 正解・解説エリア -->
-    <div class="explanation-box" id="explanationBox">
-      <div class="answer" id="answer"></div>
-      <div class="explanation" id="explanation"></div>
-    </div>
-
-    <div class="status" id="status"></div>
-  </div>
-
-  <div class="right">
-    <div id="graph">集計データを待っています…</div>
-  </div>
+  <div id="message"></div>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+    import { getDatabase, ref, onValue } from
+      "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyBke-wTU16skpbK8z80ddK04tE154dHERQ",
       authDomain: "satosan-41eac.firebaseapp.com",
       databaseURL: "https://satosan-41eac-default-rtdb.asia-southeast1.firebasedatabase.app",
-      projectId: "satosan-41eac",
-      storageBucket: "satosan-41eac.firebasestorage.app",
-      messagingSenderId: "992482993229",
-      appId: "1:992482993229:web:e2c59b078233b0ed16e804",
-      measurementId: "G-VT9FKHN3LT"
+      projectId: "satosan-41eac"
     };
 
     const app = initializeApp(firebaseConfig);
     const db  = getDatabase(app);
 
-    const room = new URL(location.href).searchParams.get("room") || "kyoto-01";
+    const params = new URLSearchParams(location.search);
+    const room   = params.get("room");
+    const msgEl  = document.getElementById("message");
 
-    const questionEl = document.getElementById("question");
-    const choicesEl  = document.getElementById("choices");
-    const statusEl   = document.getElementById("status");
-
-    const explanationBox = document.getElementById("explanationBox");
-    const answerEl       = document.getElementById("answer");
-    const explanationEl  = document.getElementById("explanation");
-
-    const graphEl = document.getElementById("graph");
-
-    let currentQuestion = null;
-    let currentStatus   = "open";
-
-    /* 現在の問題ID */
-    onValue(ref(db, `rooms/${room}/quiz/current_question_id`), snap => {
-      const qid = snap.val();
-      if (!qid) return;
-      onValue(ref(db, `rooms/${room}/questions/${qid}`), s => {
-        currentQuestion = s.val();
-        renderQuestion();
-      });
-    });
-
-    /* 回答受付状態 */
-    onValue(ref(db, `rooms/${room}/activity`), snap => {
-      const a = snap.val() || {};
-      currentStatus = a.status || "open";
-      renderExplanation();
-      statusEl.textContent =
-        currentStatus === "open" ? "回答受付中" : "回答終了";
-    });
-
-    function renderQuestion() {
-      if (!currentQuestion) return;
-
-      questionEl.textContent = currentQuestion.question || "";
-      choicesEl.innerHTML = "";
-
-      const choices = currentQuestion.choices || {};
-      Object.entries(choices).forEach(([k, v]) => {
-        const div = document.createElement("div");
-        div.className = "choice";
-        div.textContent = `${k}. ${v}`;
-        choicesEl.appendChild(div);
-      });
-
-      renderExplanation();
+    if (!room) {
+      msgEl.textContent = "ルームが指定されていません";
+      msgEl.classList.add("show");
+      throw new Error("room not specified");
     }
 
-    function renderExplanation() {
-      if (!currentQuestion) return;
+    const actRef = ref(db, `rooms/${room}/activity`);
 
-      if (currentStatus === "closed") {
-        answerEl.textContent =
-          `正解：${currentQuestion.answer || ""}`;
-        explanationEl.textContent =
-          currentQuestion.explanation || "";
-        explanationBox.classList.add("show");
+    onValue(actRef, snap => {
+      const act = snap.val();
+
+      if (act && act.ending) {
+        msgEl.textContent = "授業終了します";
+        msgEl.classList.add("show");
       } else {
-        explanationBox.classList.remove("show");
+        msgEl.classList.remove("show");
       }
-    }
-
-    /* 集計 */
-    onValue(ref(db, `rooms/${room}/result`), snap => {
-      renderGraph(snap.val() || {});
     });
-
-    function renderGraph(data) {
-      graphEl.innerHTML = "";
-      const entries = Object.entries(data);
-      if (entries.length === 0) {
-        graphEl.textContent = "まだ回答はありません";
-        return;
-      }
-
-      entries.forEach(([label, count]) => {
-        const row = document.createElement("div");
-        row.className = "bar-row";
-
-        const lbl = document.createElement("div");
-        lbl.className = "bar-label";
-        lbl.textContent = `${label}: ${count}`;
-
-        const bar = document.createElement("div");
-        bar.className = "bar";
-        bar.style.width = Math.max(20, count * 30) + "px";
-
-        row.appendChild(lbl);
-        row.appendChild(bar);
-        graphEl.appendChild(row);
-      });
-    }
   </script>
 </body>
 </html>
