@@ -3,28 +3,16 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ClassSync Teacher Control</title>
+  <title>ClassSync Teacher Control（mode自動）</title>
 
   <style>
-    :root {
-      --color-o: #34c759;
-      --color-x: #ff3b30;
-      --color-a: #0a84ff;
-      --color-b: #30d158;
-      --color-c: #ff9f0a;
-      --color-d: #bf5af2;
-      --color-e: #ff375f;
-      --color-count: #d1d1d6;
-    }
-
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
       margin: 0;
       min-height: 100vh;
       background: #050608;
       display: flex;
-      flex-direction: column;
-      align-items: center;
+      justify-content: center;
       padding-top: 32px;
       color: #f9fafb;
     }
@@ -32,30 +20,10 @@
     .card {
       background: #111827;
       border-radius: 24px;
-      box-shadow: 0 18px 50px rgba(0,0,0,0.85);
       padding: 26px 22px 30px;
       max-width: 760px;
       width: 100%;
       text-align: center;
-    }
-
-    h2 {
-      margin: 0 0 12px;
-      font-size: 22px;
-      letter-spacing: 0.08em;
-    }
-
-    .room-row {
-      margin-bottom: 12px;
-      font-size: 15px;
-    }
-
-    select {
-      padding: 6px 10px;
-      border-radius: 10px;
-      border: 1px solid #4b5563;
-      background: #020617;
-      color: #e5e7eb;
     }
 
     .button-row {
@@ -75,19 +43,6 @@
       cursor: pointer;
       min-width: 110px;
       background: #374151;
-      box-shadow: 0 6px 20px rgba(0,0,0,0.75);
-    }
-
-    .mode-ox   { background: linear-gradient(135deg, #10b981, #16a34a); }
-    .mode-five { background: linear-gradient(135deg, #8b5cf6, #a855f7); }
-    .mode-text { background: linear-gradient(135deg, #f97316, #facc15); color:#111827; }
-
-    #stopBtn  { background:#ef4444; }
-    #resetBtn { background:#4b5563; }
-    #qrBtn    { background:#0ea5e9; }
-
-    #projectionBtn {
-      background: linear-gradient(135deg, #6366f1, #a855f7);
     }
 
     #nextQuestionBtn {
@@ -97,51 +52,35 @@
     #importBtn {
       background: linear-gradient(135deg, #f59e0b, #f97316);
     }
-
-    /* ★ 授業終了（全削除） */
-    #endClassBtn {
-      background: linear-gradient(135deg, #6b7280, #374151);
-    }
-
-    #graph { text-align:left; }
   </style>
 </head>
 
 <body>
   <div class="card">
-    <h2>教員画面</h2>
+    <h2>教員画面（mode自動）</h2>
 
-    <div class="room-row">
-      <label>
-        ルーム：
-        <select id="roomSelect">
-          <option value="kyoto-01">kyoto-01</option>
-          <option value="kyoto-02">kyoto-02</option>
-        </select>
-      </label>
+    <div>
+      ルーム：
+      <select id="roomSelect">
+        <option value="kyoto-01">kyoto-01</option>
+      </select>
     </div>
 
     <div class="button-row">
-      <button id="oxBtn"   class="mode-ox">○×モード</button>
-      <button id="fiveBtn" class="mode-five">5択モード</button>
-      <button id="textBtn" class="mode-text">文字記入</button>
-
-      <button id="stopBtn">回答終了</button>
-      <button id="resetBtn">集計リセット</button>
-
-      <button id="projectionBtn">投影画面</button>
-      <button id="importBtn">CSV投入</button>
+      <button id="oxBtn">○×</button>
+      <button id="fiveBtn">5択</button>
+      <button id="textBtn">記述</button>
 
       <button id="nextQuestionBtn">次の問題 ▶</button>
-      <button id="endClassBtn">授業終了</button>
+      <button id="importBtn">CSV投入</button>
     </div>
-
-    <div id="graph"></div>
   </div>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getDatabase, ref, set, update, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+    import {
+      getDatabase, ref, set, update, onValue, get
+    } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyBke-wTU16skpbK8z80ddK04tE154dHERQ",
@@ -154,91 +93,52 @@
     const db  = getDatabase(app);
 
     const roomSelect      = document.getElementById("roomSelect");
-    const projectionBtn   = document.getElementById("projectionBtn");
     const nextQuestionBtn = document.getElementById("nextQuestionBtn");
     const importBtn       = document.getElementById("importBtn");
-    const endClassBtn     = document.getElementById("endClassBtn");
-
-    const oxBtn   = document.getElementById("oxBtn");
-    const fiveBtn = document.getElementById("fiveBtn");
-    const textBtn = document.getElementById("textBtn");
-    const stopBtn = document.getElementById("stopBtn");
-    const resetBtn= document.getElementById("resetBtn");
 
     let currentRoom = roomSelect.value;
     roomSelect.onchange = () => currentRoom = roomSelect.value;
 
-    const actRef  = () => ref(db, `rooms/${currentRoom}/activity`);
-    const ansRef  = () => ref(db, `rooms/${currentRoom}/answers`);
-    const resRef  = () => ref(db, `rooms/${currentRoom}/result`);
-    const qidRef  = () => ref(db, `rooms/${currentRoom}/quiz/current_question_id`);
-    const qsRef   = () => ref(db, `rooms/${currentRoom}/questions`);
+    const actRef = () => ref(db, `rooms/${currentRoom}/activity`);
+    const qidRef = () => ref(db, `rooms/${currentRoom}/quiz/current_question_id`);
 
-    /* 投影画面 */
-    projectionBtn.onclick = () => {
-      const base = location.href.replace(/[^/]*$/, "");
-      window.open(`${base}display.html?room=${currentRoom}`, "_blank");
-    };
-
-    /* CSV投入 */
-    importBtn.onclick = () => {
-      const base = location.href.replace(/[^/]*$/, "");
-      window.open(`${base}import-csv.html`, "_blank");
-    };
-
-    /* モード開始 */
-    oxBtn.onclick   = () => startMode("ox",   ["O","X"]);
-    fiveBtn.onclick = () => startMode("five", ["A","B","C","D","E"]);
-    textBtn.onclick = () => startMode("text");
-
-    async function startMode(mode, choices) {
-      await set(ansRef(), {});
-      await set(resRef(), {});
-      await update(actRef(), { status: "open", mode, qr:false });
+    function startMode(mode, choices) {
+      update(actRef(), { status: "open", mode });
     }
 
-    /* 回答終了 */
-    stopBtn.onclick = () => {
-      update(actRef(), { status: "closed" });
-    };
-
-    /* 集計リセット */
-    resetBtn.onclick = async () => {
-      await set(ansRef(), {});
-      await set(resRef(), {});
-    };
-
-    /* 次の問題 */
+    /* 次の問題 ▶ */
     nextQuestionBtn.onclick = async () => {
       onValue(qidRef(), async snap => {
         const cur = snap.val();
-        if (!cur) {
-          await set(qidRef(), "Q01");
-          return;
+        let nextId = "Q01";
+
+        if (cur) {
+          const m = cur.match(/^Q(\d+)$/);
+          if (m) {
+            nextId = `Q${String(Number(m[1]) + 1).padStart(2, "0")}`;
+          }
         }
-        const m = String(cur).match(/^Q(\d+)$/);
-        if (!m) return;
-        const next = `Q${String(Number(m[1]) + 1).padStart(2,"0")}`;
-        await set(qidRef(), next);
-      }, { onlyOnce:true });
+
+        await set(qidRef(), nextId);
+
+        // ★ mode自動切替
+        const modeSnap = await get(
+          ref(db, `rooms/${currentRoom}/questions/${nextId}/mode`)
+        );
+
+        const mode = modeSnap.val();
+        if (!mode) return;
+
+        if (mode === "ox")   startMode("ox", ["O","X"]);
+        if (mode === "five") startMode("five", ["A","B","C","D","E"]);
+        if (mode === "text") startMode("text");
+      }, { onlyOnce: true });
     };
 
-    /* ★ 授業終了：questions 含め全削除 */
-    endClassBtn.onclick = async () => {
-      const ok = confirm(
-        "授業を終了します。\n" +
-        "出題・回答・集計・questions（問題データ）をすべて削除します。\n" +
-        "次回はCSV再投入が必要です。"
-      );
-      if (!ok) return;
-
-      await update(actRef(), { status:"closed", mode:null, qr:false });
-      await set(ansRef(), null);
-      await set(resRef(), null);
-      await set(qidRef(), null);
-      await set(qsRef(), null);
-
-      alert("授業終了：データを削除しました。");
+    /* CSV投入画面 */
+    importBtn.onclick = () => {
+      const base = location.href.replace(/[^/]*$/, "");
+      window.open(`${base}import-csv.html`, "_blank");
     };
   </script>
 </body>
