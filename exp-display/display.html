@@ -14,7 +14,6 @@
       height: 100vh;
     }
 
-    /* 全体レイアウト */
     #screen {
       height: 100vh;
       display: flex;
@@ -23,22 +22,26 @@
       justify-content: flex-start;
     }
 
-    /* ===== QR表示 ===== */
+    /* ===== QR ONLY ===== */
     #qrOnly {
       flex: 1;
-      display: none;
+      display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
-      flex-direction: column;
+      opacity: 0;
+      transition: opacity 0.6s ease;
+      pointer-events: none;
     }
 
     #qrOnly.show {
-      display: flex;
+      opacity: 1;
+      pointer-events: auto;
     }
 
     #qrTitle {
       font-size: 40px;
-      margin-bottom: 24px;
+      margin-bottom: 16px;
     }
 
     #qrcode canvas {
@@ -46,11 +49,17 @@
       height: 360px !important;
     }
 
-    /* ===== 問題表示 ===== */
+    #participantCount {
+      margin-top: 14px;
+      font-size: 18px;
+      color: #d1d5db;
+    }
+
+    /* ===== QUESTION ===== */
     #questionArea {
       width: 90%;
       max-width: 1400px;
-      padding-top: 80px; /* ← 上すぎ問題の解消 */
+      padding-top: 80px;
       display: none;
     }
 
@@ -78,7 +87,7 @@
       padding: 20px;
     }
 
-    /* ===== 授業終了 ===== */
+    /* ===== ENDING ===== */
     #endingOverlay {
       position: fixed;
       inset: 0;
@@ -101,13 +110,14 @@
 <body>
 <div id="screen">
 
-  <!-- QRのみ表示 -->
+  <!-- QR ONLY -->
   <div id="qrOnly">
     <div id="qrTitle">参加はこちら</div>
     <div id="qrcode"></div>
+    <div id="participantCount">参加中 0 人</div>
   </div>
 
-  <!-- 問題表示 -->
+  <!-- QUESTION -->
   <div id="questionArea">
     <div id="question">問題を待っています…</div>
     <div id="choices"></div>
@@ -120,16 +130,16 @@
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-  import { getDatabase, ref, onValue } from
+  import { getDatabase, ref, onValue, update } from
     "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
+  /* Firebase */
   const app = initializeApp({
     apiKey: "AIzaSyBke-wTU16skpbK8z80ddK04tE154dHERQ",
     authDomain: "satosan-41eac.firebaseapp.com",
     databaseURL: "https://satosan-41eac-default-rtdb.asia-southeast1.firebasedatabase.app",
     projectId: "satosan-41eac"
   });
-
   const db = getDatabase(app);
 
   const params = new URLSearchParams(location.search);
@@ -137,16 +147,23 @@
 
   const qrOnly = document.getElementById("qrOnly");
   const qrDiv = document.getElementById("qrcode");
+  const countEl = document.getElementById("participantCount");
+
   const qArea = document.getElementById("questionArea");
   const qEl = document.getElementById("question");
   const cEl = document.getElementById("choices");
+
   const endEl = document.getElementById("endingOverlay");
 
-  /* activity監視 */
+  let isQRMode = false;
+
+  /* ===== display起動時：強制QR ===== */
+  update(ref(db, `rooms/${room}/activity`), { qr: true });
+
+  /* ===== activity ===== */
   onValue(ref(db, `rooms/${room}/activity`), snap => {
     const act = snap.val() || {};
 
-    /* 授業終了 */
     if (act.ending) {
       endEl.classList.add("show");
       return;
@@ -154,8 +171,8 @@
       endEl.classList.remove("show");
     }
 
-    /* QR表示優先 */
     if (act.qr) {
+      isQRMode = true;
       qArea.classList.remove("show");
       qrOnly.classList.add("show");
 
@@ -167,23 +184,31 @@
         });
       }
     } else {
+      isQRMode = false;
       qrOnly.classList.remove("show");
-      qrDiv.innerHTML = "";
+      setTimeout(() => qrDiv.innerHTML = "", 600);
     }
   });
 
-  /* 問題表示 */
+  /* ===== participant count ===== */
+  onValue(ref(db, `rooms/${room}/answers`), snap => {
+    const data = snap.val() || {};
+    countEl.textContent = `参加中 ${Object.keys(data).length} 人`;
+  });
+
+  /* ===== question ===== */
   onValue(ref(db, `rooms/${room}/quiz/current_question_id`), snap => {
+    if (isQRMode) return;
+
     const qid = snap.val();
     if (!qid) return;
 
     onValue(ref(db, `rooms/${room}/questions/${qid}`), qSnap => {
+      if (isQRMode) return;
       const q = qSnap.val();
       if (!q) return;
 
-      qrOnly.classList.remove("show");
       qArea.classList.add("show");
-
       qEl.textContent = q.question || "";
       cEl.innerHTML = "";
 
