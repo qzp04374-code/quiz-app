@@ -19,21 +19,27 @@
 
     #container {
       width: 90%;
-      max-width: 1200px;
+      max-width: 1400px;
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 32px;
+    }
+
+    #left {
       text-align: center;
     }
 
     #question {
       font-size: 42px;
       font-weight: 700;
-      margin-bottom: 32px;
+      margin-bottom: 28px;
     }
 
     #choices {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
       gap: 16px;
-      font-size: 28px;
+      font-size: 26px;
     }
 
     .choice {
@@ -42,18 +48,53 @@
       padding: 18px;
     }
 
-    /* 終了オーバーレイ */
+    /* 集計 */
+    #right {
+      padding-top: 40px;
+    }
+
+    .barRow {
+      display: flex;
+      align-items: center;
+      margin-bottom: 14px;
+      font-size: 20px;
+    }
+
+    .label {
+      width: 40px;
+      text-align: right;
+      margin-right: 10px;
+    }
+
+    .bar {
+      height: 20px;
+      background: #2563eb;
+      border-radius: 999px;
+      transition: width 0.2s ease;
+    }
+
+    /* QR */
+    #qrArea {
+      display: none;
+      margin-top: 32px;
+      text-align: center;
+    }
+
+    #qrArea.show {
+      display: block;
+    }
+
+    /* 授業終了 */
     #endingOverlay {
       position: fixed;
       inset: 0;
       background: rgba(5,6,8,0.95);
-      display: flex;
+      display: none;
       align-items: center;
       justify-content: center;
       font-size: 64px;
       font-weight: 800;
       letter-spacing: 0.1em;
-      display: none;
       z-index: 999;
     }
 
@@ -65,11 +106,24 @@
 
 <body>
   <div id="container">
-    <div id="question">問題を待っています…</div>
-    <div id="choices"></div>
+    <div id="left">
+      <div id="question">問題を待っています…</div>
+      <div id="choices"></div>
+
+      <div id="qrArea">
+        <h2>参加はこちら</h2>
+        <div id="qrcode"></div>
+      </div>
+    </div>
+
+    <div id="right">
+      <div id="results"></div>
+    </div>
   </div>
 
   <div id="endingOverlay">授業終了します</div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -91,31 +145,42 @@
 
     const qEl   = document.getElementById("question");
     const cEl   = document.getElementById("choices");
+    const rEl   = document.getElementById("results");
+    const qrEl  = document.getElementById("qrArea");
+    const qrDiv = document.getElementById("qrcode");
     const endEl = document.getElementById("endingOverlay");
 
-    if (!room) {
-      qEl.textContent = "ルームが指定されていません";
-      throw new Error("room not specified");
-    }
-
-    /* 授業終了監視（最優先） */
+    /* activity */
     onValue(ref(db, `rooms/${room}/activity`), snap => {
-      const act = snap.val();
-      if (act && act.ending) {
+      const act = snap.val() || {};
+
+      if (act.ending) {
         endEl.classList.add("show");
+        return;
       } else {
         endEl.classList.remove("show");
       }
+
+      if (act.qr) {
+        qrEl.classList.add("show");
+        if (!qrDiv.hasChildNodes()) {
+          const base = location.href.replace(/[^/]*$/, "");
+          new QRCode(qrDiv, {
+            text: `${base}student.html?room=${room}`,
+            width: 220,
+            height: 220
+          });
+        }
+      } else {
+        qrEl.classList.remove("show");
+        qrDiv.innerHTML = "";
+      }
     });
 
-    /* 問題表示 */
+    /* 問題 */
     onValue(ref(db, `rooms/${room}/quiz/current_question_id`), snap => {
       const qid = snap.val();
-      if (!qid) {
-        qEl.textContent = "問題を待っています…";
-        cEl.innerHTML = "";
-        return;
-      }
+      if (!qid) return;
 
       onValue(ref(db, `rooms/${room}/questions/${qid}`), qSnap => {
         const q = qSnap.val();
@@ -126,12 +191,36 @@
 
         if (q.choices) {
           Object.entries(q.choices).forEach(([k,v]) => {
-            const div = document.createElement("div");
-            div.className = "choice";
-            div.textContent = `${k}. ${v}`;
-            cEl.appendChild(div);
+            const d = document.createElement("div");
+            d.className = "choice";
+            d.textContent = `${k}. ${v}`;
+            cEl.appendChild(d);
           });
         }
+      });
+    });
+
+    /* 集計結果 */
+    onValue(ref(db, `rooms/${room}/result`), snap => {
+      const data = snap.val() || {};
+      rEl.innerHTML = "";
+
+      Object.entries(data).forEach(([k,v]) => {
+        const row = document.createElement("div");
+        row.className = "barRow";
+
+        const lbl = document.createElement("div");
+        lbl.className = "label";
+        lbl.textContent = k;
+
+        const bar = document.createElement("div");
+        bar.className = "bar";
+        bar.style.width = `${v * 30}px`;
+        bar.textContent = ` ${v}`;
+
+        row.appendChild(lbl);
+        row.appendChild(bar);
+        rEl.appendChild(row);
       });
     });
   </script>
