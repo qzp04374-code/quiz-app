@@ -2,10 +2,10 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>CSV → Firebase Import</title>
+  <title>CSV → Firebase Import（mode対応）</title>
 </head>
 <body>
-  <h2>CSV → Firebase questions インポート</h2>
+  <h2>CSV → questions インポート（mode対応）</h2>
 
   <label>
     ルーム名：
@@ -28,10 +28,7 @@
       apiKey: "AIzaSyBke-wTU16skpbK8z80ddK04tE154dHERQ",
       authDomain: "satosan-41eac.firebaseapp.com",
       databaseURL: "https://satosan-41eac-default-rtdb.asia-southeast1.firebasedatabase.app",
-      projectId: "satosan-41eac",
-      storageBucket: "satosan-41eac.firebasestorage.app",
-      messagingSenderId: "992482993229",
-      appId: "1:992482993229:web:e2c59b078233b0ed16e804"
+      projectId: "satosan-41eac"
     };
 
     const app = initializeApp(firebaseConfig);
@@ -76,11 +73,12 @@
           question: row.question,
           choices,
           answer: row.answer,
-          explanation: row.explanation
+          explanation: row.explanation,
+          mode: row.mode || null   // ★ mode対応
         };
 
         await set(ref(db, `rooms/${room}/questions/${qid}`), data);
-        log(`✔ ${qid} を登録`);
+        log(`✔ ${qid} を登録（mode=${data.mode || "なし"}）`);
 
         qNum++;
       }
