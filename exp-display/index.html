@@ -25,10 +25,7 @@
       width: 100%;
     }
 
-    h2 {
-      margin-top: 0;
-      text-align: center;
-    }
+    h2 { margin-top: 0; text-align: center; }
 
     select, button {
       padding: 10px 18px;
@@ -57,15 +54,6 @@
       margin: 20px 0;
     }
 
-    #prevQuestionBtn { background: #4b5563; }
-    #nextQuestionBtn { background: linear-gradient(135deg,#22c55e,#06b6d4); }
-    #stopBtn { background: #ef4444; }
-    #endClassBtn { background: linear-gradient(135deg,#dc2626,#991b1b); }
-    #qrBtn { background: #0ea5e9; }
-    #projectionBtn { background: linear-gradient(135deg,#6366f1,#a855f7); }
-    #importBtn { background: linear-gradient(135deg,#f59e0b,#f97316); }
-
-    /* プレビュー */
     #preview {
       margin-top: 24px;
       padding: 20px;
@@ -73,30 +61,10 @@
       background: #020617;
     }
 
-    #preview h3 {
-      margin-top: 0;
-      font-size: 18px;
-      letter-spacing: 0.1em;
-    }
+    .pv-choice { margin-left: 12px; margin-bottom: 4px; }
+    .pv-answer { margin-top: 12px; font-weight: 700; color: #34d399; }
+    .pv-explanation { margin-top: 6px; font-size: 14px; color: #d1d5db; }
 
-    .pv-choice {
-      margin-left: 12px;
-      margin-bottom: 4px;
-    }
-
-    .pv-answer {
-      margin-top: 12px;
-      font-weight: 700;
-      color: #34d399;
-    }
-
-    .pv-explanation {
-      margin-top: 6px;
-      font-size: 14px;
-      color: #d1d5db;
-    }
-
-    /* QR */
     #qrModal {
       display: none;
       position: fixed;
@@ -137,7 +105,6 @@
     <button id="importBtn">CSV投入</button>
   </div>
 
-  <!-- プレビュー -->
   <div id="preview">
     <h3>出題プレビュー（教員のみ）</h3>
     <div id="pvQuestion">問題を待っています…</div>
@@ -147,12 +114,10 @@
   </div>
 </div>
 
-<!-- QRモーダル -->
 <div id="qrModal">
   <div id="qrInner">
     <h3>学生用QRコード</h3>
-    <div id="qrcode"></div>
-    <br>
+    <div id="qrcode"></div><br>
     <button id="closeQR">閉じる</button>
   </div>
 </div>
@@ -161,41 +126,88 @@
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-  import {
-    getDatabase, ref, set, update, onValue, get
-  } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+  import { getDatabase, ref, set, update, onValue, get } from
+    "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-  const firebaseConfig = {
+  const app = initializeApp({
     apiKey: "AIzaSyBke-wTU16skpbK8z80ddK04tE154dHERQ",
     authDomain: "satosan-41eac.firebaseapp.com",
     databaseURL: "https://satosan-41eac-default-rtdb.asia-southeast1.firebasedatabase.app",
     projectId: "satosan-41eac"
-  };
+  });
 
-  const app = initializeApp(firebaseConfig);
-  const db  = getDatabase(app);
-
+  const db = getDatabase(app);
   const room = "kyoto-01";
 
+  const qidRef = () => ref(db, `rooms/${room}/quiz/current_question_id`);
+  const actRef = () => ref(db, `rooms/${room}/activity`);
+
+  /* ===== 操作ボタン ===== */
+
+  document.getElementById("nextQuestionBtn").onclick = async () => {
+    const snap = await get(qidRef());
+    let next = "Q01";
+    if (snap.val()) {
+      const n = Number(snap.val().replace("Q","")) + 1;
+      next = `Q${String(n).padStart(2,"0")}`;
+    }
+    await set(qidRef(), next);
+
+    const modeSnap = await get(ref(db, `rooms/${room}/questions/${next}/mode`));
+    if (modeSnap.exists()) {
+      await update(actRef(), { status:"open", mode: modeSnap.val() });
+    }
+  };
+
+  document.getElementById("prevQuestionBtn").onclick = async () => {
+    const snap = await get(qidRef());
+    if (!snap.val()) return;
+    const n = Number(snap.val().replace("Q",""));
+    if (n <= 1) return;
+    const prev = `Q${String(n-1).padStart(2,"0")}`;
+    await set(qidRef(), prev);
+  };
+
+  document.getElementById("stopBtn").onclick =
+    () => update(actRef(), { status:"closed", qr:false });
+
+  document.getElementById("projectionBtn").onclick = () => {
+    const base = location.href.replace(/[^/]*$/, "");
+    window.open(`${base}display.html?room=${room}`, "_blank");
+  };
+
+  document.getElementById("importBtn").onclick = () => {
+    const base = location.href.replace(/[^/]*$/, "");
+    window.open(`${base}import-csv.html`, "_blank");
+  };
+
+  /* QR */
+  const qrModal = document.getElementById("qrModal");
+  const qrDiv = document.getElementById("qrcode");
+
+  document.getElementById("qrBtn").onclick = () => {
+    update(actRef(), { qr:true });
+    qrDiv.innerHTML = "";
+    new QRCode(qrDiv, { text:`student.html?room=${room}`, width:240, height:240 });
+    qrModal.style.display = "flex";
+  };
+
+  document.getElementById("closeQR").onclick =
+    () => qrModal.style.display = "none";
+
+  /* ===== プレビュー ===== */
   const qEl = document.getElementById("pvQuestion");
   const cEl = document.getElementById("pvChoices");
   const aEl = document.getElementById("pvAnswer");
   const eEl = document.getElementById("pvExplanation");
 
-  /* 問題プレビュー */
-  onValue(ref(db, `rooms/${room}/quiz/current_question_id`), snap => {
-    const qid = snap.val();
-    if (!qid) return;
-
-    onValue(ref(db, `rooms/${room}/questions/${qid}`), qSnap => {
+  onValue(qidRef(), snap => {
+    if (!snap.val()) return;
+    onValue(ref(db, `rooms/${room}/questions/${snap.val()}`), qSnap => {
       const q = qSnap.val();
       if (!q) return;
-
       qEl.textContent = q.question || "";
       cEl.innerHTML = "";
-      aEl.textContent = "";
-      eEl.textContent = "";
-
       if (q.choices) {
         Object.entries(q.choices).forEach(([k,v]) => {
           const d = document.createElement("div");
@@ -204,13 +216,8 @@
           cEl.appendChild(d);
         });
       }
-
-      if (q.answer) {
-        aEl.textContent = `正解：${q.answer}`;
-      }
-      if (q.explanation) {
-        eEl.textContent = `解説：${q.explanation}`;
-      }
+      aEl.textContent = q.answer ? `正解：${q.answer}` : "";
+      eEl.textContent = q.explanation ? `解説：${q.explanation}` : "";
     });
   });
 </script>
