@@ -48,10 +48,9 @@
     body.poll.closed .grid{ grid-template-columns: 1fr !important; }
 
     /* textモード：右側を（人数バー＋一覧）に最適化 */
-    body.textmode #rightTitle{ letter-spacing:.10em; }
     body.textmode #vchartWrap{
-      flex: 0 0 auto;          /* 固定枠にする */
-      height: 120px;           /* 人数バー枠の高さ */
+      flex: 0 0 auto;
+      height: 120px;
     }
     body.textmode #vchart{
       align-items:center;
@@ -60,7 +59,7 @@
     }
     body.textmode #textAnswersBox{
       display:block !important;
-      flex: 1 1 auto;          /* 残り全部を一覧に */
+      flex: 1 1 auto;
       max-height:none !important;
       overflow:auto;
     }
@@ -288,7 +287,7 @@
       letter-spacing:.08em;
     }
 
-    /* text回答一覧：解答終了後に表示（textmodeで全高） */
+    /* text回答一覧 */
     #textAnswersBox{
       display:none;
       border-radius:18px;
@@ -296,7 +295,7 @@
       border:1px solid rgba(255,255,255,.08);
       padding:12px 12px;
       box-sizing:border-box;
-      max-height:38vh;     /* ← 通常時は控えめ */
+      max-height:38vh;
       overflow:auto;
       min-height:0;
     }
@@ -405,7 +404,7 @@
 </head>
 
 <body>
-  <div id="buildTag">build: 2025-12-27 / textlist-fullheight</div>
+  <div id="buildTag">build: 2025-12-27 / q1fix-textlist-fullheight</div>
   <div id="toast">解答終了 → 公開</div>
 
   <div id="qrLayer">
@@ -563,6 +562,7 @@
     const answersRef  = ref(db, `rooms/${room}/answers`);
     const qRef = (qid) => ref(db, `rooms/${room}/questions/${qid}`);
 
+    // display起動で強制QR
     update(activityRef, { qr: true }).catch(()=>{});
 
     const studentUrl =
@@ -583,6 +583,10 @@
     let currentQuestion = null;
 
     let lastAnswers = {};
+
+    /* ★Q1欠落対策：最後のQIDを保持し、poll→quizで必ず表示処理を回す */
+    let latestQid = null;
+    let unsubQ = null;
 
     function defaultChoicesFromMode(mode){
       if (mode === "ox") return ["O","X"];
@@ -751,9 +755,6 @@
         div.innerHTML = `<span class="no">—</span>（回答なし）`;
         textList.appendChild(div);
       }
-
-      // 公開時は「先頭に戻る」より「全体が見える」方が多いので固定はしない
-      // 必要ならここで textBox.scrollTop = textBox.scrollHeight; に変更可
     }
 
     function recomputeAndRenderFromAnswers(ans){
@@ -765,7 +766,6 @@
 
       const isText = (currentMode === "text");
       if (isText){
-        // textmodeのときは「人数バー枠」に情報を置く（一覧は別枠で全高）
         vchart.innerHTML = `
           <div style="width:100%; display:flex; align-items:center; justify-content:space-between; gap:12px;">
             <div style="font-weight:1000; letter-spacing:.10em; color:rgba(203,213,225,.92);">
@@ -809,6 +809,46 @@
       renderVChart(counts, choiceOrder);
     }
 
+    /* ★QIDを表示処理に回す関数（poll中にQIDが来ても保持して、quizに戻ったら必ず適用） */
+    function applyCurrentQid(){
+      if (currentView === "poll") return;
+
+      const qid = latestQid;
+
+      if (unsubQ) { unsubQ(); unsubQ = null; }
+
+      if (!qid){
+        currentQuestion = null;
+        qEl.textContent = "（問題を待っています…）";
+        cEl.innerHTML = "";
+        updateAnswerUI();
+        return;
+      }
+
+      unsubQ = onValue(qRef(qid), qsnap => {
+        const q = qsnap.val();
+        if (!q){
+          currentQuestion = null;
+          qEl.textContent = "（問題データが見つかりません）";
+          cEl.innerHTML = "";
+          updateAnswerUI();
+          return;
+        }
+
+        currentQuestion = q;
+        qEl.textContent = q.question || "";
+
+        if (q.choices && typeof q.choices === "object"){
+          const ord = Object.keys(q.choices).map(k => String(k).toUpperCase());
+          if (ord.length) choiceOrder = ord;
+        }
+
+        const ck = q.answer ? String(q.answer).trim().toUpperCase() : null;
+        renderChoices(q.choices || {}, ck, currentStatus === "closed");
+        updateAnswerUI();
+      });
+    }
+
     // activity
     onValue(activityRef, snap => {
       const a = snap.val() || {};
@@ -834,8 +874,7 @@
         choiceOrder = defaultChoicesFromMode(currentMode);
       }
 
-      if (lastStatus !== "closed" && currentStatus === "closed") toast.style.opacity = "1";
-      if (lastStatus !== "closed" && currentStatus === "closed") setTimeout(()=> toast.style.opacity = "0", 1200);
+      if (lastStatus !== "closed" && currentStatus === "closed") showToast();
       lastStatus = currentStatus;
 
       if (currentView === "poll"){
@@ -847,46 +886,17 @@
         updateAnswerUI();
       }
 
+      // ★重要：poll→quizになった瞬間に、保持していたQIDを必ず反映（Q1欠落を防ぐ）
+      applyCurrentQid();
+
       // 即再描画
       recomputeAndRenderFromAnswers(lastAnswers);
     });
 
-    // quizの問題表示
-    let unsubQ = null;
+    // qid：常に保持し、quiz状態なら即適用
     onValue(qidRef, snap => {
-      const qid = snap.val();
-      if (document.body.classList.contains("poll")) return;
-
-      if (!qid){
-        currentQuestion = null;
-        qEl.textContent = "（問題を待っています…）";
-        cEl.innerHTML = "";
-        updateAnswerUI();
-        return;
-      }
-      if (unsubQ) unsubQ();
-      unsubQ = onValue(qRef(qid), qsnap => {
-        const q = qsnap.val();
-        if (!q){
-          currentQuestion = null;
-          qEl.textContent = "（問題データが見つかりません）";
-          cEl.innerHTML = "";
-          updateAnswerUI();
-          return;
-        }
-
-        currentQuestion = q;
-        qEl.textContent = q.question || "";
-
-        if (q.choices && typeof q.choices === "object"){
-          const ord = Object.keys(q.choices).map(k => String(k).toUpperCase());
-          if (ord.length) choiceOrder = ord;
-        }
-
-        const ck = q.answer ? String(q.answer).trim().toUpperCase() : null;
-        renderChoices(q.choices || {}, ck, currentStatus === "closed");
-        updateAnswerUI();
-      });
+      latestQid = snap.val() || null;
+      applyCurrentQid();
     });
 
     // answers：保存＋音＋再描画
