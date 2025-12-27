@@ -6,222 +6,530 @@
   <title>ClassSync Display</title>
 
   <style>
-    body {
-      margin: 0;
-      background: #050608;
-      color: #f9fafb;
-      font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
-      height: 100vh;
+    :root{
+      --bg:#050608;
+      --card:#0b1220;
+      --ink:#f9fafb;
+      --muted:#cbd5e1;
+      --line:rgba(255,255,255,.08);
+
+      --color-o:#34c759;
+      --color-x:#ff3b30;
+      --color-a:#0a84ff;
+      --color-b:#30d158;
+      --color-c:#ff9f0a;
+      --color-d:#bf5af2;
+      --color-e:#ff375f;
     }
 
-    #screen {
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: flex-start;
+    body{
+      margin:0;
+      min-height:100vh;
+      background:var(--bg);
+      color:var(--ink);
+      font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",sans-serif;
+      overflow:hidden;
     }
 
-    /* ===== QR ONLY ===== */
-    #qrOnly {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      opacity: 0;
-      transition: opacity 0.6s ease;
-      pointer-events: none;
+    /* ===== 画面全体：上寄せ（ここが「下すぎる」対策の核） ===== */
+    .wrap{
+      min-height:100vh;
+      display:flex;
+      flex-direction:column;
+      align-items:stretch;
+      justify-content:flex-start;
+      padding:22px 22px 18px;
+      box-sizing:border-box;
+      gap:14px;
     }
 
-    #qrOnly.show {
-      opacity: 1;
-      pointer-events: auto;
+    .topbar{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+      padding:12px 14px;
+      border-radius:18px;
+      background:rgba(17,24,39,.55);
+      border:1px solid var(--line);
+      box-shadow:0 18px 50px rgba(0,0,0,.55);
+    }
+    .room{
+      font-weight:800;
+      letter-spacing:.08em;
+      font-size:18px;
+    }
+    .meta{
+      color:var(--muted);
+      font-size:14px;
+      display:flex;
+      gap:14px;
+      align-items:center;
+      white-space:nowrap;
     }
 
-    #qrTitle {
-      font-size: 40px;
-      margin-bottom: 16px;
+    .grid{
+      flex:1;
+      display:grid;
+      grid-template-columns: 2fr 1fr;
+      gap:14px;
+      align-items:stretch;
+      min-height:0;
     }
 
-    #qrcode canvas {
-      width: 360px !important;
-      height: 360px !important;
+    .panel{
+      background:rgba(17,24,39,.55);
+      border:1px solid var(--line);
+      border-radius:22px;
+      box-shadow:0 18px 50px rgba(0,0,0,.55);
+      padding:18px 18px;
+      box-sizing:border-box;
+      min-height:0;
     }
 
-    #participantCount {
-      margin-top: 14px;
-      font-size: 18px;
-      color: #d1d5db;
+    /* ===== 問題ブロック：上に詰める（余白過多を排除） ===== */
+    .qTitle{
+      margin:0 0 10pxpx 0;
+      font-size:18px;
+      letter-spacing:.08em;
+      color:var(--muted);
+    }
+    .question{
+      margin:0;
+      font-size:44px;
+      line-height:1.15;
+      font-weight:900;
+      letter-spacing:.02em;
     }
 
-    /* ===== QUESTION ===== */
-    #questionArea {
-      width: 90%;
-      max-width: 1400px;
-      padding-top: 80px;
-      display: none;
+    .choices{
+      margin-top:14px;
+      display:grid;
+      grid-template-columns: 1fr;
+      gap:10px;
+    }
+    .choice{
+      background:rgba(2,6,23,.6);
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:16px;
+      padding:12px 14px;
+      font-size:22px;
+      line-height:1.25;
+      display:flex;
+      gap:10px;
+      align-items:flex-start;
+    }
+    .badge{
+      min-width:44px;
+      height:36px;
+      border-radius:999px;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      font-weight:900;
+      color:#0b1220;
+      margin-top:2px;
     }
 
-    #questionArea.show {
-      display: block;
+    .badge.A{background:var(--color-a);}
+    .badge.B{background:var(--color-b);}
+    .badge.C{background:var(--color-c);}
+    .badge.D{background:var(--color-d); color:#fff;}
+    .badge.E{background:var(--color-e); color:#fff;}
+    .badge.O{background:var(--color-o);}
+    .badge.X{background:var(--color-x); color:#fff;}
+
+    /* 集計 */
+    .rTitle{
+      margin:0 0 10px 0;
+      font-size:18px;
+      letter-spacing:.08em;
+      color:var(--muted);
+    }
+    .bars{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      overflow:auto;
+      padding-right:6px;
+      box-sizing:border-box;
+      max-height:100%;
+    }
+    .barRow{
+      display:grid;
+      grid-template-columns: 70px 1fr 56px;
+      gap:10px;
+      align-items:center;
+      font-size:18px;
+    }
+    .barLabel{
+      text-align:right;
+      font-weight:800;
+      color:#e5e7eb;
+    }
+    .barTrack{
+      height:20px;
+      border-radius:999px;
+      background:rgba(255,255,255,.08);
+      overflow:hidden;
+    }
+    .barFill{
+      height:100%;
+      width:0%;
+      border-radius:999px;
+      transition:width .2s ease;
+    }
+    .barCount{
+      text-align:left;
+      color:#e5e7eb;
+      font-weight:800;
     }
 
-    #question {
-      font-size: 42px;
-      font-weight: 700;
-      margin-bottom: 32px;
-      text-align: center;
+    /* ===== QR レイヤー ===== */
+    .qrLayer{
+      position:fixed;
+      inset:0;
+      background:rgba(0,0,0,.92);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      z-index:999;
+      opacity:1;
+      transition: opacity .45s ease;
+    }
+    .qrLayer.hidden{
+      pointer-events:none;
+      opacity:0;
+    }
+    .qrBox{
+      width:min(920px, 94vw);
+      border-radius:28px;
+      padding:26px 22px 18px;
+      background:rgba(17,24,39,.55);
+      border:1px solid rgba(255,255,255,.10);
+      box-shadow:0 24px 80px rgba(0,0,0,.75);
+      text-align:center;
+    }
+    .qrTitle{
+      margin:0 0 8px 0;
+      font-size:22px;
+      letter-spacing:.10em;
+      font-weight:900;
+    }
+    .qrHint{
+      margin:0 0 12px 0;
+      color:var(--muted);
+      font-size:16px;
+    }
+    #qrcode{
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      margin:10px 0 10px;
+    }
+    /* “教室後ろでも読める” 最大化 */
+    #qrcode canvas{
+      width:min(760px, 82vw) !important;
+      height:auto !important;
+      border-radius:18px;
+      background:#fff;
+      padding:10px;
+      box-sizing:border-box;
+    }
+    .qrCount{
+      margin-top:8px;
+      color:rgba(203,213,225,.9);
+      font-size:14px;
     }
 
-    #choices {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 20px;
-      font-size: 28px;
+    /* 終了通知 */
+    .ending{
+      position:fixed;
+      inset:0;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      z-index:1000;
+      background:rgba(0,0,0,.88);
+    }
+    .ending.show{ display:flex; }
+    .endingBox{
+      background:rgba(17,24,39,.65);
+      border:1px solid rgba(255,255,255,.12);
+      border-radius:26px;
+      padding:28px 26px;
+      width:min(860px, 92vw);
+      text-align:center;
+      box-shadow:0 24px 80px rgba(0,0,0,.8);
+    }
+    .endingBox h1{
+      margin:0 0 10px 0;
+      font-size:44px;
+      letter-spacing:.06em;
+    }
+    .endingBox p{
+      margin:0;
+      color:var(--muted);
+      font-size:18px;
     }
 
-    .choice {
-      background: #111827;
-      border-radius: 16px;
-      padding: 20px;
-    }
-
-    /* ===== ENDING ===== */
-    #endingOverlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(5,6,8,0.95);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      font-size: 64px;
-      font-weight: 800;
-      letter-spacing: 0.1em;
-      z-index: 999;
-    }
-
-    #endingOverlay.show {
-      display: flex;
+    @media (max-width: 980px){
+      .grid{ grid-template-columns: 1fr; }
+      .question{ font-size:38px; }
+      .choice{ font-size:20px; }
     }
   </style>
 </head>
 
 <body>
-<div id="screen">
-
-  <!-- QR ONLY -->
-  <div id="qrOnly">
-    <div id="qrTitle">参加はこちら</div>
-    <div id="qrcode"></div>
-    <div id="participantCount">参加中 0 人</div>
+  <!-- QR レイヤー（QR中は問題を表示しない） -->
+  <div id="qrLayer" class="qrLayer">
+    <div class="qrBox">
+      <div class="qrTitle">参加用QRコード</div>
+      <div class="qrHint">スマホで読み取って参加</div>
+      <div id="qrcode"></div>
+      <div id="qrCount" class="qrCount">参加中 0人</div>
+    </div>
   </div>
 
-  <!-- QUESTION -->
-  <div id="questionArea">
-    <div id="question">問題を待っています…</div>
-    <div id="choices"></div>
+  <!-- 終了表示 -->
+  <div id="ending" class="ending">
+    <div class="endingBox">
+      <h1>授業終了します</h1>
+      <p>ご協力ありがとうございました。</p>
+    </div>
   </div>
-</div>
 
-<div id="endingOverlay">授業終了します</div>
+  <div class="wrap">
+    <div class="topbar">
+      <div class="room" id="roomLabel">ROOM</div>
+      <div class="meta">
+        <span id="statusLabel">status: -</span>
+        <span id="countLabel">参加中 0人</span>
+      </div>
+    </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <div class="grid" id="mainGrid">
+      <div class="panel">
+        <div class="qTitle">問題</div>
+        <p id="question" class="question">（問題を待っています…）</p>
+        <div id="choices" class="choices"></div>
+      </div>
 
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-  import { getDatabase, ref, onValue, update } from
-    "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+      <div class="panel">
+        <div class="rTitle">集計</div>
+        <div id="bars" class="bars"></div>
+      </div>
+    </div>
+  </div>
 
-  /* Firebase */
-  const app = initializeApp({
-    apiKey: "AIzaSyBke-wTU16skpbK8z80ddK04tE154dHERQ",
-    authDomain: "satosan-41eac.firebaseapp.com",
-    databaseURL: "https://satosan-41eac-default-rtdb.asia-southeast1.firebasedatabase.app",
-    projectId: "satosan-41eac"
-  });
-  const db = getDatabase(app);
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
-  const params = new URLSearchParams(location.search);
-  const room = params.get("room");
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import {
+      getDatabase, ref, onValue, update
+    } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-  const qrOnly = document.getElementById("qrOnly");
-  const qrDiv = document.getElementById("qrcode");
-  const countEl = document.getElementById("participantCount");
+    const firebaseConfig = {
+      apiKey: "AIzaSyBke-wTU16skpbK8z80ddK04tE154dHERQ",
+      authDomain: "satosan-41eac.firebaseapp.com",
+      databaseURL: "https://satosan-41eac-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "satosan-41eac",
+      storageBucket: "satosan-41eac.firebasestorage.app",
+      messagingSenderId: "992482993229",
+      appId: "1:992482993229:web:e2c59b078233b0ed16e804",
+      measurementId: "G-VT9FKHN3LT"
+    };
 
-  const qArea = document.getElementById("questionArea");
-  const qEl = document.getElementById("question");
-  const cEl = document.getElementById("choices");
+    const app = initializeApp(firebaseConfig);
+    const db  = getDatabase(app);
 
-  const endEl = document.getElementById("endingOverlay");
+    const url = new URL(location.href);
+    const room = url.searchParams.get("room") || "kyoto-01";
 
-  let isQRMode = false;
+    const roomLabel  = document.getElementById("roomLabel");
+    const statusLabel= document.getElementById("statusLabel");
+    const countLabel = document.getElementById("countLabel");
 
-  /* ===== display起動時：強制QR ===== */
-  update(ref(db, `rooms/${room}/activity`), { qr: true });
+    const qEl  = document.getElementById("question");
+    const cEl  = document.getElementById("choices");
+    const bars = document.getElementById("bars");
 
-  /* ===== activity ===== */
-  onValue(ref(db, `rooms/${room}/activity`), snap => {
-    const act = snap.val() || {};
+    const qrLayer = document.getElementById("qrLayer");
+    const qrDiv   = document.getElementById("qrcode");
+    const qrCount = document.getElementById("qrCount");
 
-    if (act.ending) {
-      endEl.classList.add("show");
-      return;
-    } else {
-      endEl.classList.remove("show");
+    const ending = document.getElementById("ending");
+
+    roomLabel.textContent = `ROOM: ${room}`;
+
+    const activityRef = ref(db, `rooms/${room}/activity`);
+    const qidRef      = ref(db, `rooms/${room}/quiz/current_question_id`);
+    const qBaseRef    = (qid) => ref(db, `rooms/${room}/questions/${qid}`);
+    const resultRef   = ref(db, `rooms/${room}/result`);
+    const answersRef  = ref(db, `rooms/${room}/answers`);
+
+    // display を開いたら強制的に qr=true
+    update(activityRef, { qr: true }).catch(()=>{});
+
+    // QRコード（フルURL）
+    const studentUrl = `https://qzp04374-code.github.io/quiz-app/exp-display/student.html?room=${encodeURIComponent(room)}`;
+    function drawQR(){
+      qrDiv.innerHTML = "";
+      // eslint-disable-next-line no-undef
+      new QRCode(qrDiv, {
+        text: studentUrl,
+        width: 720,
+        height: 720
+      });
+    }
+    drawQR();
+
+    let isQR = true;
+
+    function showQR(){
+      isQR = true;
+      qrLayer.classList.remove("hidden");
+      // QR中は問題を隠す（ユーザー要望）
+      document.getElementById("mainGrid").style.visibility = "hidden";
     }
 
-    if (act.qr) {
-      isQRMode = true;
-      qArea.classList.remove("show");
-      qrOnly.classList.add("show");
-
-      if (!qrDiv.hasChildNodes()) {
-        new QRCode(qrDiv, {
-          text: `https://qzp04374-code.github.io/quiz-app/exp-display/student.html?room=${room}`,
-          width: 360,
-          height: 360
-        });
-      }
-    } else {
-      isQRMode = false;
-      qrOnly.classList.remove("show");
-      setTimeout(() => qrDiv.innerHTML = "", 600);
+    function hideQRWithFade(){
+      isQR = false;
+      // フェードアウト
+      qrLayer.classList.add("hidden");
+      // 終わったら問題を表示
+      setTimeout(()=>{
+        if (!isQR) document.getElementById("mainGrid").style.visibility = "visible";
+      }, 460);
     }
-  });
 
-  /* ===== participant count ===== */
-  onValue(ref(db, `rooms/${room}/answers`), snap => {
-    const data = snap.val() || {};
-    countEl.textContent = `参加中 ${Object.keys(data).length} 人`;
-  });
-
-  /* ===== question ===== */
-  onValue(ref(db, `rooms/${room}/quiz/current_question_id`), snap => {
-    if (isQRMode) return;
-
-    const qid = snap.val();
-    if (!qid) return;
-
-    onValue(ref(db, `rooms/${room}/questions/${qid}`), qSnap => {
-      if (isQRMode) return;
-      const q = qSnap.val();
-      if (!q) return;
-
-      qArea.classList.add("show");
-      qEl.textContent = q.question || "";
-      cEl.innerHTML = "";
-
-      if (q.choices) {
-        Object.entries(q.choices).forEach(([k,v]) => {
-          const d = document.createElement("div");
-          d.className = "choice";
-          d.textContent = `${k}. ${v}`;
-          cEl.appendChild(d);
-        });
-      }
+    // 参加人数（QR中は小さく表示）
+    onValue(answersRef, snap => {
+      const ans = snap.val() || {};
+      const n = Object.keys(ans).length;
+      countLabel.textContent = `参加中 ${n}人`;
+      qrCount.textContent = `参加中 ${n}人`;
     });
-  });
-</script>
+
+    // activity：qr / status / ending
+    onValue(activityRef, snap => {
+      const a = snap.val() || {};
+      const status = a.status || "-";
+      statusLabel.textContent = `status: ${status}`;
+
+      if (a.ending === true){
+        ending.classList.add("show");
+      } else {
+        ending.classList.remove("show");
+      }
+
+      const q = (a.qr === true);
+      if (q) showQR();
+      else hideQRWithFade();
+    });
+
+    // 問題表示
+    let unsubQ = null;
+    onValue(qidRef, snap => {
+      const qid = snap.val();
+      if (!qid){
+        qEl.textContent = "（問題を待っています…）";
+        cEl.innerHTML = "";
+        return;
+      }
+      if (unsubQ) unsubQ();
+      unsubQ = onValue(qBaseRef(qid), qsnap => {
+        const q = qsnap.val();
+        if (!q){
+          qEl.textContent = "（問題データが見つかりません）";
+          cEl.innerHTML = "";
+          return;
+        }
+
+        qEl.textContent = q.question || "";
+        cEl.innerHTML = "";
+
+        const choices = q.choices || {};
+        Object.entries(choices).forEach(([k, v]) => {
+          const row = document.createElement("div");
+          row.className = "choice";
+
+          const b = document.createElement("div");
+          const key = String(k).trim().toUpperCase();
+          b.className = `badge ${key}`;
+          b.textContent = key;
+
+          const t = document.createElement("div");
+          t.textContent = v;
+
+          row.appendChild(b);
+          row.appendChild(t);
+          cEl.appendChild(row);
+        });
+      });
+    });
+
+    // 集計表示
+    function colorOf(label){
+      const css = getComputedStyle(document.documentElement);
+      switch(label){
+        case "O": return css.getPropertyValue("--color-o");
+        case "X": return css.getPropertyValue("--color-x");
+        case "A": return css.getPropertyValue("--color-a");
+        case "B": return css.getPropertyValue("--color-b");
+        case "C": return css.getPropertyValue("--color-c");
+        case "D": return css.getPropertyValue("--color-d");
+        case "E": return css.getPropertyValue("--color-e");
+        default:  return "#94a3b8";
+      }
+    }
+
+    onValue(resultRef, snap => {
+      const r = snap.val() || {};
+      const entries = Object.entries(r);
+
+      bars.innerHTML = "";
+      if (!entries.length){
+        bars.innerHTML = `<div style="color:rgba(203,213,225,.9);">（集計待ち）</div>`;
+        return;
+      }
+
+      const max = Math.max(...entries.map(([,v]) => Number(v)||0), 1);
+
+      entries.forEach(([k, v]) => {
+        const label = String(k).trim().toUpperCase();
+        const count = Number(v)||0;
+
+        const row = document.createElement("div");
+        row.className = "barRow";
+
+        const l = document.createElement("div");
+        l.className = "barLabel";
+        l.textContent = label;
+
+        const track = document.createElement("div");
+        track.className = "barTrack";
+
+        const fill = document.createElement("div");
+        fill.className = "barFill";
+        fill.style.background = colorOf(label);
+        fill.style.width = `${Math.round((count / max) * 100)}%`;
+
+        track.appendChild(fill);
+
+        const c = document.createElement("div");
+        c.className = "barCount";
+        c.textContent = count;
+
+        row.appendChild(l);
+        row.appendChild(track);
+        row.appendChild(c);
+
+        bars.appendChild(row);
+      });
+    });
+  </script>
 </body>
 </html>
