@@ -14,21 +14,19 @@
       --ink:#f9fafb;
       --muted:#cbd5e1;
 
-      --g2a: #22c55e;
-      --g2b: #06b6d4;
-
-      --g5a: #8b5cf6;
-      --g5b: #a855f7;
-
-      --gt1:#f59e0b;
-      --gt2:#f97316;
+      /* ここが “番号(文字)と色の対応” の正本 */
+      --color-o:#34c759;
+      --color-x:#ff3b30;
+      --color-a:#0a84ff;
+      --color-b:#30d158;
+      --color-c:#ff9f0a;
+      --color-d:#bf5af2;
+      --color-e:#ff375f;
 
       --danger:#ef4444;
       --danger2:#991b1b;
-
       --info:#0ea5e9;
       --indigo:#6366f1;
-
       --gray:#4b5563;
     }
 
@@ -100,7 +98,7 @@
       transform:none;
     }
 
-    /* ===== ここが追加：クイック投票（正円ボタン） ===== */
+    /* ===== クイック投票（正円ボタン） ===== */
     .quickWrap{
       margin: 10px auto 18px;
       padding: 14px 12px 12px;
@@ -129,9 +127,9 @@
     }
 
     .qbtn{
-      width:96px;
-      height:96px;            /* 正円 */
-      border-radius:9999px;   /* 正円 */
+      width:100px;
+      height:100px;
+      border-radius:9999px;
       padding:0;
       display:flex;
       flex-direction:column;
@@ -154,12 +152,12 @@
     }
     .qbtn:hover::before{ opacity:.75; }
     .qbtn.active{
-      outline: none;
       box-shadow: 0 0 0 4px rgba(255,255,255,.10), 0 18px 60px rgba(0,0,0,.55);
       border-color: rgba(255,255,255,.22);
+      transform: translateY(-1px);
     }
     .qbtn .big{
-      font-size:26px;
+      font-size:28px;
       font-weight:1000;
       letter-spacing:.02em;
       line-height:1;
@@ -172,16 +170,14 @@
     }
     .qbtn .hint{
       font-size:11px;
-      color: rgba(255,255,255,.82);
-      letter-spacing:.06em;
+      letter-spacing:.10em;
       opacity:.9;
     }
 
-    .q2{ background: linear-gradient(135deg, var(--g2a), var(--g2b)); }
-    .q5{ background: linear-gradient(135deg, var(--g5a), var(--g5b)); }
-    .qt{ background: linear-gradient(135deg, var(--gt2), var(--gt1)); color:#111827; }
-    .qt .hint{ color: rgba(0,0,0,.72); }
-    .qt .small{ color: rgba(0,0,0,.84); }
+    .q2{ background: linear-gradient(135deg, var(--color-o), rgba(6,182,212,.95)); }
+    .q5{ background: linear-gradient(135deg, var(--color-d), rgba(168,85,247,.95)); }
+    .qt{ background: linear-gradient(135deg, var(--color-c), rgba(245,158,11,.95)); color:#111827; }
+    .qt .hint,.qt .small{ color: rgba(0,0,0,.72); }
 
     /* ===== 既存ボタン列 ===== */
     .button-row{
@@ -193,12 +189,12 @@
     }
 
     #prevQuestionBtn { background: var(--gray); }
-    #nextQuestionBtn { background: linear-gradient(135deg,#22c55e,#06b6d4); }
+    #nextQuestionBtn { background: linear-gradient(135deg, var(--color-o), #06b6d4); }
     #stopBtn { background: var(--danger); }
     #endClassBtn { background: linear-gradient(135deg,var(--danger),var(--danger2)); }
     #qrBtn { background: var(--info); }
     #projectionBtn { background: linear-gradient(135deg,var(--indigo),#a855f7); }
-    #importBtn { background: linear-gradient(135deg,#f59e0b,#f97316); }
+    #importBtn { background: linear-gradient(135deg,var(--color-c),#f97316); }
 
     /* プレビュー */
     #preview{
@@ -214,7 +210,7 @@
       letter-spacing:.10em;
     }
     .pv-choice{ margin-left:12px; margin-bottom:4px; color:#e5e7eb; }
-    .pv-answer{ margin-top:12px; font-weight:1000; color:#34d399; }
+    .pv-answer{ margin-top:12px; font-weight:1000; color:var(--color-o); }
     .pv-explanation{ margin-top:6px; font-size:14px; color:#d1d5db; white-space:pre-wrap; }
 
     /* QRモーダル */
@@ -249,7 +245,7 @@
 </head>
 
 <body>
-  <div id="buildTag">build: 2025-12-27 / teacher-quickpoll</div>
+  <div id="buildTag">build: 2025-12-27 / teacher-colorsync</div>
 
   <div class="card">
     <h2>教員画面</h2>
@@ -268,7 +264,7 @@
       </div>
     </div>
 
-    <!-- ★追加：クイック投票（問題は出さず「集計だけ」） -->
+    <!-- クイック投票 -->
     <div class="quickWrap">
       <div class="quickTitle">
         <span>クイック投票（口頭Q&A用：集計だけ表示）</span>
@@ -276,27 +272,27 @@
       </div>
 
       <div class="quickRow">
-        <button id="quick2Btn" class="qbtn q2" title="2択（○×）">
-          <div class="big">2</div>
+        <button id="quick2Btn" class="qbtn q2" title="2択（○✕）">
+          <div class="big">○✕</div>
           <div class="small">2択</div>
-          <div class="hint">○×</div>
+          <div class="hint">投票</div>
         </button>
 
         <button id="quick5Btn" class="qbtn q5" title="5択（A〜E）">
-          <div class="big">5</div>
+          <div class="big">ABCDE</div>
           <div class="small">5択</div>
-          <div class="hint">A〜E</div>
+          <div class="hint">投票</div>
         </button>
 
         <button id="quickTextBtn" class="qbtn qt" title="文字入力">
-          <div class="big">Aa</div>
+          <div class="big">TEXT</div>
           <div class="small">文字</div>
           <div class="hint">入力</div>
         </button>
       </div>
     </div>
 
-    <!-- 既存：授業運用ボタン -->
+    <!-- 授業運用ボタン -->
     <div class="button-row">
       <button id="prevQuestionBtn">問題戻る ◀</button>
       <button id="nextQuestionBtn">次の問題 ▶</button>
@@ -307,7 +303,7 @@
       <button id="importBtn">CSV投入</button>
     </div>
 
-    <!-- プレビュー -->
+    <!-- プレビュー（教員用：残しておく） -->
     <div id="preview">
       <h3>出題プレビュー（教員のみ）</h3>
       <div id="pvQuestion">問題を待っています…</div>
@@ -335,9 +331,8 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import {
-      getDatabase, ref, set, update, remove, onValue, get, child
-    } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+    import { getDatabase, ref, set, update, remove, onValue, get } from
+      "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyBke-wTU16skpbK8z80ddK04tE154dHERQ",
@@ -349,7 +344,6 @@
     const app = initializeApp(firebaseConfig);
     const db  = getDatabase(app);
 
-    // ===== DOM =====
     const roomSelect = document.getElementById("roomSelect");
 
     const quick2Btn = document.getElementById("quick2Btn");
@@ -374,7 +368,6 @@
     const qrDiv   = document.getElementById("qrcode");
     const closeQR = document.getElementById("closeQR");
 
-    // ===== state =====
     let currentRoom = roomSelect.value;
     let questionOrder = [];
     let currentQid = null;
@@ -392,7 +385,6 @@
       if (which === "t") quickTextBtn.classList.add("active");
     }
 
-    // ルーム切替
     roomSelect.addEventListener("change", async () => {
       currentRoom = roomSelect.value;
       setQuickActive(null);
@@ -401,37 +393,30 @@
       attachPreview();
     });
 
-    // ===== 共通：回答をクリア =====
     async function clearAnswers(){
       await set(answersRef(), {});
     }
 
-    // ===== クイック投票（集計だけ表示） =====
+    // クイック投票（集計だけ）
     async function startQuickPoll(mode){
-      // 口頭Q&Aなので「問題IDは消す」
-      await set(qidRef(), null);
+      await set(qidRef(), null);         // 口頭なので問題IDは消す
       await clearAnswers();
 
-      // display 側が「pollなら問題を隠す」判定に使う
-      const data = {
-        status: "open",
-        qr: false,
-        view: "poll",
-        mode,
-      };
+      const data = { status:"open", qr:false, view:"poll", mode };
 
       if (mode === "text"){
-        data.config = { type: "text" };
+        data.config = { type:"text" };
       } else if (mode === "ox"){
-        data.config = { choices: ["O","X"] };
+        // DB値は O/X を維持、表示は ○/✕ に変換（display/student側）
+        data.config = { choices:["O","X"] };
       } else {
-        data.config = { choices: ["A","B","C","D","E"] };
+        data.config = { choices:["A","B","C","D","E"] };
       }
 
       await update(activityRef(), data);
 
-      if (mode === "ox"){ setQuickActive("2"); quickState.textContent = "クイック：2択（○×）"; }
-      if (mode === "five"){ setQuickActive("5"); quickState.textContent = "クイック：5択（A〜E）"; }
+      if (mode === "ox"){ setQuickActive("2"); quickState.textContent = "クイック：2択（○✕）"; }
+      if (mode === "five"){ setQuickActive("5"); quickState.textContent = "クイック：5択（ABCDE）"; }
       if (mode === "text"){ setQuickActive("t"); quickState.textContent = "クイック：文字入力"; }
     }
 
@@ -439,7 +424,7 @@
     quick5Btn.onclick = () => startQuickPoll("five");
     quickTextBtn.onclick = () => startQuickPoll("text");
 
-    // ===== 問題順を作る（questionsキーを昇順） =====
+    // 問題順（questionsキー昇順）
     async function refreshQuestionOrder(){
       const snap = await get(questionsRef());
       const val = snap.val() || {};
@@ -447,30 +432,29 @@
       return questionOrder;
     }
 
-    // ===== 授業モード（問題を出す＝view:"quiz"） =====
+    // 授業モード（view:"quiz"）
     async function startQuizQuestion(qid){
       if (!qid) return;
 
       await set(qidRef(), qid);
       await clearAnswers();
 
-      // 問題データから choices を推定（displayの集計キー順にも使える）
       const qs = await get(questionRef(qid));
       const q = qs.val() || {};
-      const choicesKeys = q.choices ? Object.keys(q.choices).map(k => String(k).toUpperCase()) : ["A","B","C","D","E"];
-      const inferredMode = (choicesKeys.length === 2 && choicesKeys.includes("O") && choicesKeys.includes("X")) ? "ox"
-                        : (choicesKeys.length === 5 && choicesKeys.includes("A")) ? "five"
-                        : "five";
+      const keys = q.choices ? Object.keys(q.choices).map(k => String(k).toUpperCase()) : ["A","B","C","D","E"];
+
+      const inferredMode =
+        (keys.length === 2 && keys.includes("O") && keys.includes("X")) ? "ox" :
+        (keys.length === 5 && keys.includes("A")) ? "five" : "five";
 
       await update(activityRef(), {
-        status: "open",
-        qr: false,
-        view: "quiz",
+        status:"open",
+        qr:false,
+        view:"quiz",
         mode: inferredMode,
-        config: { choices: choicesKeys }
+        config: { choices: keys }
       });
 
-      // クイックの強調を外す（授業モードに戻った印）
       setQuickActive(null);
       quickState.textContent = "授業モード：問題表示";
     }
@@ -478,7 +462,6 @@
     prevQuestionBtn.onclick = async () => {
       await refreshQuestionOrder();
       if (questionOrder.length === 0) return;
-
       const i = questionOrder.indexOf(currentQid);
       const prev = (i <= 0) ? questionOrder[0] : questionOrder[i - 1];
       await startQuizQuestion(prev);
@@ -487,7 +470,6 @@
     nextQuestionBtn.onclick = async () => {
       await refreshQuestionOrder();
       if (questionOrder.length === 0) return;
-
       const i = questionOrder.indexOf(currentQid);
       const next = (i < 0) ? questionOrder[0]
                  : (i >= questionOrder.length - 1) ? questionOrder[questionOrder.length - 1]
@@ -495,22 +477,18 @@
       await startQuizQuestion(next);
     };
 
-    // 解答終了
     stopBtn.onclick = async () => {
-      await update(activityRef(), { status: "closed" });
+      await update(activityRef(), { status:"closed" });
     };
 
-    // 授業終了（ここでは “削除”は今の運用に合わせて必要なら後で強化）
     endClassBtn.onclick = async () => {
       const ok1 = confirm("授業終了します。データを消去しますか？（1/2）");
       if (!ok1) return;
       const ok2 = confirm("本当に削除します。よろしいですか？（2/2）");
       if (!ok2) return;
 
-      // displayへ終了表示（display側が見ていれば反映）
-      await update(activityRef(), { ending: true, status: "closed", qr: false });
+      await update(activityRef(), { ending:true, status:"closed", qr:false });
 
-      // 少し待って削除
       setTimeout(async () => {
         await remove(ref(db, `rooms/${currentRoom}/questions`)).catch(()=>{});
         await remove(ref(db, `rooms/${currentRoom}/quiz`)).catch(()=>{});
@@ -518,14 +496,15 @@
         await remove(ref(db, `rooms/${currentRoom}/result`)).catch(()=>{});
         await remove(ref(db, `rooms/${currentRoom}/activity`)).catch(()=>{});
         alert("授業データを削除しました。次回はCSV投入から開始してください。");
-      }, 600);
+      }, 650);
     };
 
-    // QR：display側に qr=true を通知＋教員PCにもQR表示
     qrBtn.onclick = async () => {
-      await update(activityRef(), { qr: true });
+      await update(activityRef(), { qr:true });
 
-      const studentUrl = `https://qzp04374-code.github.io/quiz-app/exp-display/student.html?room=${encodeURIComponent(currentRoom)}`;
+      const studentUrl =
+        `https://qzp04374-code.github.io/quiz-app/exp-display/student.html?room=${encodeURIComponent(currentRoom)}`;
+
       qrDiv.innerHTML = "";
       // eslint-disable-next-line no-undef
       new QRCode(qrDiv, { text: studentUrl, width: 280, height: 280 });
@@ -535,29 +514,29 @@
 
     closeQR.onclick = async () => {
       qrModal.style.display = "none";
-      await update(activityRef(), { qr: false });
+      await update(activityRef(), { qr:false });
     };
 
     qrModal.addEventListener("click", async (e) => {
       if (e.target === qrModal){
         qrModal.style.display = "none";
-        await update(activityRef(), { qr: false });
+        await update(activityRef(), { qr:false });
       }
     });
 
-    // display表示
     projectionBtn.onclick = () => {
-      const url = `https://qzp04374-code.github.io/quiz-app/exp-display/display.html?room=${encodeURIComponent(currentRoom)}&v=teacher-quickpoll`;
+      const url =
+        `https://qzp04374-code.github.io/quiz-app/exp-display/display.html?room=${encodeURIComponent(currentRoom)}&v=teacher-colorsync`;
       window.open(url, "_blank");
     };
 
-    // CSV投入
     importBtn.onclick = () => {
-      const url = `https://qzp04374-code.github.io/quiz-app/exp-display/import-csv.html?v=teacher-quickpoll`;
+      const url =
+        `https://qzp04374-code.github.io/quiz-app/exp-display/import-csv.html?v=teacher-colorsync`;
       window.open(url, "_blank");
     };
 
-    // ===== プレビュー：current_question_id を監視 =====
+    // プレビュー：current_question_id を監視（教員のみ）
     let unsubQid = null;
     let unsubQ = null;
 
@@ -606,18 +585,17 @@
         });
       });
 
-      // activity.view を見てクイック状態表示（任意）
+      // view/poll 表示
       onValue(activityRef(), snap => {
         const a = snap.val() || {};
         if (a.view === "poll"){
-          if (a.mode === "ox"){ setQuickActive("2"); quickState.textContent = "クイック：2択（○×）"; }
-          else if (a.mode === "five"){ setQuickActive("5"); quickState.textContent = "クイック：5択（A〜E）"; }
+          if (a.mode === "ox"){ setQuickActive("2"); quickState.textContent = "クイック：2択（○✕）"; }
+          else if (a.mode === "five"){ setQuickActive("5"); quickState.textContent = "クイック：5択（ABCDE）"; }
           else if (a.mode === "text"){ setQuickActive("t"); quickState.textContent = "クイック：文字入力"; }
         }
       });
     }
 
-    // init
     (async () => {
       await refreshQuestionOrder();
       attachPreview();
