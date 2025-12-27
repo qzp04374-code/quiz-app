@@ -47,8 +47,6 @@
       box-shadow:0 8px 22px rgba(0,0,0,0.35);
     }
     button:active{transform:scale(.98);filter:brightness(.98);}
-
-    /* disabled（QR表示中は次の問題を無効化） */
     button:disabled{
       opacity:0.35;
       cursor:not-allowed;
@@ -65,7 +63,6 @@
       margin:18px 0 18px;
     }
 
-    /* ボタン色 */
     #prevQuestionBtn{background:#4b5563;}
     #nextQuestionBtn{background:linear-gradient(135deg,#22c55e,#06b6d4);}
     #stopBtn{background:#ef4444;}
@@ -75,14 +72,12 @@
     #projectionBtn{background:linear-gradient(135deg,#6366f1,#a855f7);}
     #importBtn{background:linear-gradient(135deg,#f59e0b,#f97316);}
 
-    /* QR表示中：QRを消すだけ強調 */
     .qr-off-active{
       background:linear-gradient(135deg,#f59e0b,#ef4444) !important;
       box-shadow:0 0 18px rgba(239,68,68,0.55);
       opacity:1 !important;
     }
 
-    /* プレビュー */
     #preview{
       margin-top:18px;
       padding:18px;
@@ -106,7 +101,6 @@
     .pv-answer{margin-top:12px;font-weight:800;color:#34d399;}
     .pv-explanation{margin-top:6px;font-size:14px;color:#cbd5e1;line-height:1.5;}
 
-    /* QRモーダル */
     #qrModal{
       display:none;
       position:fixed;
@@ -151,7 +145,7 @@
       <button id="stopBtn">解答終了</button>
       <button id="endClassBtn">授業終了</button>
       <button id="qrBtn">QR表示</button>
-      <button id="qrOffBtn">QRを消す</button>
+      <button id="qrOffBtn">QRを消す（出題開始）</button>
       <button id="projectionBtn">display表示</button>
       <button id="importBtn">CSV投入</button>
     </div>
@@ -165,7 +159,6 @@
     </div>
   </div>
 
-  <!-- QRモーダル（教員PC用） -->
   <div id="qrModal">
     <div id="qrInner">
       <h3 style="margin:0 0 12px 0; letter-spacing:.08em;">学生用QRコード</h3>
@@ -180,9 +173,8 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import {
-      getDatabase, ref, set, update, onValue, get
-    } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+    import { getDatabase, ref, set, update, onValue, get } from
+      "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyBke-wTU16skpbK8z80ddK04tE154dHERQ",
@@ -198,7 +190,6 @@
     const app = initializeApp(firebaseConfig);
     const db  = getDatabase(app);
 
-    // UI
     const roomSelect = document.getElementById("roomSelect");
     const prevBtn = document.getElementById("prevQuestionBtn");
     const nextBtn = document.getElementById("nextQuestionBtn");
@@ -218,16 +209,13 @@
     const pvA = document.getElementById("pvAnswer");
     const pvE = document.getElementById("pvExplanation");
 
-    // State
     let currentRoom = roomSelect.value;
 
-    // unsub
     let unsubActivity = null;
     let unsubQid = null;
     let unsubQuestion = null;
     let unsubAnswers = null;
 
-    // refs
     const actRef = () => ref(db, `rooms/${currentRoom}/activity`);
     const qidRef = () => ref(db, `rooms/${currentRoom}/quiz/current_question_id`);
     const qRef   = (qid) => ref(db, `rooms/${currentRoom}/questions/${qid}`);
@@ -241,9 +229,7 @@
       if (unsubAnswers){unsubAnswers();unsubAnswers=null;}
     }
 
-    function normMode(x){
-      return (x === "ox") ? "ox" : "five";
-    }
+    function normMode(x){ return (x === "ox") ? "ox" : "five"; }
 
     function inferModeFromQuestion(q){
       if (q && q.mode) return normMode(q.mode);
@@ -252,237 +238,39 @@
       return "five";
     }
 
-    function inferChoicesFromQuestion(q, mode){
-      // student に出す「ボタン文字」
-      if (mode === "ox") return ["O","X"];
-
-      // five：choicesのキーから推測（A-Eがあるならそれ優先）
-      const ch = q && q.choices ? q.choices : null;
-      if (ch && typeof ch === "object"){
-        const keys = Object.keys(ch).map(k => String(k).trim().toUpperCase());
-        const want = ["A","B","C","D","E"];
-        const has = want.filter(k => keys.includes(k));
-        if (has.length >= 2) return want; // 5択は固定でA-E
-      }
-      return ["A","B","C","D","E"];
+    function inferChoicesFromMode(mode){
+      return (mode === "ox") ? ["O","X"] : ["A","B","C","D","E"];
     }
 
     async function applyActivityForQuestion(qid){
       const snap = await get(qRef(qid));
       const q = snap.val() || {};
-
       const mode = inferModeFromQuestion(q);
-      const choices = inferChoicesFromQuestion(q, mode);
+      const choices = inferChoicesFromMode(mode);
 
-      // activity を「学生UIが出る形」にする（最重要）
       await update(actRef(), {
-        status: "open",
-        qr: false,
+        status:"open",
+        qr:false,
         mode,
-        config: { choices }
+        config:{ choices }
       });
 
-      // answers / result を初期化（集計が確実に動く）
       await set(ansRef(), {});
       const init = {};
       choices.forEach(c => init[c] = 0);
       await set(resRef(), init);
     }
 
+    async function startCurrentOrQ01(){
+      let qid = (await get(qidRef())).val();
+      if (!qid){
+        qid = "Q01";
+        await set(qidRef(), qid);
+      }
+      await applyActivityForQuestion(qid);
+    }
+
     function attachListeners(){
       detachAll();
 
-      // 1) activity.qr 監視：次の問題 disabled + QRを消す強調
-      unsubActivity = onValue(ref(db, `rooms/${currentRoom}/activity`), snap => {
-        const act = snap.val() || {};
-        const isQR = act.qr === true;
-
-        nextBtn.disabled = isQR; // 要望：QR中は次へdisabled
-
-        if (isQR) qrOffBtn.classList.add("qr-off-active");
-        else qrOffBtn.classList.remove("qr-off-active");
-      });
-
-      // 2) current_question_id → プレビュー更新
-      unsubQid = onValue(qidRef(), snap => {
-        const qid = snap.val();
-        if (!qid){
-          pvQ.textContent = "問題を待っています…";
-          pvC.innerHTML = "";
-          pvA.textContent = "";
-          pvE.textContent = "";
-          if (unsubQuestion){unsubQuestion();unsubQuestion=null;}
-          return;
-        }
-        if (unsubQuestion){unsubQuestion();unsubQuestion=null;}
-        unsubQuestion = onValue(qRef(qid), qSnap => {
-          const q = qSnap.val();
-          if (!q) return;
-
-          pvQ.textContent = q.question || "";
-          pvC.innerHTML = "";
-          pvA.textContent = q.answer ? `正解：${q.answer}` : "";
-          pvE.textContent = q.explanation ? `解説：${q.explanation}` : "";
-
-          if (q.choices && typeof q.choices === "object"){
-            Object.entries(q.choices).forEach(([k,v]) => {
-              const d = document.createElement("div");
-              d.className = "pv-choice";
-              d.textContent = `${String(k).toUpperCase()}. ${v}`;
-              pvC.appendChild(d);
-            });
-          }
-        });
-      });
-
-      // 3) answers → result を更新（display 集計用）
-      unsubAnswers = onValue(ansRef(), async snap => {
-        const answers = snap.val() || {};
-
-        // activity から choices を取得（無いときは何もしない）
-        const actSnap = await get(actRef());
-        const act = actSnap.val() || {};
-        const choices = (act.config && Array.isArray(act.config.choices)) ? act.config.choices : null;
-        if (!choices || !choices.length) return;
-
-        const counts = {};
-        choices.forEach(c => counts[c] = 0);
-
-        Object.values(answers).forEach(v => {
-          // student は {value, timestamp} / 文字列どちらでも来うる
-          let val = v;
-          if (v && typeof v === "object" && typeof v.value === "string") val = v.value;
-          if (typeof val !== "string") return;
-          const key = val.trim().toUpperCase();
-          if (counts[key] !== undefined) counts[key] += 1;
-        });
-
-        await set(resRef(), counts);
-      });
-    }
-
-    // ルーム変更
-    roomSelect.addEventListener("change", () => {
-      currentRoom = roomSelect.value;
-      // モーダルは閉じる
-      qrModal.style.display = "none";
-      // 再アタッチ
-      attachListeners();
-    });
-
-    // ---- 操作：次の問題 ▶（QR中はdisabledなので基本押せない） ----
-    nextBtn.onclick = async () => {
-      // 念のためガード（disabledでも保険）
-      const qrSnap = await get(ref(db, `rooms/${currentRoom}/activity/qr`));
-      if (qrSnap.val() === true) return;
-
-      const curSnap = await get(qidRef());
-      const cur = curSnap.val();
-
-      let next = "Q01";
-      if (cur){
-        const m = String(cur).match(/^Q(\d+)$/);
-        if (m) next = `Q${String(Number(m[1]) + 1).padStart(2,"0")}`;
-      }
-      await set(qidRef(), next);
-      await applyActivityForQuestion(next);
-    };
-
-    // ---- 操作：問題戻る ◀ ----
-    prevBtn.onclick = async () => {
-      const curSnap = await get(qidRef());
-      const cur = curSnap.val();
-      if (!cur) return;
-
-      const m = String(cur).match(/^Q(\d+)$/);
-      if (!m) return;
-
-      const num = Number(m[1]);
-      if (num <= 1) return;
-
-      const prev = `Q${String(num - 1).padStart(2,"0")}`;
-      await set(qidRef(), prev);
-      await applyActivityForQuestion(prev);
-    };
-
-    // ---- 操作：解答終了 ----
-    stopBtn.onclick = () => {
-      update(actRef(), { status:"closed", qr:false });
-    };
-
-    // ---- 操作：授業終了（2段階確認 + displayに事前通知） ----
-    endBtn.onclick = async () => {
-      const ok1 = confirm(
-        "【授業終了】\n\n" +
-        "問題・回答・集計がすべて削除されます。\n" +
-        "本当に授業を終了しますか？"
-      );
-      if (!ok1) return;
-
-      const input = prompt("最終確認：授業を終了する場合は【終了】と入力してください。");
-      if (input !== "終了") {
-        alert("入力が一致しません。キャンセルしました。");
-        return;
-      }
-
-      const base = `rooms/${currentRoom}`;
-
-      await update(ref(db, `${base}/activity`), { ending:true, qr:false });
-      await new Promise(r => setTimeout(r, 1500));
-
-      await set(ref(db, `${base}/questions`), null);
-      await set(ref(db, `${base}/quiz`), null);
-      await set(ref(db, `${base}/answers`), null);
-      await set(ref(db, `${base}/result`), null);
-      await set(ref(db, `${base}/activity`), null);
-
-      alert("授業を終了しました（データを削除しました）。");
-    };
-
-    // ---- 操作：QR表示（フルURLで生成） ----
-    qrBtn.onclick = () => {
-      update(actRef(), { qr:true });
-
-      const url = `https://qzp04374-code.github.io/quiz-app/exp-display/student.html?room=${encodeURIComponent(currentRoom)}`;
-
-      qrDiv.innerHTML = "";
-      // eslint-disable-next-line no-undef
-      new QRCode(qrDiv, { text:url, width:280, height:280 });
-
-      qrModal.style.display = "flex";
-    };
-
-    // ---- 操作：QRを消す ----
-    qrOffBtn.onclick = () => {
-      update(actRef(), { qr:false });
-      qrModal.style.display = "none";
-    };
-
-    // モーダル「閉じる」は表示だけ閉じる（QR状態は維持）
-    closeQR.onclick = () => {
-      qrModal.style.display = "none";
-    };
-
-    // 背景クリックで閉じる
-    qrModal.addEventListener("click", (e) => {
-      if (e.target === qrModal) qrModal.style.display = "none";
-    });
-
-    // ---- 操作：display表示 ----
-    projBtn.onclick = () => {
-      const base = location.href.replace(/[^/]*$/, "");
-      const url  = `${base}display.html?room=${encodeURIComponent(currentRoom)}`;
-      window.open(url, "_blank");
-    };
-
-    // ---- 操作：CSV投入 ----
-    impBtn.onclick = () => {
-      const base = location.href.replace(/[^/]*$/, "");
-      window.open(`${base}import-csv.html`, "_blank");
-    };
-
-    // 初期
-    attachListeners();
-  </script>
-</body>
-</html>
+      unsubActivity = on Вам(1)
