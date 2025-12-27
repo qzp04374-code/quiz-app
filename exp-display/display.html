@@ -13,6 +13,7 @@
       --ink:#f9fafb;
       --muted:#cbd5e1;
 
+      /* 色対応：正本（index/studentと一致） */
       --color-o:#34c759;
       --color-x:#ff3b30;
       --color-a:#0a84ff;
@@ -41,21 +42,10 @@
       backdrop-filter: blur(8px);
     }
 
-    /* ===== pollモード：問題パネルを完全に隠し、集計を全幅に ===== */
+    /* pollモード：左を消して集計全幅 */
     body.poll #leftPanel{ display:none !important; }
     body.poll .grid{ grid-template-columns: 1fr !important; }
-    body.poll #rightPanel{ width:100%; }
-    body.poll .secTitle.rightTitle::after{
-      content:"（集計のみ）";
-      margin-left:10px;
-      font-size:13px;
-      color:rgba(203,213,225,.85);
-      letter-spacing:.06em;
-      font-weight:900;
-    }
-
-    body.closed .grid{ grid-template-columns: 1.6fr 1fr; }
-    body.poll.closed .grid{ grid-template-columns: 1fr !important; } /* poll優先 */
+    body.poll.closed .grid{ grid-template-columns: 1fr !important; }
 
     .wrap{
       height:100vh;
@@ -126,9 +116,6 @@
       overflow:hidden;
     }
 
-    #leftPanel{ display:flex; flex-direction:column; gap:10px; min-height:0; }
-    #leftScroll{ min-height:0; overflow:hidden; }
-
     .secTitle{
       margin:0 0 6px 0;
       font-size:15px;
@@ -137,6 +124,9 @@
       font-weight:800;
     }
 
+    /* 左（授業モード用） */
+    #leftPanel{ display:flex; flex-direction:column; gap:10px; min-height:0; }
+    #leftScroll{ min-height:0; overflow:hidden; }
     #question{
       margin:0;
       font-size:clamp(30px, 4.1vw, 44px);
@@ -146,14 +136,12 @@
       text-align:left;
       padding:0 2px;
     }
-
     #choices{
       margin-top:10px;
       display:grid;
       grid-template-columns: 1fr;
       gap:8px;
     }
-
     .choice{
       background:rgba(2,6,23,.6);
       border:1px solid rgba(255,255,255,.08);
@@ -165,18 +153,18 @@
       gap:10px;
       align-items:flex-start;
     }
-
     .badge{
-      min-width:42px;
+      min-width:46px;
       height:34px;
       border-radius:999px;
       display:inline-flex;
       align-items:center;
       justify-content:center;
-      font-weight:900;
+      font-weight:1000;
       color:#0b1220;
       margin-top:2px;
       flex:0 0 auto;
+      letter-spacing:.06em;
     }
     .badge.A{background:var(--color-a);}
     .badge.B{background:var(--color-b);}
@@ -190,7 +178,6 @@
       border:2px solid rgba(34,197,94,.85);
       box-shadow:0 0 0 3px rgba(34,197,94,.15);
     }
-
     @keyframes pulseGreen {
       0%   { box-shadow:0 0 0 0 rgba(34,197,94,.55); }
       70%  { box-shadow:0 0 0 14px rgba(34,197,94,0); }
@@ -198,6 +185,7 @@
     }
     body.closed .choice.correct{ animation:pulseGreen 1.3s infinite; }
 
+    /* 解説 */
     #answerBox{
       display:none;
       margin-top:10px;
@@ -207,7 +195,6 @@
       border:1px solid rgba(34,197,94,.45);
     }
     #answerBox.show{ display:block; }
-
     #answerLine{
       font-size:clamp(26px, 3.2vw, 34px);
       font-weight:1000;
@@ -223,9 +210,8 @@
       white-space:pre-wrap;
     }
 
+    /* 右：集計（縦棒） */
     #rightPanel{ display:flex; flex-direction:column; gap:10px; min-height:0; }
-
-    /* 縦棒チャート */
     #vchartWrap{
       flex:1;
       min-height:0;
@@ -236,7 +222,6 @@
       box-sizing:border-box;
       display:flex;
       flex-direction:column;
-      justify-content:space-between;
       overflow:hidden;
     }
     #vchart{
@@ -244,14 +229,14 @@
       display:flex;
       align-items:flex-end;
       justify-content:space-around;
-      gap:10px;
-      padding:6px 4px 4px;
+      gap:12px;
+      padding:6px 6px 2px;
       box-sizing:border-box;
       min-height:0;
     }
     .col{
       width:100%;
-      max-width:72px;
+      max-width:84px;
       display:flex;
       flex-direction:column;
       align-items:center;
@@ -260,7 +245,7 @@
     }
     .count{
       font-size:14px;
-      font-weight:900;
+      font-weight:1000;
       color:#e5e7eb;
       line-height:1.1;
       min-height:20px;
@@ -279,9 +264,48 @@
     }
     .barFill{ position:absolute; inset:0; opacity:.95; }
     .lab{
-      font-size:15px;
-      font-weight:900;
+      font-size:16px;
+      font-weight:1000;
       color:var(--muted);
+      letter-spacing:.08em;
+    }
+
+    /* text回答一覧：解答終了後に表示 */
+    #textAnswersBox{
+      display:none;
+      border-radius:18px;
+      background:rgba(2,6,23,.55);
+      border:1px solid rgba(255,255,255,.08);
+      padding:12px 12px;
+      box-sizing:border-box;
+      max-height:38vh;
+      overflow:auto;
+    }
+    #textAnswersBox.show{ display:block; }
+    #textAnswersTitle{
+      font-weight:1000;
+      letter-spacing:.08em;
+      color:rgba(203,213,225,.92);
+      margin:0 0 8px 0;
+      font-size:13px;
+    }
+    .textItem{
+      padding:10px 10px;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,.08);
+      background:rgba(0,0,0,.25);
+      margin-bottom:8px;
+      font-size:clamp(18px, 2.1vw, 24px);
+      line-height:1.35;
+      color:#f9fafb;
+      white-space:pre-wrap;
+    }
+    .textItem .no{
+      display:inline-block;
+      min-width:44px;
+      margin-right:8px;
+      color:rgba(203,213,225,.85);
+      font-weight:1000;
       letter-spacing:.06em;
     }
 
@@ -311,7 +335,7 @@
       margin:0 0 6px 0;
       font-size:22px;
       letter-spacing:.10em;
-      font-weight:900;
+      font-weight:1000;
     }
     .qrHint{
       margin:0 0 10px 0;
@@ -344,7 +368,7 @@
       padding:10px 14px;
       border-radius:999px;
       color:#f9fafb;
-      font-weight:900;
+      font-weight:1000;
       letter-spacing:.06em;
       z-index:1200;
       opacity:0;
@@ -362,8 +386,8 @@
 </head>
 
 <body>
-  <div id="buildTag">build: 2025-12-27 / pollonly-sound</div>
-  <div id="toast">解答終了 → 正解公開</div>
+  <div id="buildTag">build: 2025-12-27 / display-colorsync-textafter</div>
+  <div id="toast">解答終了 → 公開</div>
 
   <div id="qrLayer">
     <div class="qrBox">
@@ -400,9 +424,14 @@
       </div>
 
       <div class="panel" id="rightPanel">
-        <div class="secTitle rightTitle">集計（縦棒）</div>
+        <div class="secTitle" id="rightTitle">集計（縦棒）</div>
         <div id="vchartWrap">
           <div id="vchart"></div>
+        </div>
+
+        <div id="textAnswersBox">
+          <div id="textAnswersTitle">文字回答（解答終了で表示）</div>
+          <div id="textAnswersList"></div>
         </div>
       </div>
     </div>
@@ -442,13 +471,17 @@
 
     const vchart = document.getElementById("vchart");
 
+    const textBox = document.getElementById("textAnswersBox");
+    const textList = document.getElementById("textAnswersList");
+    const textTitle = document.getElementById("textAnswersTitle");
+
     const qrLayer = document.getElementById("qrLayer");
     const qrDiv   = document.getElementById("qrcode");
     const qrCount = document.getElementById("qrCount");
 
     const toast  = document.getElementById("toast");
 
-    // ===== Sound: poyon.mp3（display.htmlと同じディレクトリ） =====
+    // ===== Sound: poyon.mp3（同ディレクトリ） =====
     const soundBtn = document.getElementById("soundBtn");
     const se = new Audio("./poyon.mp3");
     se.preload = "auto";
@@ -478,8 +511,6 @@
       }
     }
     soundBtn.onclick = async () => { await unlockSound(); };
-
-    // 画面どこでも1回タップ/クリックで解錠
     (function addOneShotUnlock(){
       const handler = async () => {
         await unlockSound();
@@ -498,6 +529,14 @@
       }catch(_){}
     }
 
+    // ===== Label mapping: DBキー → 表示文字 =====
+    function uiLabel(key){
+      const k = String(key).trim().toUpperCase();
+      if (k === "O") return "○";
+      if (k === "X") return "✕";
+      return k;
+    }
+
     roomLabel.textContent = `ROOM: ${room}`;
 
     const activityRef = ref(db, `rooms/${room}/activity`);
@@ -508,8 +547,10 @@
     // display起動で強制QR
     update(activityRef, { qr: true }).catch(()=>{});
 
-    // QR（固定URL）
-    const studentUrl = `https://qzp04374-code.github.io/quiz-app/exp-display/student.html?room=${encodeURIComponent(room)}`;
+    // QR固定URL
+    const studentUrl =
+      `https://qzp04374-code.github.io/quiz-app/exp-display/student.html?room=${encodeURIComponent(room)}`;
+
     function drawQR(){
       qrDiv.innerHTML = "";
       // eslint-disable-next-line no-undef
@@ -569,13 +610,14 @@
         return;
       }
       answerBox.classList.add("show");
-      answerLine.textContent = q.answer ? `正解：${String(q.answer).trim().toUpperCase()}` : "正解：—";
+      const ans = q.answer ? String(q.answer).trim().toUpperCase() : "";
+      answerLine.textContent = ans ? `正解：${uiLabel(ans)}` : "正解：—";
       explanationLine.textContent = q.explanation ? `解説：${q.explanation}` : "";
     }
 
     function colorOf(label){
       const css = getComputedStyle(document.documentElement);
-      switch(label){
+      switch(String(label).trim().toUpperCase()){
         case "O": return css.getPropertyValue("--color-o");
         case "X": return css.getPropertyValue("--color-x");
         case "A": return css.getPropertyValue("--color-a");
@@ -598,7 +640,7 @@
 
         const b = document.createElement("div");
         b.className = `badge ${key}`;
-        b.textContent = key;
+        b.textContent = uiLabel(key);
 
         const t = document.createElement("div");
         t.textContent = v;
@@ -633,7 +675,7 @@
 
         const bar = document.createElement("div");
         bar.className = "bar";
-        const h = Math.max(12, Math.round((val / max) * 260));
+        const h = Math.max(12, Math.round((val / max) * 280));
         bar.style.height = `${h}px`;
 
         const fill = document.createElement("div");
@@ -643,7 +685,7 @@
 
         const label = document.createElement("div");
         label.className = "lab";
-        label.textContent = lab;
+        label.textContent = uiLabel(lab);
 
         col.appendChild(cnt);
         col.appendChild(bar);
@@ -653,16 +695,58 @@
       });
     }
 
-    // activity：status/qr/mode/view/config.choices
+    function renderTextAnswers(answers){
+      textList.innerHTML = "";
+      const keys = Object.keys(answers || {});
+      const items = [];
+
+      keys.forEach(uid => {
+        const v = answers[uid];
+        if (typeof v === "string") items.push(v);
+        else if (v && typeof v === "object" && typeof v.value === "string") items.push(v.value);
+      });
+
+      if (currentStatus !== "closed"){
+        textTitle.textContent = `文字回答（解答終了で表示） / 現在 ${items.length} 件`;
+        return;
+      }
+
+      textTitle.textContent = `文字回答（公開中） / ${items.length} 件`;
+
+      items.forEach((t, idx) => {
+        const div = document.createElement("div");
+        div.className = "textItem";
+        div.innerHTML = `<span class="no">${idx+1}.</span>${escapeHtml(String(t||""))}`;
+        textList.appendChild(div);
+      });
+
+      if (items.length === 0){
+        const div = document.createElement("div");
+        div.className = "textItem";
+        div.innerHTML = `<span class="no">—</span>（回答なし）`;
+        textList.appendChild(div);
+      }
+    }
+
+    function escapeHtml(str){
+      return str
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#39;");
+    }
+
+    // activity
     onValue(activityRef, snap => {
       const a = snap.val() || {};
       currentStatus = a.status || "-";
       currentMode = a.mode || null;
-      currentView = a.view || "quiz"; // ★追加
+      currentView = a.view || "quiz";
 
       statusLabel.textContent = `status: ${currentStatus}`;
+      document.body.classList.toggle("poll", currentView === "poll");
       document.body.classList.toggle("closed", currentStatus === "closed");
-      document.body.classList.toggle("poll", currentView === "poll"); // ★追加
 
       if (a.qr === true) showQR();
       else hideQRWithFade();
@@ -674,19 +758,27 @@
         choiceOrder = defaultChoicesFromMode(currentMode);
       }
 
-      // poll のときは問題表示系を隠すので、ここでUIを安全側に寄せる
-      if (currentView === "poll"){
-        currentQuestion = null;
-        qEl.textContent = "（口頭Q&A：集計のみ）";
-        cEl.innerHTML = "";
-        updateAnswerUI();
+      // textモードの一覧ボックス表示制御
+      const isText = (currentMode === "text") || (a.config && a.config.type === "text");
+      if (isText){
+        textBox.classList.add("show");
+      } else {
+        textBox.classList.remove("show");
+        textList.innerHTML = "";
       }
 
       if (lastStatus !== "closed" && currentStatus === "closed") showToast();
       lastStatus = currentStatus;
 
-      // quiz のときだけ解説更新
-      if (currentView === "quiz") updateAnswerUI();
+      if (currentView === "poll"){
+        // pollは問題領域を見せない（左はCSSで非表示）
+        currentQuestion = null;
+        qEl.textContent = "（口頭Q&A：集計のみ）";
+        cEl.innerHTML = "";
+        updateAnswerUI();
+      } else {
+        updateAnswerUI();
+      }
 
       if (currentView === "quiz" && currentQuestion && currentQuestion.choices){
         const ck = currentQuestion.answer ? String(currentQuestion.answer).trim().toUpperCase() : null;
@@ -694,12 +786,11 @@
       }
     });
 
-    // 問題表示（quizのみ）
+    // quizの問題表示（display用）
     let unsubQ = null;
     onValue(qidRef, snap => {
       const qid = snap.val();
 
-      // poll中は、qid変化を追わない（表示を固定）
       if (document.body.classList.contains("poll")) return;
 
       if (!qid){
@@ -734,7 +825,7 @@
       });
     });
 
-    // answers：参加人数＋集計＋音
+    // answers：参加人数＋集計＋音＋（textは解答終了後に表示）
     onValue(answersRef, snap => {
       const ans = snap.val() || {};
       const keys = Object.keys(ans);
@@ -746,6 +837,22 @@
       if (n > lastAnswerTotal) playPoyon();
       lastAnswerTotal = n;
 
+      // textモードなら、集計は「件数」だけ（バーは1本にせず、ここでは 右上の人数と一覧で見せる）
+      const isText = (currentMode === "text");
+      if (isText){
+        // vchartは「現在の入力数」だけ表示（見やすさ優先）
+        renderVChart({ "O": 0, "X": 0 }, []); // 表示消し込み用
+        vchart.innerHTML = `<div style="color:rgba(203,213,225,.92); font-weight:1000; letter-spacing:.08em;">
+          文字入力：<span style="color:#fff; font-size:28px;">${n}</span> 件
+          <div style="margin-top:8px; font-size:14px; color:rgba(203,213,225,.85);">
+            ※解答終了で一覧を表示
+          </div>
+        </div>`;
+        renderTextAnswers(ans);
+        return;
+      }
+
+      // OX / ABCDE
       const counts = {};
       (choiceOrder || []).forEach(c => counts[c] = 0);
 
