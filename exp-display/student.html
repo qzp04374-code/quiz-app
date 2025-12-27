@@ -8,36 +8,42 @@
   <style>
     :root{
       --bg:#050608;
-      --panel:#111827;
-      --panel2:#020617;
-      --line:rgba(255,255,255,.10);
+      --card: rgba(17,24,39,.72);
+      --line: rgba(255,255,255,.10);
       --ink:#f9fafb;
       --muted:#cbd5e1;
 
-      --a:#0a84ff;
-      --b:#30d158;
-      --c:#ff9f0a;
-      --d:#bf5af2;
-      --e:#ff375f;
-
-      --o:#34c759;
-      --x:#ff3b30;
+      /* 色対応：正本（index/displayと一致） */
+      --color-o:#34c759;
+      --color-x:#ff3b30;
+      --color-a:#0a84ff;
+      --color-b:#30d158;
+      --color-c:#ff9f0a;
+      --color-d:#bf5af2;
+      --color-e:#ff375f;
 
       --ok:#22c55e;
-      --danger:#ef4444;
+      --ng:#ef4444;
+
+      --shadow: 0 20px 70px rgba(0,0,0,.65);
     }
 
+    *{ box-sizing:border-box; }
     body{
       margin:0;
       min-height:100vh;
-      background:var(--bg);
+      background:
+        radial-gradient(1200px 600px at 20% 0%, rgba(99,102,241,.12), transparent 60%),
+        radial-gradient(1000px 600px at 80% 10%, rgba(34,197,94,.10), transparent 60%),
+        radial-gradient(1200px 700px at 50% 120%, rgba(245,158,11,.10), transparent 60%),
+        var(--bg);
       color:var(--ink);
       font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",sans-serif;
       display:flex;
       justify-content:center;
       align-items:flex-start;
       padding:18px 12px 28px;
-      box-sizing:border-box;
+      overflow-x:hidden;
     }
 
     #buildTag{
@@ -50,12 +56,20 @@
 
     .card{
       width:min(720px, 96vw);
-      background:rgba(17,24,39,.70);
+      background:var(--card);
       border:1px solid rgba(255,255,255,.08);
-      border-radius:22px;
-      box-shadow:0 18px 60px rgba(0,0,0,.65);
+      border-radius:24px;
+      box-shadow:var(--shadow);
       padding:16px 14px 18px;
-      box-sizing:border-box;
+      position:relative;
+      overflow:hidden;
+    }
+    .card::before{
+      content:"";
+      position:absolute; inset:-40%;
+      background: radial-gradient(circle at 30% 20%, rgba(255,255,255,.10), transparent 55%);
+      transform: rotate(10deg);
+      pointer-events:none;
     }
 
     .top{
@@ -64,22 +78,23 @@
       align-items:center;
       gap:10px;
       margin-bottom:10px;
+      position:relative;
+      z-index:1;
     }
-
     .room{
       font-weight:1000;
       letter-spacing:.08em;
-      font-size:15px;
+      font-size:14px;
       opacity:.95;
       white-space:nowrap;
     }
-
-    .status{
-      font-size:13px;
-      color:var(--muted);
-      white-space:nowrap;
+    .badges{
+      display:flex;
+      gap:8px;
+      align-items:center;
+      flex-wrap:wrap;
+      justify-content:flex-end;
     }
-
     .badge{
       display:inline-flex;
       align-items:center;
@@ -88,61 +103,81 @@
       border-radius:999px;
       background:rgba(2,6,23,.60);
       border:1px solid rgba(255,255,255,.10);
-      font-weight:900;
+      font-weight:1000;
       letter-spacing:.06em;
       font-size:12px;
       color:#e5e7eb;
+      backdrop-filter: blur(8px);
     }
 
+    .header{
+      position:relative;
+      z-index:1;
+      margin: 6px 0 14px;
+    }
     .title{
-      margin:6px 0 10px;
+      margin:0 0 6px;
       font-size:18px;
       font-weight:1000;
       letter-spacing:.06em;
     }
-
     .hint{
-      margin:0 0 12px;
-      color:var(--muted);
+      margin:0;
+      color:rgba(203,213,225,.92);
       font-size:14px;
       line-height:1.45;
     }
 
-    .question{
-      margin:0 0 12px;
-      padding:14px 14px;
-      border-radius:18px;
-      background:rgba(2,6,23,.62);
-      border:1px solid rgba(255,255,255,.08);
-      font-size:18px;
-      font-weight:900;
-      line-height:1.35;
-      white-space:pre-wrap;
+    /* 画面切替アニメ */
+    .stage{
+      position:relative;
+      z-index:1;
+      transition: opacity .22s ease, transform .22s ease;
+    }
+    .stage.fade{
+      opacity:0;
+      transform: translateY(6px);
     }
 
-    .choices{
+    /* 選択ボタン：かっこよく */
+    .grid{
       display:grid;
       grid-template-columns: 1fr;
-      gap:10px;
+      gap:12px;
+      margin-top:12px;
     }
 
     .btn{
       width:100%;
+      border:none;
+      border-radius:20px;
       padding:14px 14px;
-      border-radius:18px;
+      background:rgba(2,6,23,.55);
       border:1px solid rgba(255,255,255,.10);
-      background:rgba(2,6,23,.62);
       color:#f9fafb;
-      font-weight:1000;
-      font-size:16px;
-      letter-spacing:.04em;
-      text-align:left;
       cursor:pointer;
-      box-shadow:0 10px 30px rgba(0,0,0,.35);
-      transition:transform .10s ease, filter .10s ease, box-shadow .10s ease, opacity .10s ease;
+      box-shadow:0 12px 34px rgba(0,0,0,.35);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      transition: transform .10s ease, filter .10s ease, box-shadow .10s ease, border-color .10s ease;
       user-select:none;
+      overflow:hidden;
+      position:relative;
     }
-    .btn:active{ transform:scale(.98); filter:brightness(.98); }
+    .btn::after{
+      content:"";
+      position:absolute; inset:-60%;
+      background: radial-gradient(circle at 30% 20%, rgba(255,255,255,.14), transparent 55%);
+      transform: rotate(12deg);
+      opacity:0;
+      transition:opacity .18s ease;
+      pointer-events:none;
+    }
+    .btn:active{ transform: scale(.985); filter:brightness(.98); }
+    .btn:hover::after{ opacity:.75; }
+
     .btn[disabled]{
       opacity:.45;
       cursor:not-allowed;
@@ -150,135 +185,174 @@
       transform:none;
     }
 
+    .left{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      min-width:0;
+    }
+
+    /* 大きいラベル（○/✕/Aなど） */
     .pill{
-      display:inline-flex;
+      width:56px;
+      height:44px;
+      border-radius:999px;
+      display:flex;
       align-items:center;
       justify-content:center;
-      min-width:40px;
-      height:28px;
-      border-radius:999px;
-      font-weight:1000;
-      margin-right:10px;
-      color:#0b1220;
-      background:#94a3b8;
+      font-weight:1100;
       letter-spacing:.06em;
+      color:#0b1220;
       flex:0 0 auto;
+      box-shadow:0 10px 26px rgba(0,0,0,.35);
     }
-    .pill.A{ background:var(--a); }
-    .pill.B{ background:var(--b); }
-    .pill.C{ background:var(--c); }
-    .pill.D{ background:var(--d); color:#fff; }
-    .pill.E{ background:var(--e); color:#fff; }
-    .pill.O{ background:var(--o); }
-    .pill.X{ background:var(--x); color:#fff; }
 
-    .selected{
-      outline: none;
+    .pill.O{ background:var(--color-o); }
+    .pill.X{ background:var(--color-x); color:#fff; }
+    .pill.A{ background:var(--color-a); }
+    .pill.B{ background:var(--color-b); }
+    .pill.C{ background:var(--color-c); }
+    .pill.D{ background:var(--color-d); color:#fff; }
+    .pill.E{ background:var(--color-e); color:#fff; }
+
+    .label{
+      font-size:16px;
+      font-weight:1000;
+      letter-spacing:.04em;
+      white-space:nowrap;
+    }
+    .sub{
+      font-size:12px;
+      color:rgba(203,213,225,.90);
+      letter-spacing:.06em;
+      white-space:nowrap;
+    }
+
+    .rightMark{
+      font-weight:1000;
+      color:rgba(203,213,225,.92);
+      letter-spacing:.06em;
+      white-space:nowrap;
+    }
+
+    /* 選択時の強調 */
+    .btn.selected{
       border-color: rgba(34,197,94,.55);
-      box-shadow:0 0 0 3px rgba(34,197,94,.18), 0 18px 60px rgba(0,0,0,.45);
+      box-shadow:0 0 0 4px rgba(34,197,94,.16), 0 18px 60px rgba(0,0,0,.45);
+      transform: translateY(-1px);
     }
 
+    /* text入力 */
     .textBox{
-      margin-top:10px;
+      margin-top:12px;
       padding:12px;
-      border-radius:18px;
+      border-radius:22px;
       border:1px solid rgba(255,255,255,.10);
-      background:rgba(2,6,23,.62);
+      background:rgba(2,6,23,.55);
+      box-shadow:0 12px 34px rgba(0,0,0,.30);
     }
-
     textarea{
       width:100%;
-      min-height:96px;
+      min-height:110px;
       resize:vertical;
       border:none;
       outline:none;
       background:transparent;
       color:#f9fafb;
       font-size:16px;
-      line-height:1.45;
-      font-weight:700;
+      line-height:1.50;
+      font-weight:800;
     }
-
     .row{
       display:flex;
       gap:10px;
       margin-top:10px;
     }
-
     .send{
       flex:1;
-      text-align:center;
-      background:linear-gradient(135deg, #22c55e, #06b6d4);
       border:none;
+      border-radius:999px;
+      padding:12px 14px;
+      font-weight:1100;
+      letter-spacing:.06em;
+      background: linear-gradient(135deg, var(--color-o), #06b6d4);
+      color:#041016;
+      cursor:pointer;
+      box-shadow:0 16px 40px rgba(0,0,0,.35);
+      transition: transform .10s ease, filter .10s ease;
     }
+    .send:active{ transform:scale(.985); filter:brightness(.98); }
+    .send:disabled{ opacity:.45; cursor:not-allowed; box-shadow:none; }
 
     .clear{
       width:120px;
-      text-align:center;
-      background:rgba(75,85,99,.9);
       border:none;
+      border-radius:999px;
+      padding:12px 14px;
+      font-weight:1000;
+      letter-spacing:.06em;
+      background: rgba(75,85,99,.85);
+      color:#f9fafb;
+      cursor:pointer;
+      transition: transform .10s ease, filter .10s ease;
     }
+    .clear:active{ transform:scale(.985); filter:brightness(.98); }
+    .clear:disabled{ opacity:.45; cursor:not-allowed; }
 
     .msg{
       margin-top:12px;
       padding:10px 12px;
       border-radius:16px;
-      background:rgba(2,6,23,.62);
+      background:rgba(2,6,23,.55);
       border:1px solid rgba(255,255,255,.08);
       color:#e5e7eb;
       font-size:14px;
       line-height:1.45;
       white-space:pre-wrap;
+      position:relative;
+      z-index:1;
     }
-
     .msg.ok{ border-color: rgba(34,197,94,.35); }
     .msg.ng{ border-color: rgba(239,68,68,.35); }
-
-    .small{
-      margin-top:10px;
-      color:rgba(203,213,225,.85);
-      font-size:12px;
-      line-height:1.4;
-    }
   </style>
 </head>
 
 <body>
-  <div id="buildTag">build: 2025-12-27 / student-pollfix</div>
+  <div id="buildTag">build: 2025-12-27 / student-colorsync-noproblem</div>
 
   <div class="card">
     <div class="top">
       <div class="room" id="roomLabel">ROOM</div>
-      <div class="status">
+      <div class="badges">
         <span class="badge" id="modeBadge">—</span>
         <span class="badge" id="statusBadge">status: -</span>
       </div>
     </div>
 
-    <div class="title" id="title">接続中…</div>
-    <div class="hint" id="hint">先生の指示に従って回答してください。</div>
-
-    <div class="question" id="questionBox" style="display:none;"></div>
-
-    <div class="choices" id="choices"></div>
-
-    <div class="textBox" id="textBox" style="display:none;">
-      <textarea id="textInput" placeholder="ここに入力して送信"></textarea>
-      <div class="row">
-        <button class="btn send" id="sendTextBtn">送信</button>
-        <button class="btn clear" id="clearTextBtn">消去</button>
-      </div>
+    <div class="header">
+      <div class="title" id="title">接続中…</div>
+      <p class="hint" id="hint">ボタンで回答してください。</p>
     </div>
 
-    <div class="msg" id="msg" style="display:none;"></div>
-    <div class="small" id="smallNote"></div>
+    <div class="stage" id="stage">
+      <div class="grid" id="choices"></div>
+
+      <div class="textBox" id="textBox" style="display:none;">
+        <textarea id="textInput" placeholder="ここに入力して送信"></textarea>
+        <div class="row">
+          <button id="sendTextBtn" class="send">送信</button>
+          <button id="clearTextBtn" class="clear">消去</button>
+        </div>
+      </div>
+
+      <div class="msg" id="msg" style="display:none;"></div>
+    </div>
   </div>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import {
-      getDatabase, ref, onValue, set
-    } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+    import { getDatabase, ref, onValue, set } from
+      "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyBke-wTU16skpbK8z80ddK04tE154dHERQ",
@@ -293,28 +367,26 @@
     const url = new URL(location.href);
     const room = url.searchParams.get("room") || "kyoto-01";
 
-    // ---- uid（端末ごと）----
-    const uidKey = "classsync_uid_v1";
+    // uid（端末ごと）
+    const uidKey = "classsync_uid_v2";
     let uid = localStorage.getItem(uidKey);
     if (!uid) {
       uid = "u_" + Math.random().toString(36).slice(2,10) + Date.now().toString(36).slice(-4);
       localStorage.setItem(uidKey, uid);
     }
 
-    // ---- refs ----
+    // refs
     const activityRef = ref(db, `rooms/${room}/activity`);
-    const qidRef      = ref(db, `rooms/${room}/quiz/current_question_id`);
     const answersMyRef= ref(db, `rooms/${room}/answers/${uid}`);
-    const qRef = (qid) => ref(db, `rooms/${room}/questions/${qid}`);
 
-    // ---- DOM ----
+    // DOM
     const roomLabel = document.getElementById("roomLabel");
     const modeBadge = document.getElementById("modeBadge");
     const statusBadge = document.getElementById("statusBadge");
-
     const titleEl = document.getElementById("title");
     const hintEl  = document.getElementById("hint");
-    const questionBox = document.getElementById("questionBox");
+
+    const stage = document.getElementById("stage");
     const choicesEl = document.getElementById("choices");
 
     const textBox = document.getElementById("textBox");
@@ -323,19 +395,27 @@
     const clearTextBtn = document.getElementById("clearTextBtn");
 
     const msgEl = document.getElementById("msg");
-    const smallNote = document.getElementById("smallNote");
 
     roomLabel.textContent = `ROOM: ${room}`;
 
-    // ---- state ----
+    // state
     let currentStatus = "closed";
-    let currentView = "quiz"; // quiz | poll
+    let currentView = "quiz"; // quiz | poll（学生UIは同じ動作にする）
     let currentMode = null;   // ox | five | text
     let configChoices = null;
-    let currentQid = null;
-    let currentQuestion = null;
 
-    let selected = null; // 選んだ値
+    function uiLabel(key){
+      const k = String(key).trim().toUpperCase();
+      if (k === "O") return "○";
+      if (k === "X") return "✕";
+      return k;
+    }
+
+    function defaultChoicesFromMode(mode){
+      if (mode === "ox") return ["O","X"];
+      if (mode === "five") return ["A","B","C","D","E"];
+      return ["A","B","C","D","E"];
+    }
 
     function showMsg(text, kind){
       msgEl.style.display = "block";
@@ -348,20 +428,25 @@
       msgEl.textContent = "";
     }
 
+    function setDisabled(disabled){
+      Array.from(choicesEl.querySelectorAll("button")).forEach(b => b.disabled = disabled);
+      sendTextBtn.disabled = disabled;
+      clearTextBtn.disabled = disabled;
+      textInput.disabled = disabled;
+    }
+
+    function animateSwitch(){
+      stage.classList.add("fade");
+      setTimeout(()=> stage.classList.remove("fade"), 160);
+    }
+
     async function submitValue(value){
       if (currentStatus !== "open"){
         showMsg("受付は終了しています。", "ng");
         return;
       }
       await set(answersMyRef, { value, timestamp: Date.now() });
-      showMsg("送信しました。必要なら押し直して変更できます。", "ok");
-    }
-
-    function setButtonsDisabled(disabled){
-      Array.from(choicesEl.querySelectorAll("button")).forEach(b => b.disabled = disabled);
-      sendTextBtn.disabled = disabled;
-      clearTextBtn.disabled = disabled;
-      textInput.disabled = disabled;
+      showMsg("送信しました（必要なら押し直し/再送信で変更できます）", "ok");
     }
 
     function renderChoiceButtons(keys){
@@ -374,19 +459,35 @@
         btn.className = "btn";
         btn.type = "button";
 
-        const pill = document.createElement("span");
+        const left = document.createElement("div");
+        left.className = "left";
+
+        const pill = document.createElement("div");
         pill.className = `pill ${key}`;
-        pill.textContent = key;
+        pill.textContent = uiLabel(key);
 
-        const label = document.createElement("span");
-        label.textContent = "選択";
+        const labelWrap = document.createElement("div");
+        const label = document.createElement("div");
+        label.className = "label";
+        label.textContent = (key === "O" || key === "X") ? "回答" : "選択";
+        const sub = document.createElement("div");
+        sub.className = "sub";
+        sub.textContent = (key === "O" || key === "X") ? "○ / ✕" : "A〜E";
+        labelWrap.appendChild(label);
+        labelWrap.appendChild(sub);
 
-        btn.appendChild(pill);
-        btn.appendChild(label);
+        left.appendChild(pill);
+        left.appendChild(labelWrap);
+
+        const right = document.createElement("div");
+        right.className = "rightMark";
+        right.textContent = "タップ";
+
+        btn.appendChild(left);
+        btn.appendChild(right);
 
         btn.onclick = async () => {
-          selected = key;
-          // 見た目
+          // 見た目：選択を強調
           Array.from(choicesEl.querySelectorAll("button")).forEach(b => b.classList.remove("selected"));
           btn.classList.add("selected");
           await submitValue(key);
@@ -395,120 +496,77 @@
         choicesEl.appendChild(btn);
       });
 
-      setButtonsDisabled(currentStatus !== "open");
+      setDisabled(currentStatus !== "open");
     }
 
     function renderTextInput(){
       choicesEl.innerHTML = "";
-      questionBox.style.display = "none"; // poll文字は問題なし
       textBox.style.display = "block";
-      setButtonsDisabled(currentStatus !== "open");
+      setDisabled(currentStatus !== "open");
     }
 
     function setHeader(){
       statusBadge.textContent = `status: ${currentStatus}`;
-      const viewLabel = (currentView === "poll") ? "口頭投票" : "授業問題";
-      const modeLabel = (currentMode === "ox") ? "2択(○×)" : (currentMode === "five") ? "5択(A-E)" : (currentMode === "text") ? "文字入力" : "—";
+      const viewLabel = (currentView === "poll") ? "口頭投票" : "授業";
+      const modeLabel =
+        (currentMode === "ox") ? "2択（○✕）" :
+        (currentMode === "five") ? "5択（ABCDE）" :
+        (currentMode === "text") ? "文字入力" : "—";
       modeBadge.textContent = `${viewLabel} / ${modeLabel}`;
     }
 
     function applyUI(){
       hideMsg();
+      animateSwitch();
 
-      // poll（口頭Q&A）：qid不要。modeに応じて即UIを出す
-      if (currentView === "poll"){
-        titleEl.textContent = "口頭Q&A：投票してください";
-        hintEl.textContent  = (currentMode === "text")
+      if (currentStatus === "closed"){
+        titleEl.textContent = "受付終了";
+        hintEl.textContent  = "先生の指示を待ってください。";
+      } else {
+        titleEl.textContent = "回答してください";
+        hintEl.textContent  = "ボタンを押すと送信されます。";
+      }
+
+      // 学生は “問題文を一切表示しない”
+      if (currentMode === "text"){
+        hintEl.textContent = (currentStatus === "open")
           ? "入力して「送信」を押してください。"
-          : "該当するボタンを押してください。";
-
-        questionBox.style.display = "none";
-
-        if (currentMode === "text"){
-          renderTextInput();
-        } else if (currentMode === "ox"){
-          renderChoiceButtons(configChoices || ["O","X"]);
-        } else {
-          renderChoiceButtons(configChoices || ["A","B","C","D","E"]);
-        }
+          : "受付終了です（先生の指示を待ってください）。";
+        renderTextInput();
         return;
       }
 
-      // quiz（通常）：qidが無いなら待機
-      if (!currentQid){
-        titleEl.textContent = "先生の出題を待っています…";
-        hintEl.textContent  = "出題開始後に解答ボタンが表示されます。";
-        questionBox.style.display = "none";
-        textBox.style.display = "none";
-        choicesEl.innerHTML = "";
-        setButtonsDisabled(true);
-        return;
-      }
+      const keys = (Array.isArray(configChoices) && configChoices.length)
+        ? configChoices.map(x => String(x).trim().toUpperCase())
+        : defaultChoicesFromMode(currentMode);
 
-      // quiz：問題がある
-      titleEl.textContent = "問題に答えてください";
-      hintEl.textContent  = "該当する選択肢を押してください。";
-
-      if (currentQuestion && currentQuestion.question){
-        questionBox.style.display = "block";
-        questionBox.textContent = currentQuestion.question;
-      } else {
-        questionBox.style.display = "block";
-        questionBox.textContent = "（問題データ読み込み中…）";
-      }
-
-      // quiz：choicesは問題データ優先
-      if (currentQuestion && currentQuestion.choices){
-        const keys = Object.keys(currentQuestion.choices).map(k => String(k).toUpperCase());
-        renderChoiceButtons(keys);
-        // ラベルを選択肢文に変える
-        Array.from(choicesEl.querySelectorAll("button")).forEach(btn => {
-          const key = btn.querySelector(".pill")?.textContent;
-          const text = currentQuestion.choices[key];
-          btn.querySelector("span:last-child").textContent = text ?? "選択";
-        });
-      } else {
-        // フォールバック（mode/configがあればそれを使う）
-        if (currentMode === "ox") renderChoiceButtons(configChoices || ["O","X"]);
-        else renderChoiceButtons(configChoices || ["A","B","C","D","E"]);
-      }
+      renderChoiceButtons(keys);
     }
 
-    // ---- activity監視（view/mode/status/choices）----
+    // activity監視
     onValue(activityRef, snap => {
       const a = snap.val() || {};
+      const prevMode = currentMode;
+      const prevStatus = currentStatus;
+
       currentStatus = a.status || "closed";
       currentView = a.view || "quiz";
       currentMode = a.mode || null;
 
-      // choicesの優先：config.choices
       configChoices = (a.config && Array.isArray(a.config.choices)) ? a.config.choices : null;
 
       setHeader();
-      applyUI();
-    });
 
-    // ---- qid監視（quizでのみ使う）----
-    onValue(qidRef, snap => {
-      currentQid = snap.val() || null;
-      // pollの時はqidを無視してUI固定
-      if (currentView !== "quiz") return;
-      applyUI();
-
-      if (!currentQid) {
-        currentQuestion = null;
-        return;
-      }
-
-      // 問題データ購読
-      onValue(qRef(currentQid), qsnap => {
-        currentQuestion = qsnap.val() || null;
-        if (currentView !== "quiz") return;
+      // モード/状態が変わったときだけUI再描画
+      if (prevMode !== currentMode || prevStatus !== currentStatus){
         applyUI();
-      });
+      } else {
+        // 受付終了だけは即反映
+        setDisabled(currentStatus !== "open");
+      }
     });
 
-    // ---- text送信 ----
+    // text送信
     sendTextBtn.onclick = async () => {
       const v = (textInput.value || "").trim();
       if (!v){
@@ -522,9 +580,8 @@
       hideMsg();
     };
 
-    // note
-    smallNote.textContent =
-      "※送信後も押し直し/再送信で変更できます（受付中のみ）。";
+    // 初期表示
+    applyUI();
   </script>
 </body>
 </html>
