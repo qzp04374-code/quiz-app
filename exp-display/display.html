@@ -41,7 +41,21 @@
       backdrop-filter: blur(8px);
     }
 
+    /* ===== pollモード：問題パネルを完全に隠し、集計を全幅に ===== */
+    body.poll #leftPanel{ display:none !important; }
+    body.poll .grid{ grid-template-columns: 1fr !important; }
+    body.poll #rightPanel{ width:100%; }
+    body.poll .secTitle.rightTitle::after{
+      content:"（集計のみ）";
+      margin-left:10px;
+      font-size:13px;
+      color:rgba(203,213,225,.85);
+      letter-spacing:.06em;
+      font-weight:900;
+    }
+
     body.closed .grid{ grid-template-columns: 1.6fr 1fr; }
+    body.poll.closed .grid{ grid-template-columns: 1fr !important; } /* poll優先 */
 
     .wrap{
       height:100vh;
@@ -211,6 +225,7 @@
 
     #rightPanel{ display:flex; flex-direction:column; gap:10px; min-height:0; }
 
+    /* 縦棒チャート */
     #vchartWrap{
       flex:1;
       min-height:0;
@@ -236,7 +251,7 @@
     }
     .col{
       width:100%;
-      max-width:64px;
+      max-width:72px;
       display:flex;
       flex-direction:column;
       align-items:center;
@@ -270,6 +285,7 @@
       letter-spacing:.06em;
     }
 
+    /* QR */
     #qrLayer{
       position:fixed;
       inset:0;
@@ -340,12 +356,13 @@
     @media (max-width: 980px){
       .grid{ grid-template-columns: 1fr; }
       #leftScroll{ overflow:auto; }
+      body.poll #leftPanel{ display:none !important; }
     }
   </style>
 </head>
 
 <body>
-  <div id="buildTag">build: 2025-12-27 / aggfix2-sound</div>
+  <div id="buildTag">build: 2025-12-27 / pollonly-sound</div>
   <div id="toast">解答終了 → 正解公開</div>
 
   <div id="qrLayer">
@@ -383,7 +400,7 @@
       </div>
 
       <div class="panel" id="rightPanel">
-        <div class="secTitle">集計（縦棒）</div>
+        <div class="secTitle rightTitle">集計（縦棒）</div>
         <div id="vchartWrap">
           <div id="vchart"></div>
         </div>
@@ -433,7 +450,7 @@
 
     // ===== Sound: poyon.mp3（display.htmlと同じディレクトリ） =====
     const soundBtn = document.getElementById("soundBtn");
-    const se = new Audio("./poyon.mp3"); // ←同じディレクトリ
+    const se = new Audio("./poyon.mp3");
     se.preload = "auto";
     se.volume = 0.6;
 
@@ -444,7 +461,6 @@
     async function unlockSound(){
       if (soundUnlocked) return true;
       try{
-        // 1回だけ再生できれば解錠扱い（無音ではなく短く鳴る可能性あり）
         await se.play();
         se.pause();
         se.currentTime = 0;
@@ -461,12 +477,10 @@
         return false;
       }
     }
-
-    // ボタンで明示的にON
     soundBtn.onclick = async () => { await unlockSound(); };
 
-    // 画面どこでも1回タップ/クリックで解錠（運用ラクにする）
-    function addOneShotUnlock(){
+    // 画面どこでも1回タップ/クリックで解錠
+    (function addOneShotUnlock(){
       const handler = async () => {
         await unlockSound();
         window.removeEventListener("pointerdown", handler, true);
@@ -474,12 +488,10 @@
       };
       window.addEventListener("pointerdown", handler, true);
       window.addEventListener("keydown", handler, true);
-    }
-    addOneShotUnlock();
+    })();
 
     function playPoyon(){
-      if (!soundEnabled) return;
-      if (!soundUnlocked) return;
+      if (!soundEnabled || !soundUnlocked) return;
       try{
         se.currentTime = 0;
         se.play().catch(()=>{});
@@ -510,6 +522,7 @@
     let currentStatus = "-";
     let lastStatus = null;
     let currentMode = null;
+    let currentView = "quiz"; // quiz | poll
 
     let choiceOrder = ["A","B","C","D","E"];
     let currentQuestion = null;
@@ -620,7 +633,7 @@
 
         const bar = document.createElement("div");
         bar.className = "bar";
-        const h = Math.max(12, Math.round((val / max) * 250));
+        const h = Math.max(12, Math.round((val / max) * 260));
         bar.style.height = `${h}px`;
 
         const fill = document.createElement("div");
@@ -640,14 +653,16 @@
       });
     }
 
-    // activity：status/qr/mode/config.choices
+    // activity：status/qr/mode/view/config.choices
     onValue(activityRef, snap => {
       const a = snap.val() || {};
       currentStatus = a.status || "-";
       currentMode = a.mode || null;
+      currentView = a.view || "quiz"; // ★追加
 
       statusLabel.textContent = `status: ${currentStatus}`;
       document.body.classList.toggle("closed", currentStatus === "closed");
+      document.body.classList.toggle("poll", currentView === "poll"); // ★追加
 
       if (a.qr === true) showQR();
       else hideQRWithFade();
@@ -659,21 +674,34 @@
         choiceOrder = defaultChoicesFromMode(currentMode);
       }
 
+      // poll のときは問題表示系を隠すので、ここでUIを安全側に寄せる
+      if (currentView === "poll"){
+        currentQuestion = null;
+        qEl.textContent = "（口頭Q&A：集計のみ）";
+        cEl.innerHTML = "";
+        updateAnswerUI();
+      }
+
       if (lastStatus !== "closed" && currentStatus === "closed") showToast();
       lastStatus = currentStatus;
 
-      updateAnswerUI();
+      // quiz のときだけ解説更新
+      if (currentView === "quiz") updateAnswerUI();
 
-      if (currentQuestion && currentQuestion.choices){
+      if (currentView === "quiz" && currentQuestion && currentQuestion.choices){
         const ck = currentQuestion.answer ? String(currentQuestion.answer).trim().toUpperCase() : null;
         renderChoices(currentQuestion.choices, ck, currentStatus === "closed");
       }
     });
 
-    // 問題表示
+    // 問題表示（quizのみ）
     let unsubQ = null;
     onValue(qidRef, snap => {
       const qid = snap.val();
+
+      // poll中は、qid変化を追わない（表示を固定）
+      if (document.body.classList.contains("poll")) return;
+
       if (!qid){
         currentQuestion = null;
         qEl.textContent = "（問題を待っています…）";
@@ -706,7 +734,7 @@
       });
     });
 
-    // answers：参加人数＋集計＋「増えたら音」
+    // answers：参加人数＋集計＋音
     onValue(answersRef, snap => {
       const ans = snap.val() || {};
       const keys = Object.keys(ans);
@@ -715,10 +743,7 @@
       countLabel.textContent = `参加中 ${n}人`;
       qrCount.textContent = `参加中 ${n}人`;
 
-      // ★回答が増えたら鳴らす
-      if (n > lastAnswerTotal) {
-        playPoyon();
-      }
+      if (n > lastAnswerTotal) playPoyon();
       lastAnswerTotal = n;
 
       const counts = {};
