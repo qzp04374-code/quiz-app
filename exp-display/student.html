@@ -7,13 +7,7 @@
 
   <style>
     :root{
-      --bg:#050608;
-      --card: rgba(17,24,39,.72);
-      --line: rgba(255,255,255,.10);
-      --ink:#f9fafb;
-      --muted:#cbd5e1;
-
-      /* 色対応：正本（index/displayと一致） */
+      /* display/index と同じ色（踏襲） */
       --color-o:#34c759;
       --color-x:#ff3b30;
       --color-a:#0a84ff;
@@ -22,566 +16,876 @@
       --color-d:#bf5af2;
       --color-e:#ff375f;
 
-      --ok:#22c55e;
-      --ng:#ef4444;
+      --bg:#050608;
+      --panel:#0b1020;
+      --panel2:#111827;
+      --line:rgba(255,255,255,.10);
+      --ink:#f9fafb;
+      --muted:rgba(203,213,225,.85);
 
-      --shadow: 0 20px 70px rgba(0,0,0,.65);
+      --shadow: 0 18px 60px rgba(0,0,0,.65);
     }
 
-    *{ box-sizing:border-box; }
+    *{box-sizing:border-box;}
+    html,body{height:100%;}
     body{
       margin:0;
-      min-height:100vh;
       background:
-        radial-gradient(1200px 600px at 20% 0%, rgba(99,102,241,.12), transparent 60%),
-        radial-gradient(1000px 600px at 80% 10%, rgba(34,197,94,.10), transparent 60%),
-        radial-gradient(1200px 700px at 50% 120%, rgba(245,158,11,.10), transparent 60%),
+        radial-gradient(1200px 800px at 20% 20%, rgba(96,165,250,.10), transparent 55%),
+        radial-gradient(1000px 800px at 80% 30%, rgba(34,197,94,.08), transparent 55%),
+        radial-gradient(900px 900px at 50% 90%, rgba(191,90,242,.10), transparent 60%),
         var(--bg);
       color:var(--ink);
       font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",sans-serif;
-      display:flex;
-      justify-content:center;
-      align-items:flex-start;
-      padding:18px 12px 28px;
-      overflow-x:hidden;
-    }
-
-    #buildTag{
-      position:fixed; right:10px; bottom:10px;
-      opacity:.55; font-size:12px; z-index:9999;
-      background:rgba(0,0,0,.35); border:1px solid rgba(255,255,255,.08);
-      padding:6px 10px; border-radius:999px;
-      backdrop-filter: blur(8px);
-    }
-
-    .card{
-      width:min(720px, 96vw);
-      background:var(--card);
-      border:1px solid rgba(255,255,255,.08);
-      border-radius:24px;
-      box-shadow:var(--shadow);
-      padding:16px 14px 18px;
-      position:relative;
       overflow:hidden;
     }
-    .card::before{
-      content:"";
-      position:absolute; inset:-40%;
-      background: radial-gradient(circle at 30% 20%, rgba(255,255,255,.10), transparent 55%);
-      transform: rotate(10deg);
-      pointer-events:none;
-    }
 
-    .top{
+    /* 上部ステータス */
+    .topbar{
+      position:fixed;
+      top:12px; left:12px; right:12px;
       display:flex;
       justify-content:space-between;
       align-items:center;
       gap:10px;
-      margin-bottom:10px;
-      position:relative;
-      z-index:1;
+      padding:10px 12px;
+      border-radius:18px;
+      background:rgba(17,24,39,.55);
+      border:1px solid rgba(255,255,255,.08);
+      backdrop-filter: blur(10px);
+      box-shadow:0 18px 60px rgba(0,0,0,.45);
+      z-index:10;
     }
     .room{
       font-weight:1000;
-      letter-spacing:.08em;
+      letter-spacing:.10em;
       font-size:14px;
-      opacity:.95;
       white-space:nowrap;
     }
-    .badges{
+    .status{
+      font-weight:900;
+      font-size:13px;
+      color:var(--muted);
+      letter-spacing:.06em;
       display:flex;
-      gap:8px;
+      gap:10px;
       align-items:center;
-      flex-wrap:wrap;
-      justify-content:flex-end;
+      white-space:nowrap;
     }
-    .badge{
+    .pill{
       display:inline-flex;
       align-items:center;
-      justify-content:center;
+      gap:8px;
       padding:6px 10px;
       border-radius:999px;
-      background:rgba(2,6,23,.60);
       border:1px solid rgba(255,255,255,.10);
+      background:rgba(2,6,23,.45);
+    }
+    .dot{
+      width:8px;height:8px;border-radius:50%;
+      background:#9ca3af;
+      box-shadow:0 0 0 3px rgba(156,163,175,.15);
+    }
+    .dot.open{
+      background:#22c55e;
+      box-shadow:0 0 0 3px rgba(34,197,94,.18), 0 0 16px rgba(34,197,94,.35);
+    }
+    .dot.closed{
+      background:#ef4444;
+      box-shadow:0 0 0 3px rgba(239,68,68,.18), 0 0 16px rgba(239,68,68,.25);
+    }
+
+    /* 画面中央：コントローラー本体 */
+    .stage{
+      height:100%;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:88px 14px 18px;
+    }
+
+    .controller{
+      width:min(720px, 94vw);
+      height:min(520px, 72vh);
+      position:relative;
+      border-radius:48px;
+      background:
+        radial-gradient(100% 120% at 50% 20%, rgba(255,255,255,.06), transparent 55%),
+        linear-gradient(180deg, rgba(17,24,39,.92), rgba(2,6,23,.88));
+      border:1px solid rgba(255,255,255,.10);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+      padding:18px;
+      display:flex;
+      flex-direction:column;
+      justify-content:space-between;
+      gap:12px;
+    }
+
+    /* グリップ */
+    .controller::before,
+    .controller::after{
+      content:"";
+      position:absolute;
+      top:64%;
+      width:44%;
+      height:60%;
+      border-radius:60px;
+      background:
+        radial-gradient(90% 80% at 50% 10%, rgba(255,255,255,.05), transparent 60%),
+        linear-gradient(180deg, rgba(255,255,255,.04), rgba(0,0,0,.22));
+      border:1px solid rgba(255,255,255,.08);
+      z-index:0;
+    }
+    .controller::before{ left:-14%; transform:rotate(10deg); }
+    .controller::after { right:-14%; transform:rotate(-10deg); }
+
+    .controller > *{ position:relative; z-index:1; }
+
+    /* 中央表示 */
+    .hud{
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      gap:10px;
+      padding:10px 12px;
+      border-radius:18px;
+      background:rgba(2,6,23,.55);
+      border:1px solid rgba(255,255,255,.08);
+      letter-spacing:.10em;
       font-weight:1000;
+      color:rgba(203,213,225,.92);
+      text-align:center;
+    }
+    .hud strong{
+      color:#fff;
+      letter-spacing:.12em;
+    }
+
+    /* メイン操作領域 */
+    .controls{
+      flex:1;
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:14px;
+      min-height:0;
+      align-items:center;
+    }
+
+    /* 左：D-Pad風（装飾） */
+    .dpad{
+      height:100%;
+      min-height:240px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      opacity:.9;
+    }
+    .dpadCore{
+      width:min(220px, 44vw);
+      aspect-ratio:1/1;
+      display:grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      grid-template-rows: 1fr 1fr 1fr;
+      gap:10px;
+      padding:10px;
+    }
+    .dpadPiece{
+      border-radius:18px;
+      background:rgba(255,255,255,.04);
+      border:1px solid rgba(255,255,255,.08);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
+    }
+    .dpadPiece.center{
+      border-radius:22px;
+      background:rgba(255,255,255,.06);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 18px 40px rgba(0,0,0,.25);
+    }
+
+    /* 右：ボタン群 */
+    .pad{
+      height:100%;
+      min-height:240px;
+      display:flex;
+      flex-direction:column;
+      justify-content:center;
+      align-items:center;
+      gap:12px;
+      position:relative; /* FX用 */
+    }
+
+    /* ===== B1：強め吸い込み演出 ===== */
+
+    /* 中央リング（2重＋グロー） */
+    .fxRing, .fxRing2{
+      position:absolute;
+      left:50%;
+      top:50%;
+      width:18px;
+      height:18px;
+      transform:translate(-50%,-50%);
+      border-radius:999px;
+      pointer-events:none;
+      opacity:0;
+      z-index:6;
+      background: radial-gradient(circle, rgba(255,255,255,.95), rgba(255,255,255,0) 62%);
+      filter: blur(.1px);
+    }
+    .fxRing2{
+      width:16px; height:16px;
+      background: radial-gradient(circle, rgba(168,85,247,.85), rgba(168,85,247,0) 62%);
+      mix-blend-mode: screen;
+      z-index:5;
+      filter: blur(.4px);
+    }
+
+    .fxRing::after,
+    .fxRing2::after{
+      content:"";
+      position:absolute;
+      inset:-10px;
+      border-radius:999px;
+      border:2px solid rgba(255,255,255,.22);
+      opacity:0;
+    }
+    .fxRing2::after{
+      border-color: rgba(168,85,247,.18);
+      inset:-14px;
+      border-width: 3px;
+    }
+
+    .controller.fx .fxRing{
+      opacity:1;
+      animation: ringPopB1 520ms cubic-bezier(.12,.9,.1,1) forwards;
+    }
+    .controller.fx .fxRing::after{
+      animation: ringOutlineB1 520ms cubic-bezier(.12,.9,.1,1) forwards;
+    }
+    .controller.fx .fxRing2{
+      opacity:1;
+      animation: ringPopB1b 600ms cubic-bezier(.12,.9,.1,1) forwards;
+    }
+    .controller.fx .fxRing2::after{
+      animation: ringOutlineB1b 600ms cubic-bezier(.12,.9,.1,1) forwards;
+    }
+
+    @keyframes ringPopB1{
+      0%   { transform:translate(-50%,-50%) scale(.55); opacity:0; }
+      12%  { opacity:1; }
+      65%  { transform:translate(-50%,-50%) scale(12.5); opacity:.55; }
+      100% { transform:translate(-50%,-50%) scale(16.0); opacity:0; }
+    }
+    @keyframes ringOutlineB1{
+      0%   { opacity:0; transform:scale(.55); }
+      18%  { opacity:.65; }
+      70%  { opacity:.35; transform:scale(13.0); }
+      100% { opacity:0; transform:scale(16.5); }
+    }
+    @keyframes ringPopB1b{
+      0%   { transform:translate(-50%,-50%) scale(.5); opacity:0; }
+      15%  { opacity:1; }
+      70%  { transform:translate(-50%,-50%) scale(10.8); opacity:.45; }
+      100% { transform:translate(-50%,-50%) scale(14.8); opacity:0; }
+    }
+    @keyframes ringOutlineB1b{
+      0%   { opacity:0; transform:scale(.5); }
+      20%  { opacity:.55; }
+      72%  { opacity:.28; transform:scale(11.6); }
+      100% { opacity:0; transform:scale(15.4); }
+    }
+
+    /* 残像（クローン） */
+    .trail{
+      position:absolute;
+      border-radius:999px;
+      pointer-events:none;
+      z-index:7;
+      will-change: transform, opacity, filter;
+      transform-origin:center;
+      filter: blur(.2px);
+      mix-blend-mode: screen;
+    }
+    .trail.t1{ opacity:.55; animation: trail1 520ms cubic-bezier(.12,.9,.1,1) forwards; }
+    .trail.t2{ opacity:.35; animation: trail2 560ms cubic-bezier(.12,.9,.1,1) forwards; }
+
+    @keyframes trail1{
+      0%   { transform:translate(0,0) scale(1.00) rotate(0deg);   opacity:.55; filter: blur(.2px); }
+      35%  { transform:translate(6px,10px) scale(.78) rotate(180deg); opacity:.48; filter: blur(.6px); }
+      70%  { transform:translate(12px,22px) scale(.28) rotate(520deg); opacity:.22; filter: blur(1.2px); }
+      100% { transform:translate(18px,34px) scale(.06) rotate(900deg); opacity:0;    filter: blur(1.8px); }
+    }
+    @keyframes trail2{
+      0%   { transform:translate(-2px,2px) scale(1.00) rotate(0deg);   opacity:.35; filter: blur(.3px); }
+      40%  { transform:translate(4px,14px) scale(.72) rotate(210deg); opacity:.28; filter: blur(.8px); }
+      75%  { transform:translate(10px,26px) scale(.22) rotate(620deg); opacity:.14; filter: blur(1.4px); }
+      100% { transform:translate(16px,38px) scale(.05) rotate(980deg); opacity:0;    filter: blur(2.0px); }
+    }
+
+    /* ボタン共通（押し心地） */
+    .btn{
+      -webkit-tap-highlight-color: transparent;
+      appearance:none;
+      border:none;
+      cursor:pointer;
+      user-select:none;
+      outline:none;
+
+      width:84px; height:84px;
+      border-radius:999px;
+      color:#0b1020;
+      font-weight:1100;
+      font-size:30px;
       letter-spacing:.06em;
-      font-size:12px;
-      color:#e5e7eb;
+
+      background: rgba(255,255,255,.88);
+      box-shadow:
+        inset 0 10px 18px rgba(255,255,255,.35),
+        inset 0 -14px 18px rgba(0,0,0,.18),
+        0 18px 40px rgba(0,0,0,.55);
+      transform: translateY(0);
+      transition: transform .10s ease, filter .12s ease, box-shadow .12s ease, opacity .15s ease;
+      position:relative;
+      will-change: transform, opacity, filter;
+    }
+
+    .btn::after{
+      content:"";
+      position:absolute;
+      inset:10px;
+      border-radius:999px;
+      background: radial-gradient(circle at 30% 25%, rgba(255,255,255,.55), rgba(255,255,255,0) 55%);
+      opacity:.85;
+      pointer-events:none;
+    }
+
+    .btn:active{
+      transform: translateY(3px) scale(.985);
+      filter: brightness(.98);
+      box-shadow:
+        inset 0 10px 18px rgba(255,255,255,.25),
+        inset 0 -14px 18px rgba(0,0,0,.25),
+        0 10px 24px rgba(0,0,0,.55);
+    }
+
+    .btn.sel{
+      box-shadow:
+        0 0 0 3px rgba(255,255,255,.24),
+        0 0 0 10px rgba(255,255,255,.10),
+        0 0 36px rgba(255,255,255,.16),
+        0 18px 40px rgba(0,0,0,.55);
+      transform: translateY(-2px) scale(1.05);
+    }
+
+    /* 送信後：より強い吸い込み（速い＋回転多め） */
+    .btn.sucked{
+      pointer-events:none;
+      animation: suckInB1 520ms cubic-bezier(.12,.9,.1,1) forwards;
+    }
+    @keyframes suckInB1{
+      0%{
+        transform: translateY(-2px) scale(1.05) rotate(0deg);
+        opacity:1;
+        filter: blur(0);
+      }
+      18%{
+        transform: translateY(1px) scale(.90) rotate(180deg);
+        opacity:1;
+        filter: blur(.2px);
+      }
+      50%{
+        transform: translateY(12px) scale(.42) rotate(540deg);
+        opacity:.70;
+        filter: blur(1.0px);
+      }
+      80%{
+        transform: translateY(24px) scale(.12) rotate(980deg);
+        opacity:.25;
+        filter: blur(1.6px);
+      }
+      100%{
+        transform: translateY(32px) scale(.05) rotate(1260deg);
+        opacity:0;
+        filter: blur(2.1px);
+      }
+    }
+
+    /* 色バリエーション（踏襲） */
+    .btn.O { background: var(--color-o); color:#0b1020; }
+    .btn.X { background: var(--color-x); color:#fff; }
+    .btn.A { background: var(--color-a); color:#fff; }
+    .btn.B { background: var(--color-b); color:#0b1020; }
+    .btn.C { background: var(--color-c); color:#0b1020; }
+    .btn.D { background: var(--color-d); color:#fff; }
+    .btn.E { background: var(--color-e); color:#fff; }
+
+    /* OX＝2ボタン */
+    .oxGrid{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:14px;
+      align-items:center;
+      justify-items:center;
+    }
+    .oxGrid .btn{
+      width:110px; height:110px;
+      font-size:42px;
+    }
+
+    /* 5択＝フェイスボタン配置 */
+    .fiveGrid{
+      width:min(340px, 80vw);
+      aspect-ratio: 1.15 / 1;
+      display:grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      grid-template-rows: 1fr 1fr 1fr;
+      gap:12px;
+      align-items:center;
+      justify-items:center;
+    }
+    .posD{ grid-column:2; grid-row:1; }
+    .posB{ grid-column:2; grid-row:3; }
+    .posC{ grid-column:1; grid-row:2; }
+    .posA{ grid-column:3; grid-row:2; }
+    .posE{ grid-column:2; grid-row:2; width:92px; height:92px; font-size:32px; }
+
+    /* 決定（Start） */
+    .submit{
+      width:min(320px, 84vw);
+      height:64px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.12);
+      background:
+        radial-gradient(circle at 20% 20%, rgba(255,255,255,.15), transparent 50%),
+        linear-gradient(180deg, rgba(99,102,241,.90), rgba(168,85,247,.90));
+      color:#fff;
+      font-weight:1100;
+      font-size:18px;
+      letter-spacing:.12em;
+      box-shadow:0 18px 40px rgba(139,92,246,.35), 0 18px 60px rgba(0,0,0,.55);
+      cursor:pointer;
+      transition: transform .10s ease, filter .12s ease, opacity .15s ease;
+    }
+    .submit:active{ transform: translateY(2px); filter: brightness(.98); }
+    .submit:disabled{
+      opacity:.45;
+      cursor:not-allowed;
+      filter: grayscale(.2);
+    }
+
+    /* ロック（送信後） */
+    .locked{
+      opacity:.55;
+      pointer-events:none;
+      filter: grayscale(.15);
+    }
+
+    /* 受付前 overlay */
+    .overlay{
+      position:absolute;
+      inset:0;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:22px;
+      text-align:center;
+      background:rgba(0,0,0,.42);
+      backdrop-filter: blur(10px);
+      opacity:0;
+      pointer-events:none;
+      transition: opacity .18s ease;
+      z-index:3;
+    }
+    .overlay.show{
+      opacity:1;
+      pointer-events:auto;
+    }
+    .overlayCard{
+      width:min(520px, 92vw);
+      border-radius:26px;
+      padding:18px 16px;
+      background:rgba(17,24,39,.72);
+      border:1px solid rgba(255,255,255,.10);
+      box-shadow:0 24px 80px rgba(0,0,0,.65);
+    }
+    .overlayCard h3{
+      margin:0 0 8px 0;
+      letter-spacing:.10em;
+      font-weight:1100;
+      font-size:18px;
+    }
+    .overlayCard p{
+      margin:0;
+      color:rgba(203,213,225,.9);
+      line-height:1.5;
+      font-size:14px;
+    }
+
+    /* 送信完了表示 */
+    .toast{
+      position:fixed;
+      left:50%;
+      bottom:16px;
+      transform:translateX(-50%);
+      background:rgba(17,24,39,.92);
+      border:1px solid rgba(255,255,255,.12);
+      padding:10px 14px;
+      border-radius:999px;
+      box-shadow:0 18px 50px rgba(0,0,0,.55);
+      color:#f9fafb;
+      font-weight:1000;
+      letter-spacing:.10em;
+      opacity:0;
+      pointer-events:none;
+      transition: opacity .18s ease;
+      z-index:20;
+      white-space:nowrap;
+    }
+    .toast.show{ opacity:1; }
+
+    #buildTag{
+      position:fixed; right:10px; bottom:10px;
+      opacity:.55; font-size:12px; z-index:30;
+      background:rgba(0,0,0,.35);
+      border:1px solid rgba(255,255,255,.08);
+      padding:6px 10px;
+      border-radius:999px;
       backdrop-filter: blur(8px);
     }
 
-    .header{
-      position:relative;
-      z-index:1;
-      margin: 6px 0 14px;
+    @media (max-height: 640px){
+      .controller{ height:min(520px, 78vh); }
+      .btn{ width:76px; height:76px; }
+      .oxGrid .btn{ width:98px; height:98px; font-size:40px; }
+      .posE{ width:86px; height:86px; }
     }
-    .title{
-      margin:0 0 6px;
-      font-size:18px;
-      font-weight:1000;
-      letter-spacing:.06em;
-    }
-    .hint{
-      margin:0;
-      color:rgba(203,213,225,.92);
-      font-size:14px;
-      line-height:1.45;
-    }
-
-    /* 画面切替アニメ */
-    .stage{
-      position:relative;
-      z-index:1;
-      transition: opacity .22s ease, transform .22s ease;
-    }
-    .stage.fade{
-      opacity:0;
-      transform: translateY(6px);
-    }
-
-    /* 選択ボタン：かっこよく */
-    .grid{
-      display:grid;
-      grid-template-columns: 1fr;
-      gap:12px;
-      margin-top:12px;
-    }
-
-    .btn{
-      width:100%;
-      border:none;
-      border-radius:20px;
-      padding:14px 14px;
-      background:rgba(2,6,23,.55);
-      border:1px solid rgba(255,255,255,.10);
-      color:#f9fafb;
-      cursor:pointer;
-      box-shadow:0 12px 34px rgba(0,0,0,.35);
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:12px;
-      transition: transform .10s ease, filter .10s ease, box-shadow .10s ease, border-color .10s ease;
-      user-select:none;
-      overflow:hidden;
-      position:relative;
-    }
-    .btn::after{
-      content:"";
-      position:absolute; inset:-60%;
-      background: radial-gradient(circle at 30% 20%, rgba(255,255,255,.14), transparent 55%);
-      transform: rotate(12deg);
-      opacity:0;
-      transition:opacity .18s ease;
-      pointer-events:none;
-    }
-    .btn:active{ transform: scale(.985); filter:brightness(.98); }
-    .btn:hover::after{ opacity:.75; }
-
-    .btn[disabled]{
-      opacity:.45;
-      cursor:not-allowed;
-      box-shadow:none;
-      transform:none;
-    }
-
-    .left{
-      display:flex;
-      align-items:center;
-      gap:12px;
-      min-width:0;
-    }
-
-    /* 大きいラベル（○/✕/Aなど） */
-    .pill{
-      width:56px;
-      height:44px;
-      border-radius:999px;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      font-weight:1100;
-      letter-spacing:.06em;
-      color:#0b1220;
-      flex:0 0 auto;
-      box-shadow:0 10px 26px rgba(0,0,0,.35);
-    }
-
-    .pill.O{ background:var(--color-o); }
-    .pill.X{ background:var(--color-x); color:#fff; }
-    .pill.A{ background:var(--color-a); }
-    .pill.B{ background:var(--color-b); }
-    .pill.C{ background:var(--color-c); }
-    .pill.D{ background:var(--color-d); color:#fff; }
-    .pill.E{ background:var(--color-e); color:#fff; }
-
-    .label{
-      font-size:16px;
-      font-weight:1000;
-      letter-spacing:.04em;
-      white-space:nowrap;
-    }
-    .sub{
-      font-size:12px;
-      color:rgba(203,213,225,.90);
-      letter-spacing:.06em;
-      white-space:nowrap;
-    }
-
-    .rightMark{
-      font-weight:1000;
-      color:rgba(203,213,225,.92);
-      letter-spacing:.06em;
-      white-space:nowrap;
-    }
-
-    /* 選択時の強調 */
-    .btn.selected{
-      border-color: rgba(34,197,94,.55);
-      box-shadow:0 0 0 4px rgba(34,197,94,.16), 0 18px 60px rgba(0,0,0,.45);
-      transform: translateY(-1px);
-    }
-
-    /* text入力 */
-    .textBox{
-      margin-top:12px;
-      padding:12px;
-      border-radius:22px;
-      border:1px solid rgba(255,255,255,.10);
-      background:rgba(2,6,23,.55);
-      box-shadow:0 12px 34px rgba(0,0,0,.30);
-    }
-    textarea{
-      width:100%;
-      min-height:110px;
-      resize:vertical;
-      border:none;
-      outline:none;
-      background:transparent;
-      color:#f9fafb;
-      font-size:16px;
-      line-height:1.50;
-      font-weight:800;
-    }
-    .row{
-      display:flex;
-      gap:10px;
-      margin-top:10px;
-    }
-    .send{
-      flex:1;
-      border:none;
-      border-radius:999px;
-      padding:12px 14px;
-      font-weight:1100;
-      letter-spacing:.06em;
-      background: linear-gradient(135deg, var(--color-o), #06b6d4);
-      color:#041016;
-      cursor:pointer;
-      box-shadow:0 16px 40px rgba(0,0,0,.35);
-      transition: transform .10s ease, filter .10s ease;
-    }
-    .send:active{ transform:scale(.985); filter:brightness(.98); }
-    .send:disabled{ opacity:.45; cursor:not-allowed; box-shadow:none; }
-
-    .clear{
-      width:120px;
-      border:none;
-      border-radius:999px;
-      padding:12px 14px;
-      font-weight:1000;
-      letter-spacing:.06em;
-      background: rgba(75,85,99,.85);
-      color:#f9fafb;
-      cursor:pointer;
-      transition: transform .10s ease, filter .10s ease;
-    }
-    .clear:active{ transform:scale(.985); filter:brightness(.98); }
-    .clear:disabled{ opacity:.45; cursor:not-allowed; }
-
-    .msg{
-      margin-top:12px;
-      padding:10px 12px;
-      border-radius:16px;
-      background:rgba(2,6,23,.55);
-      border:1px solid rgba(255,255,255,.08);
-      color:#e5e7eb;
-      font-size:14px;
-      line-height:1.45;
-      white-space:pre-wrap;
-      position:relative;
-      z-index:1;
-    }
-    .msg.ok{ border-color: rgba(34,197,94,.35); }
-    .msg.ng{ border-color: rgba(239,68,68,.35); }
   </style>
 </head>
 
 <body>
-  <div id="buildTag">build: 2025-12-27 / student-colorsync-noproblem</div>
+  <div id="buildTag">build: 2025-12-27 / student-pad-ui-suck-B1</div>
 
-  <div class="card">
-    <div class="top">
-      <div class="room" id="roomLabel">ROOM</div>
-      <div class="badges">
-        <span class="badge" id="modeBadge">—</span>
-        <span class="badge" id="statusBadge">status: -</span>
-      </div>
-    </div>
-
-    <div class="header">
-      <div class="title" id="title">接続中…</div>
-      <p class="hint" id="hint">ボタンで回答してください。</p>
-    </div>
-
-    <div class="stage" id="stage">
-      <div class="grid" id="choices"></div>
-
-      <div class="textBox" id="textBox" style="display:none;">
-        <textarea id="textInput" placeholder="ここに入力して送信"></textarea>
-        <div class="row">
-          <button id="sendTextBtn" class="send">送信</button>
-          <button id="clearTextBtn" class="clear">消去</button>
-        </div>
-      </div>
-
-      <div class="msg" id="msg" style="display:none;"></div>
+  <div class="topbar">
+    <div class="room" id="roomLabel">ROOM: -</div>
+    <div class="status">
+      <span class="pill"><span id="dot" class="dot"></span><span id="statusText">status: -</span></span>
+      <span class="pill" id="modeText">mode: -</span>
     </div>
   </div>
 
+  <div class="stage">
+    <div class="controller" id="controller">
+      <div class="hud" id="hud">
+        <span>回答モード：</span><strong id="hudMode">待機</strong>
+      </div>
+
+      <div class="controls">
+        <!-- 左：D-Pad風（飾り） -->
+        <div class="dpad" aria-hidden="true">
+          <div class="dpadCore">
+            <div class="dpadPiece"></div>
+            <div class="dpadPiece"></div>
+            <div class="dpadPiece"></div>
+            <div class="dpadPiece"></div>
+            <div class="dpadPiece center"></div>
+            <div class="dpadPiece"></div>
+            <div class="dpadPiece"></div>
+            <div class="dpadPiece"></div>
+            <div class="dpadPiece"></div>
+          </div>
+        </div>
+
+        <!-- 右：ボタン群 -->
+        <div class="pad" id="pad">
+          <div class="fxRing" id="fxRing"></div>
+          <div class="fxRing2" id="fxRing2"></div>
+          <div id="answer-container"></div>
+          <button id="submitBtn" class="submit" disabled>START（決定）</button>
+        </div>
+      </div>
+
+      <!-- 待機/閉鎖 overlay -->
+      <div id="overlay" class="overlay">
+        <div class="overlayCard">
+          <h3>待機中</h3>
+          <p id="overlayText">先生が出題を開始すると、解答ボタンが使えるようになります。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast">送信しました ✓</div>
+
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getDatabase, ref, onValue, set } from
-      "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+    import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyBke-wTU16skpbK8z80ddK04tE154dHERQ",
       authDomain: "satosan-41eac.firebaseapp.com",
       databaseURL: "https://satosan-41eac-default-rtdb.asia-southeast1.firebasedatabase.app",
-      projectId: "satosan-41eac"
+      projectId: "satosan-41eac",
+      storageBucket: "satosan-41eac.firebasestorage.app",
+      messagingSenderId: "992482993229",
+      appId: "1:992482993229:web:e2c59b078233b0ed16e804",
+      measurementId: "G-VT9FKHN3LT"
     };
 
     const app = initializeApp(firebaseConfig);
     const db  = getDatabase(app);
 
-    const url = new URL(location.href);
+    const url  = new URL(window.location.href);
     const room = url.searchParams.get("room") || "kyoto-01";
 
-    // uid（端末ごと）
-    const uidKey = "classsync_uid_v2";
-    let uid = localStorage.getItem(uidKey);
-    if (!uid) {
-      uid = "u_" + Math.random().toString(36).slice(2,10) + Date.now().toString(36).slice(-4);
-      localStorage.setItem(uidKey, uid);
-    }
-
-    // refs
-    const activityRef = ref(db, `rooms/${room}/activity`);
-    const answersMyRef= ref(db, `rooms/${room}/answers/${uid}`);
-
-    // DOM
+    // UI refs
+    const controller = document.getElementById("controller");
+    const pad = document.getElementById("pad");
     const roomLabel = document.getElementById("roomLabel");
-    const modeBadge = document.getElementById("modeBadge");
-    const statusBadge = document.getElementById("statusBadge");
-    const titleEl = document.getElementById("title");
-    const hintEl  = document.getElementById("hint");
+    const dot = document.getElementById("dot");
+    const statusText = document.getElementById("statusText");
+    const modeText = document.getElementById("modeText");
+    const hudMode = document.getElementById("hudMode");
 
-    const stage = document.getElementById("stage");
-    const choicesEl = document.getElementById("choices");
-
-    const textBox = document.getElementById("textBox");
-    const textInput = document.getElementById("textInput");
-    const sendTextBtn = document.getElementById("sendTextBtn");
-    const clearTextBtn = document.getElementById("clearTextBtn");
-
-    const msgEl = document.getElementById("msg");
+    const container = document.getElementById("answer-container");
+    const submitBtn = document.getElementById("submitBtn");
+    const overlay = document.getElementById("overlay");
+    const overlayText = document.getElementById("overlayText");
+    const toast = document.getElementById("toast");
 
     roomLabel.textContent = `ROOM: ${room}`;
 
+    // userId 永続
+    let userId = localStorage.getItem("student_user_id");
+    if (!userId) {
+      userId = "user_" + Math.random().toString(36).slice(2, 10);
+      localStorage.setItem("student_user_id", userId);
+    }
+
     // state
-    let currentStatus = "closed";
-    let currentView = "quiz"; // quiz | poll（学生UIは同じ動作にする）
-    let currentMode = null;   // ox | five | text
-    let configChoices = null;
+    let isOpen = false;
+    let currentMode = null;
+    let selected = null;
+    let sending = false;
 
-    function uiLabel(key){
-      const k = String(key).trim().toUpperCase();
-      if (k === "O") return "○";
-      if (k === "X") return "✕";
-      return k;
+    function showToast(msg){
+      toast.textContent = msg;
+      toast.classList.add("show");
+      setTimeout(()=> toast.classList.remove("show"), 1200);
     }
 
-    function defaultChoicesFromMode(mode){
-      if (mode === "ox") return ["O","X"];
-      if (mode === "five") return ["A","B","C","D","E"];
-      return ["A","B","C","D","E"];
+    function setOverlay(show, msg){
+      overlay.classList.toggle("show", !!show);
+      if (msg) overlayText.textContent = msg;
     }
 
-    function showMsg(text, kind){
-      msgEl.style.display = "block";
-      msgEl.classList.remove("ok","ng");
-      if (kind) msgEl.classList.add(kind);
-      msgEl.textContent = text;
-    }
-    function hideMsg(){
-      msgEl.style.display = "none";
-      msgEl.textContent = "";
+    function clearTrails(){
+      pad.querySelectorAll(".trail").forEach(el => el.remove());
     }
 
-    function setDisabled(disabled){
-      Array.from(choicesEl.querySelectorAll("button")).forEach(b => b.disabled = disabled);
-      sendTextBtn.disabled = disabled;
-      clearTextBtn.disabled = disabled;
-      textInput.disabled = disabled;
+    function unlockUI(){
+      sending = false;
+      controller.classList.remove("fx");
+      container.classList.remove("locked");
+      submitBtn.disabled = true;
+      selected = null;
+
+      clearTrails();
+
+      container.querySelectorAll(".btn").forEach(b => {
+        b.classList.remove("sel","sucked");
+        b.style.opacity = "";
+        b.style.filter = "";
+        b.style.pointerEvents = "";
+      });
+      container.style.pointerEvents = "";
     }
 
-    function animateSwitch(){
-      stage.classList.add("fade");
-      setTimeout(()=> stage.classList.remove("fade"), 160);
+    function lockUI(){
+      container.classList.add("locked");
+      submitBtn.disabled = true;
     }
 
-    async function submitValue(value){
-      if (currentStatus !== "open"){
-        showMsg("受付は終了しています。", "ng");
-        return;
-      }
-      await set(answersMyRef, { value, timestamp: Date.now() });
-      showMsg("送信しました（必要なら押し直し/再送信で変更できます）", "ok");
+    function uiLabel(ch){
+      const c = String(ch).trim().toUpperCase();
+      if (c === "O") return "○";
+      if (c === "X") return "✕";
+      return c;
     }
 
-    function renderChoiceButtons(keys){
-      choicesEl.innerHTML = "";
-      textBox.style.display = "none";
+    function haptic(){
+      try{ if (navigator.vibrate) navigator.vibrate(18); }catch(_){}
+    }
 
-      (keys || []).forEach(k => {
-        const key = String(k).trim().toUpperCase();
-        const btn = document.createElement("button");
-        btn.className = "btn";
-        btn.type = "button";
+    function createChoiceButton(ch){
+      const c = String(ch).trim().toUpperCase();
+      const btn = document.createElement("button");
+      btn.className = `btn ${c}`;
+      btn.type = "button";
+      btn.textContent = uiLabel(c);
 
-        const left = document.createElement("div");
-        left.className = "left";
+      btn.onclick = () => {
+        if (!isOpen || sending) return;
+        selected = c;
+        haptic();
+        container.querySelectorAll(".btn").forEach(b => b.classList.remove("sel"));
+        btn.classList.add("sel");
+        submitBtn.disabled = false;
+      };
+      return btn;
+    }
 
-        const pill = document.createElement("div");
-        pill.className = `pill ${key}`;
-        pill.textContent = uiLabel(key);
+    function renderOX(choices){
+      unlockUI();
+      container.innerHTML = "";
+      hudMode.textContent = "○✕";
+      modeText.textContent = "mode: ox";
 
-        const labelWrap = document.createElement("div");
-        const label = document.createElement("div");
-        label.className = "label";
-        label.textContent = (key === "O" || key === "X") ? "回答" : "選択";
-        const sub = document.createElement("div");
-        sub.className = "sub";
-        sub.textContent = (key === "O" || key === "X") ? "○ / ✕" : "A〜E";
-        labelWrap.appendChild(label);
-        labelWrap.appendChild(sub);
+      const grid = document.createElement("div");
+      grid.className = "oxGrid";
+      (choices || ["O","X"]).forEach(ch => grid.appendChild(createChoiceButton(ch)));
+      container.appendChild(grid);
 
-        left.appendChild(pill);
-        left.appendChild(labelWrap);
+      submitBtn.textContent = "START（決定）";
+      submitBtn.disabled = true;
+    }
 
-        const right = document.createElement("div");
-        right.className = "rightMark";
-        right.textContent = "タップ";
+    function renderFive(choices){
+      unlockUI();
+      container.innerHTML = "";
+      hudMode.textContent = "5択";
+      modeText.textContent = "mode: five";
 
-        btn.appendChild(left);
-        btn.appendChild(right);
+      const grid = document.createElement("div");
+      grid.className = "fiveGrid";
 
-        btn.onclick = async () => {
-          // 見た目：選択を強調
-          Array.from(choicesEl.querySelectorAll("button")).forEach(b => b.classList.remove("selected"));
-          btn.classList.add("selected");
-          await submitValue(key);
-        };
+      const order = (choices && choices.length) ? choices : ["A","B","C","D","E"];
+      const posClass = { A:"posA", B:"posB", C:"posC", D:"posD", E:"posE" };
 
-        choicesEl.appendChild(btn);
+      order.forEach(ch => {
+        const c = String(ch).trim().toUpperCase();
+        const btn = createChoiceButton(c);
+        btn.classList.add(posClass[c] || "");
+        grid.appendChild(btn);
       });
 
-      setDisabled(currentStatus !== "open");
+      container.appendChild(grid);
+
+      submitBtn.textContent = "START（決定）";
+      submitBtn.disabled = true;
     }
 
-    function renderTextInput(){
-      choicesEl.innerHTML = "";
-      textBox.style.display = "block";
-      setDisabled(currentStatus !== "open");
+    function makeTrailClone(selBtn, klass){
+      const padRect = pad.getBoundingClientRect();
+      const r = selBtn.getBoundingClientRect();
+
+      const clone = selBtn.cloneNode(true);
+      clone.classList.remove("sel");
+      clone.classList.add("trail", klass);
+
+      clone.style.left = (r.left - padRect.left) + "px";
+      clone.style.top  = (r.top  - padRect.top)  + "px";
+      clone.style.width  = r.width + "px";
+      clone.style.height = r.height + "px";
+      clone.style.position = "absolute";
+
+      // ちょい発光（残像感）
+      clone.style.boxShadow =
+        "0 0 0 2px rgba(255,255,255,.14), 0 0 18px rgba(255,255,255,.18), 0 18px 40px rgba(0,0,0,.35)";
+
+      pad.appendChild(clone);
+      clone.addEventListener("animationend", () => clone.remove());
     }
 
-    function setHeader(){
-      statusBadge.textContent = `status: ${currentStatus}`;
-      const viewLabel = (currentView === "poll") ? "口頭投票" : "授業";
-      const modeLabel =
-        (currentMode === "ox") ? "2択（○✕）" :
-        (currentMode === "five") ? "5択（ABCDE）" :
-        (currentMode === "text") ? "文字入力" : "—";
-      modeBadge.textContent = `${viewLabel} / ${modeLabel}`;
+    function playSubmitFX(){
+      const selBtn = container.querySelector(".btn.sel");
+      if (!selBtn) return;
+
+      clearTrails();
+
+      // リング開始
+      controller.classList.add("fx");
+
+      // 残像2枚
+      makeTrailClone(selBtn, "t2");
+      makeTrailClone(selBtn, "t1");
+
+      // 本体吸い込み
+      selBtn.classList.add("sucked");
+
+      // 周囲は軽くフェード
+      container.querySelectorAll(".btn").forEach(b => {
+        if (b !== selBtn) b.style.opacity = "0.50";
+      });
+
+      setTimeout(() => controller.classList.remove("fx"), 650);
     }
 
-    function applyUI(){
-      hideMsg();
-      animateSwitch();
+    // 送信
+    submitBtn.onclick = async () => {
+      if (!isOpen || !selected || sending) return;
+      sending = true;
 
-      if (currentStatus === "closed"){
-        titleEl.textContent = "受付終了";
-        hintEl.textContent  = "先生の指示を待ってください。";
-      } else {
-        titleEl.textContent = "回答してください";
-        hintEl.textContent  = "ボタンを押すと送信されます。";
-      }
+      // 先に操作を止める（演出は出す）
+      submitBtn.disabled = true;
+      container.style.pointerEvents = "none";
 
-      // 学生は “問題文を一切表示しない”
-      if (currentMode === "text"){
-        hintEl.textContent = (currentStatus === "open")
-          ? "入力して「送信」を押してください。"
-          : "受付終了です（先生の指示を待ってください）。";
-        renderTextInput();
+      // 演出
+      playSubmitFX();
+
+      // DB送信
+      try{
+        const answerRef = ref(db, `rooms/${room}/answers/${userId}`);
+        await set(answerRef, { value: selected, timestamp: Date.now() });
+      }catch(e){
+        sending = false;
+        container.style.pointerEvents = "";
+        unlockUI();
+        showToast("送信失敗…もう一度");
         return;
       }
 
-      const keys = (Array.isArray(configChoices) && configChoices.length)
-        ? configChoices.map(x => String(x).trim().toUpperCase())
-        : defaultChoicesFromMode(currentMode);
+      // 演出が見えるように待ってからロック
+      setTimeout(() => {
+        container.style.pointerEvents = "";
+        showToast("送信しました ✓");
+        lockUI();
+      }, 560);
+    };
 
-      renderChoiceButtons(keys);
-    }
-
-    // activity監視
+    // activity 監視
+    const activityRef = ref(db, `rooms/${room}/activity`);
     onValue(activityRef, snap => {
-      const a = snap.val() || {};
-      const prevMode = currentMode;
-      const prevStatus = currentStatus;
+      const data = snap.val() || {};
+      isOpen = (data.status === "open");
+      currentMode = data.mode || null;
 
-      currentStatus = a.status || "closed";
-      currentView = a.view || "quiz";
-      currentMode = a.mode || null;
+      statusText.textContent = `status: ${data.status || "-"}`;
+      dot.classList.toggle("open", isOpen);
+      dot.classList.toggle("closed", !isOpen);
 
-      configChoices = (a.config && Array.isArray(a.config.choices)) ? a.config.choices : null;
-
-      setHeader();
-
-      // モード/状態が変わったときだけUI再描画
-      if (prevMode !== currentMode || prevStatus !== currentStatus){
-        applyUI();
+      if (!isOpen){
+        setOverlay(true, "先生が出題を開始すると、解答ボタンが使えるようになります。");
+        submitBtn.disabled = true;
       } else {
-        // 受付終了だけは即反映
-        setDisabled(currentStatus !== "open");
+        setOverlay(false);
       }
-    });
 
-    // text送信
-    sendTextBtn.onclick = async () => {
-      const v = (textInput.value || "").trim();
-      if (!v){
-        showMsg("文字を入力してください。", "ng");
+      const config = data.config || {};
+      if (currentMode === "ox") {
+        renderOX(config.choices || ["O","X"]);
         return;
       }
-      await submitValue(v);
-    };
-    clearTextBtn.onclick = () => {
-      textInput.value = "";
-      hideMsg();
-    };
+      if (currentMode === "five") {
+        renderFive(config.choices || ["A","B","C","D","E"]);
+        return;
+      }
 
-    // 初期表示
-    applyUI();
+      // その他（text 等）は待機表示に倒す（studentは問題不要方針）
+      hudMode.textContent = "待機";
+      modeText.textContent = `mode: ${currentMode || "-"}`;
+      container.innerHTML = "";
+      submitBtn.disabled = true;
+      setOverlay(true, "先生が出題を開始すると、解答ボタンが使えるようになります。");
+    });
   </script>
 </body>
 </html>
