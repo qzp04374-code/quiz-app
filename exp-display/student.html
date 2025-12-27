@@ -5,179 +5,200 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ClassSync Student</title>
   <style>
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
-      text-align: center;
-      padding: 28px 18px;
-      background: #0b1220;
-      color: #f9fafb;
+    body{
+      font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",sans-serif;
+      margin:0;
+      min-height:100vh;
+      background:#0b1020;
+      color:#f9fafb;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:24px;
+      box-sizing:border-box;
+      text-align:center;
     }
-    .hint{
-      color:#cbd5e1;
-      margin-top:6px;
-      font-size:14px;
+    .card{
+      width:min(560px, 100%);
+      background:#111827;
+      border-radius:22px;
+      padding:22px 18px 18px;
+      box-shadow:0 18px 50px rgba(0,0,0,.55);
     }
-    .choice-btn {
-      width: 78px;
-      height: 78px;
-      margin: 10px;
-      font-size: 30px;
-      border-radius: 50%;
-      border: none;
-      background-color: #f1f1f4;
+    h2{margin:0 0 10px;font-size:20px;letter-spacing:.08em;}
+    #status{margin:6px 0 14px;color:#cbd5e1;font-size:14px;}
+    .choices{
+      display:flex;
+      flex-wrap:wrap;
+      justify-content:center;
+      gap:12px;
+      margin:10px 0 14px;
+    }
+    .choice-btn{
+      width:76px;height:76px;
+      border-radius:999px;
+      border:none;
+      font-size:28px;
+      font-weight:700;
+      cursor:pointer;
+      background:#e5e7eb;
       color:#111827;
-      box-shadow: 0 6px 16px rgba(0,0,0,0.35);
-      transition: 0.15s;
+      box-shadow:0 10px 22px rgba(0,0,0,.35);
+      transition:transform .12s ease, filter .12s ease;
     }
-    .choice-btn.selected {
-      background-color: #0a84ff;
-      color: white;
-      transform: scale(1.07);
+    .choice-btn:active{transform:scale(.96);filter:brightness(.98);}
+    .choice-btn.selected{
+      background:#0a84ff;
+      color:#fff;
     }
-    .submit-btn {
-      margin-top: 18px;
-      padding: 14px 34px;
-      font-size: 22px;
-      border-radius: 16px;
-      border: none;
-      background-color: #0a84ff;
-      color: white;
-      box-shadow: 0 6px 16px rgba(0,0,0,0.35);
+    .submit-btn{
+      width:100%;
+      padding:14px 18px;
+      border-radius:16px;
+      border:none;
+      font-size:18px;
+      font-weight:800;
+      cursor:pointer;
+      background:linear-gradient(135deg,#0a84ff,#22c55e);
+      color:#fff;
+      box-shadow:0 14px 34px rgba(10,132,255,.28);
     }
-    .locked {
-      opacity: 0.5;
-      pointer-events: none;
-    }
-    .state{
-      margin-top:14px;
-      color:#cbd5e1;
-      font-size:14px;
-    }
+    .locked{opacity:.55;pointer-events:none;}
+    .hint{margin-top:10px;color:#94a3b8;font-size:13px;line-height:1.5;}
   </style>
 </head>
-
 <body>
-  <h2>回答画面</h2>
-  <div class="hint">投影画面を見て、A〜E / ○× を選んでください。</div>
-  <div id="answer-container" style="margin-top:18px;"></div>
-  <div id="state" class="state">出題待ち…</div>
+  <div class="card">
+    <h2>回答画面</h2>
+    <div id="status">出題待ち…</div>
 
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-  import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+    <div id="answer-container">
+      <div class="hint">
+        先生が問題を出すと、ここに回答ボタンが表示されます。<br>
+        （表示されない場合は、先生側が「出題」を開始していない可能性があります）
+      </div>
+    </div>
+  </div>
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyBke-wTU16skpbK8z80ddK04tE154dHERQ",
-    authDomain: "satosan-41eac.firebaseapp.com",
-    databaseURL: "https://satosan-41eac-default-rtdb.asia-southeast1.firebasedatabase.app",
-    projectId: "satosan-41eac",
-    storageBucket: "satosan-41eac.firebasestorage.app",
-    messagingSenderId: "992482993229",
-    appId: "1:992482993229:web:e2c59b078233b0ed16e804",
-    measurementId: "G-VT9FKHN3LT"
-  };
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-  const app = initializeApp(firebaseConfig);
-  const db = getDatabase(app);
-
-  const url = new URL(window.location.href);
-  const room = url.searchParams.get("room") || "kyoto-01";
-
-  // userId 永続化
-  let userId = localStorage.getItem("student_user_id");
-  if (!userId) {
-    userId = "user_" + Math.random().toString(36).slice(2, 8);
-    localStorage.setItem("student_user_id", userId);
-  }
-
-  const container = document.getElementById("answer-container");
-  const stateEl = document.getElementById("state");
-
-  let isOpen = false;
-  let selected = null;
-
-  function lockUI() {
-    container.classList.add("locked");
-  }
-  function unlockUI(){
-    container.classList.remove("locked");
-  }
-
-  function renderChoices(choices) {
-    container.innerHTML = "";
-    selected = null;
-    unlockUI();
-
-    choices.forEach(ch => {
-      const btn = document.createElement("button");
-      btn.className = "choice-btn";
-      btn.textContent = ch;
-
-      btn.onclick = () => {
-        if (!isOpen) return;
-        selected = ch;
-        document.querySelectorAll(".choice-btn").forEach(b => b.classList.remove("selected"));
-        btn.classList.add("selected");
-      };
-      container.appendChild(btn);
-    });
-
-    const submit = document.createElement("button");
-    submit.className = "submit-btn";
-    submit.textContent = "決定";
-
-    submit.onclick = async () => {
-      if (!isOpen || !selected) return;
-
-      const answerRef = ref(db, `rooms/${room}/answers/${userId}`);
-      await set(answerRef, { value: selected, timestamp: Date.now() });
-
-      lockUI();
-      stateEl.textContent = "送信しました";
+    // ★ index.html / display.html と同じ Firebase 設定にする
+    const firebaseConfig = {
+      apiKey: "AIzaSyBke-wTU16skpbK8z80ddK04tE154dHERQ",
+      authDomain: "satosan-41eac.firebaseapp.com",
+      databaseURL: "https://satosan-41eac-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "satosan-41eac",
+      storageBucket: "satosan-41eac.firebasestorage.app",
+      messagingSenderId: "992482993229",
+      appId: "1:992482993229:web:e2c59b078233b0ed16e804",
+      measurementId: "G-VT9FKHN3LT"
     };
 
-    container.appendChild(document.createElement("div"));
-    container.appendChild(submit);
-  }
+    const app = initializeApp(firebaseConfig);
+    const db  = getDatabase(app);
 
-  // activity を監視（mode/config/status が必須）
-  const activityRef = ref(db, `rooms/${room}/activity`);
-  onValue(activityRef, snap => {
-    const data = snap.val();
+    const url  = new URL(window.location.href);
+    const room = url.searchParams.get("room") || "kyoto-01";
 
-    if (!data){
-      stateEl.textContent = "出題待ち…";
-      container.innerHTML = "";
-      return;
+    const statusEl = document.getElementById("status");
+    const container = document.getElementById("answer-container");
+
+    // userId 永続化
+    let userId = localStorage.getItem("student_user_id");
+    if (!userId) {
+      userId = "user_" + Math.random().toString(36).slice(2, 8);
+      localStorage.setItem("student_user_id", userId);
     }
 
-    isOpen = (data.status === "open");
-    const mode = data.mode;
-    const config = data.config || {};
-    const choices = (config.choices && Array.isArray(config.choices)) ? config.choices : null;
+    let isOpen = false;
 
-    if (!mode){
-      // mode が無いと student はUIを出せない（元の仕様）
-      stateEl.textContent = "出題準備中…（mode待ち）";
-      container.innerHTML = "";
-      return;
+    function showWaiting(msg){
+      statusEl.textContent = msg;
+      container.innerHTML = `<div class="hint">先生が「出題」を開始すると回答ボタンが表示されます。</div>`;
+      container.classList.remove("locked");
     }
 
-    if (!choices){
-      stateEl.textContent = "出題準備中…（choices待ち）";
-      container.innerHTML = "";
-      return;
+    function lockUI(){
+      container.classList.add("locked");
+      statusEl.textContent = "送信しました（受付終了まで待機）";
     }
 
-    // 出題中/終了
-    stateEl.textContent = isOpen ? "回答受付中" : "回答終了（次の出題を待ってください）";
+    function renderChoiceUI(choices){
+      container.classList.remove("locked");
+      container.innerHTML = "";
 
-    // UI描画
-    renderChoices(choices);
+      const wrap = document.createElement("div");
+      wrap.className = "choices";
 
-    // status closed のときは押せない
-    if (!isOpen) lockUI();
-  });
-</script>
+      let selected = null;
+
+      choices.forEach(ch => {
+        const btn = document.createElement("button");
+        btn.className = "choice-btn";
+        btn.textContent = ch;
+
+        btn.onclick = () => {
+          if (!isOpen) return;
+          selected = ch;
+          wrap.querySelectorAll(".choice-btn").forEach(b => b.classList.remove("selected"));
+          btn.classList.add("selected");
+        };
+
+        wrap.appendChild(btn);
+      });
+
+      const submit = document.createElement("button");
+      submit.className = "submit-btn";
+      submit.textContent = "決定";
+
+      submit.onclick = async () => {
+        if (!isOpen || !selected) return;
+        const answerRef = ref(db, `rooms/${room}/answers/${userId}`);
+        await set(answerRef, { value: selected, timestamp: Date.now() });
+        lockUI();
+      };
+
+      container.appendChild(wrap);
+      container.appendChild(submit);
+
+      const hint = document.createElement("div");
+      hint.className = "hint";
+      hint.textContent = "※ 先生が「解答終了」にすると送信できなくなります";
+      container.appendChild(hint);
+    }
+
+    // activity を監視（mode が ox / five の時だけ描画）
+    const activityRef = ref(db, `rooms/${room}/activity`);
+    onValue(activityRef, snap => {
+      const data = snap.val();
+      if (!data) {
+        showWaiting("出題待ち…");
+        return;
+      }
+
+      isOpen = (data.status === "open");
+      const mode = data.mode;
+      const config = data.config || {};
+
+      // mode が来ないと、student は何も描画できない
+      if (mode !== "ox" && mode !== "five") {
+        showWaiting("出題待ち…");
+        return;
+      }
+
+      // choices は teacher 側が入れるのが基本（無い場合は既定値）
+      const choices =
+        Array.isArray(config.choices) && config.choices.length
+          ? config.choices
+          : (mode === "ox" ? ["O","X"] : ["A","B","C","D","E"]);
+
+      statusEl.textContent = isOpen ? "回答受付中" : "回答終了（送信不可）";
+      renderChoiceUI(choices);
+
+      if (!isOpen) container.classList.add("locked");
+    });
+  </script>
 </body>
 </html>
