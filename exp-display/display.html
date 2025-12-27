@@ -41,7 +41,6 @@
       backdrop-filter: blur(8px);
     }
 
-    /* 解答終了時：少しだけ右を広く（任意） */
     body.closed .grid{ grid-template-columns: 1.6fr 1fr; }
 
     .wrap{
@@ -185,7 +184,6 @@
     }
     body.closed .choice.correct{ animation:pulseGreen 1.3s infinite; }
 
-    /* 解答・解説（解答終了時だけ表示） */
     #answerBox{
       display:none;
       margin-top:10px;
@@ -213,7 +211,6 @@
 
     #rightPanel{ display:flex; flex-direction:column; gap:10px; min-height:0; }
 
-    /* 縦棒チャート */
     #vchartWrap{
       flex:1;
       min-height:0;
@@ -273,7 +270,6 @@
       letter-spacing:.06em;
     }
 
-    /* QR */
     #qrLayer{
       position:fixed;
       inset:0;
@@ -322,7 +318,6 @@
     }
     #qrCount{ margin-top:6px; color:rgba(203,213,225,.9); font-size:14px; }
 
-    /* トースト */
     #toast{
       position:fixed;
       left:50%;
@@ -350,7 +345,7 @@
 </head>
 
 <body>
-  <div id="buildTag">build: 2025-12-27 / aggfix2</div>
+  <div id="buildTag">build: 2025-12-27 / aggfix2-sound</div>
   <div id="toast">解答終了 → 正解公開</div>
 
   <div id="qrLayer">
@@ -368,7 +363,7 @@
       <div class="meta">
         <span id="statusLabel">status: -</span>
         <span id="countLabel">参加中 0人</span>
-        <button id="soundBtn" class="soundBtn">🔈 音ON</button>
+        <button id="soundBtn" class="soundBtn">🔈 音OFF（タップでON）</button>
       </div>
     </div>
 
@@ -378,7 +373,6 @@
         <div id="leftScroll">
           <p id="question">（問題を待っています…）</p>
 
-          <!-- 解答終了時だけ show。さらにJSで choices の前へ移動 -->
           <div id="answerBox">
             <p id="answerLine"></p>
             <p id="explanationLine"></p>
@@ -437,28 +431,60 @@
 
     const toast  = document.getElementById("toast");
 
-    // ---- Sound ----
+    // ===== Sound: poyon.mp3（display.htmlと同じディレクトリ） =====
     const soundBtn = document.getElementById("soundBtn");
-    const se = new Audio("poyon.mp3"); // exp-display と同じフォルダ
+    const se = new Audio("./poyon.mp3"); // ←同じディレクトリ
     se.preload = "auto";
-    se.volume = 0.55;
+    se.volume = 0.6;
+
     let soundEnabled = false;
+    let soundUnlocked = false;
     let lastAnswerTotal = 0;
 
-    soundBtn.onclick = async () => {
+    async function unlockSound(){
+      if (soundUnlocked) return true;
       try{
+        // 1回だけ再生できれば解錠扱い（無音ではなく短く鳴る可能性あり）
         await se.play();
         se.pause();
         se.currentTime = 0;
+        soundUnlocked = true;
         soundEnabled = true;
         soundBtn.classList.add("on");
         soundBtn.textContent = "🔊 音ON";
+        return true;
       }catch(e){
+        soundUnlocked = false;
         soundEnabled = false;
         soundBtn.classList.remove("on");
-        soundBtn.textContent = "🔈 音ON（押して）";
+        soundBtn.textContent = "🔈 音OFF（タップでON）";
+        return false;
       }
-    };
+    }
+
+    // ボタンで明示的にON
+    soundBtn.onclick = async () => { await unlockSound(); };
+
+    // 画面どこでも1回タップ/クリックで解錠（運用ラクにする）
+    function addOneShotUnlock(){
+      const handler = async () => {
+        await unlockSound();
+        window.removeEventListener("pointerdown", handler, true);
+        window.removeEventListener("keydown", handler, true);
+      };
+      window.addEventListener("pointerdown", handler, true);
+      window.addEventListener("keydown", handler, true);
+    }
+    addOneShotUnlock();
+
+    function playPoyon(){
+      if (!soundEnabled) return;
+      if (!soundUnlocked) return;
+      try{
+        se.currentTime = 0;
+        se.play().catch(()=>{});
+      }catch(_){}
+    }
 
     roomLabel.textContent = `ROOM: ${room}`;
 
@@ -485,10 +511,7 @@
     let lastStatus = null;
     let currentMode = null;
 
-    // 集計キー順（必ず入るよう補完）
     let choiceOrder = ["A","B","C","D","E"];
-
-    // ★問題データ保持（解答終了で answer/explanation を出すため）
     let currentQuestion = null;
 
     function defaultChoicesFromMode(mode){
@@ -515,18 +538,15 @@
       }, 460);
     }
 
-    // 解答終了時だけ「解説を上（choicesの前）へ」
     function placeAnswerBoxTop(isTop){
       if (!leftScroll) return;
       if (isTop) leftScroll.insertBefore(answerBox, cEl);
       else leftScroll.appendChild(answerBox);
     }
 
-    // 解答・解説の表示制御（ここが今回の修正核心）
     function updateAnswerUI(){
       const q = currentQuestion;
       const shouldShow = (currentStatus === "closed") && q && (q.answer || q.explanation);
-
       placeAnswerBoxTop(currentStatus === "closed");
 
       if (!shouldShow){
@@ -632,7 +652,6 @@
       if (a.qr === true) showQR();
       else hideQRWithFade();
 
-      // choices補完
       const cfgChoices = (a.config && Array.isArray(a.config.choices)) ? a.config.choices : null;
       if (cfgChoices && cfgChoices.length){
         choiceOrder = cfgChoices.map(x => String(x).trim().toUpperCase());
@@ -640,21 +659,18 @@
         choiceOrder = defaultChoicesFromMode(currentMode);
       }
 
-      // 解答終了に入った瞬間だけトースト
       if (lastStatus !== "closed" && currentStatus === "closed") showToast();
       lastStatus = currentStatus;
 
-      // ★ここで解答解説の表示更新
       updateAnswerUI();
 
-      // ★choicesの正解枠（解答終了時だけ）
       if (currentQuestion && currentQuestion.choices){
         const ck = currentQuestion.answer ? String(currentQuestion.answer).trim().toUpperCase() : null;
         renderChoices(currentQuestion.choices, ck, currentStatus === "closed");
       }
     });
 
-    // 問題表示（answer/explanation を currentQuestion に保持）
+    // 問題表示
     let unsubQ = null;
     onValue(qidRef, snap => {
       const qid = snap.val();
@@ -679,7 +695,6 @@
         currentQuestion = q;
         qEl.textContent = q.question || "";
 
-        // 問題のchoicesがあるなら並びを優先（A-E順固定より安全）
         if (q.choices && typeof q.choices === "object"){
           const ord = Object.keys(q.choices).map(k => String(k).toUpperCase());
           if (ord.length) choiceOrder = ord;
@@ -687,13 +702,11 @@
 
         const ck = q.answer ? String(q.answer).trim().toUpperCase() : null;
         renderChoices(q.choices || {}, ck, currentStatus === "closed");
-
-        // ★問題が変わったら解説も更新
         updateAnswerUI();
       });
     });
 
-    // answers：参加人数＋集計（answers直集計）
+    // answers：参加人数＋集計＋「増えたら音」
     onValue(answersRef, snap => {
       const ans = snap.val() || {};
       const keys = Object.keys(ans);
@@ -702,13 +715,12 @@
       countLabel.textContent = `参加中 ${n}人`;
       qrCount.textContent = `参加中 ${n}人`;
 
-      if (soundEnabled && n > lastAnswerTotal){
-        se.currentTime = 0;
-        se.play().catch(()=>{});
+      // ★回答が増えたら鳴らす
+      if (n > lastAnswerTotal) {
+        playPoyon();
       }
       lastAnswerTotal = n;
 
-      // counts 初期化
       const counts = {};
       (choiceOrder || []).forEach(c => counts[c] = 0);
 
@@ -722,7 +734,7 @@
         const key = String(val).trim().toUpperCase();
         if (counts[key] === undefined){
           counts[key] = 0;
-          choiceOrder = [...choiceOrder, key]; // 想定外キーも表示
+          choiceOrder = [...choiceOrder, key];
         }
         counts[key] += 1;
       });
