@@ -17,8 +17,6 @@
       --color-e:#ff375f;
 
       --bg:#050608;
-      --panel:#0b1020;
-      --panel2:#111827;
       --line:rgba(255,255,255,.10);
       --ink:#f9fafb;
       --muted:rgba(203,213,225,.85);
@@ -214,9 +212,7 @@
       position:relative; /* FX用 */
     }
 
-    /* ===== B1：強め吸い込み演出 ===== */
-
-    /* 中央リング（2重＋グロー） */
+    /* ===== B1：強め吸い込み演出（ox/five送信時） ===== */
     .fxRing, .fxRing2{
       position:absolute;
       left:50%;
@@ -238,7 +234,6 @@
       z-index:5;
       filter: blur(.4px);
     }
-
     .fxRing::after,
     .fxRing2::after{
       content:"";
@@ -253,7 +248,6 @@
       inset:-14px;
       border-width: 3px;
     }
-
     .controller.fx .fxRing{
       opacity:1;
       animation: ringPopB1 520ms cubic-bezier(.12,.9,.1,1) forwards;
@@ -268,7 +262,6 @@
     .controller.fx .fxRing2::after{
       animation: ringOutlineB1b 600ms cubic-bezier(.12,.9,.1,1) forwards;
     }
-
     @keyframes ringPopB1{
       0%   { transform:translate(-50%,-50%) scale(.55); opacity:0; }
       12%  { opacity:1; }
@@ -294,7 +287,6 @@
       100% { opacity:0; transform:scale(15.4); }
     }
 
-    /* 残像（クローン） */
     .trail{
       position:absolute;
       border-radius:999px;
@@ -307,7 +299,6 @@
     }
     .trail.t1{ opacity:.55; animation: trail1 520ms cubic-bezier(.12,.9,.1,1) forwards; }
     .trail.t2{ opacity:.35; animation: trail2 560ms cubic-bezier(.12,.9,.1,1) forwards; }
-
     @keyframes trail1{
       0%   { transform:translate(0,0) scale(1.00) rotate(0deg);   opacity:.55; filter: blur(.2px); }
       35%  { transform:translate(6px,10px) scale(.78) rotate(180deg); opacity:.48; filter: blur(.6px); }
@@ -321,7 +312,7 @@
       100% { transform:translate(16px,38px) scale(.05) rotate(980deg); opacity:0;    filter: blur(2.0px); }
     }
 
-    /* ボタン共通（押し心地） */
+    /* ボタン共通 */
     .btn{
       -webkit-tap-highlight-color: transparent;
       appearance:none;
@@ -347,7 +338,6 @@
       position:relative;
       will-change: transform, opacity, filter;
     }
-
     .btn::after{
       content:"";
       position:absolute;
@@ -357,7 +347,6 @@
       opacity:.85;
       pointer-events:none;
     }
-
     .btn:active{
       transform: translateY(3px) scale(.985);
       filter: brightness(.98);
@@ -366,7 +355,6 @@
         inset 0 -14px 18px rgba(0,0,0,.25),
         0 10px 24px rgba(0,0,0,.55);
     }
-
     .btn.sel{
       box-shadow:
         0 0 0 3px rgba(255,255,255,.24),
@@ -375,41 +363,19 @@
         0 18px 40px rgba(0,0,0,.55);
       transform: translateY(-2px) scale(1.05);
     }
-
-    /* 送信後：より強い吸い込み（速い＋回転多め） */
     .btn.sucked{
       pointer-events:none;
       animation: suckInB1 520ms cubic-bezier(.12,.9,.1,1) forwards;
     }
     @keyframes suckInB1{
-      0%{
-        transform: translateY(-2px) scale(1.05) rotate(0deg);
-        opacity:1;
-        filter: blur(0);
-      }
-      18%{
-        transform: translateY(1px) scale(.90) rotate(180deg);
-        opacity:1;
-        filter: blur(.2px);
-      }
-      50%{
-        transform: translateY(12px) scale(.42) rotate(540deg);
-        opacity:.70;
-        filter: blur(1.0px);
-      }
-      80%{
-        transform: translateY(24px) scale(.12) rotate(980deg);
-        opacity:.25;
-        filter: blur(1.6px);
-      }
-      100%{
-        transform: translateY(32px) scale(.05) rotate(1260deg);
-        opacity:0;
-        filter: blur(2.1px);
-      }
+      0%{ transform: translateY(-2px) scale(1.05) rotate(0deg); opacity:1; filter: blur(0); }
+      18%{ transform: translateY(1px) scale(.90) rotate(180deg); opacity:1; filter: blur(.2px); }
+      50%{ transform: translateY(12px) scale(.42) rotate(540deg); opacity:.70; filter: blur(1.0px); }
+      80%{ transform: translateY(24px) scale(.12) rotate(980deg); opacity:.25; filter: blur(1.6px); }
+      100%{ transform: translateY(32px) scale(.05) rotate(1260deg); opacity:0; filter: blur(2.1px); }
     }
 
-    /* 色バリエーション（踏襲） */
+    /* 色 */
     .btn.O { background: var(--color-o); color:#0b1020; }
     .btn.X { background: var(--color-x); color:#fff; }
     .btn.A { background: var(--color-a); color:#fff; }
@@ -418,7 +384,7 @@
     .btn.D { background: var(--color-d); color:#fff; }
     .btn.E { background: var(--color-e); color:#fff; }
 
-    /* OX＝2ボタン */
+    /* OX */
     .oxGrid{
       display:grid;
       grid-template-columns: 1fr 1fr;
@@ -426,12 +392,9 @@
       align-items:center;
       justify-items:center;
     }
-    .oxGrid .btn{
-      width:110px; height:110px;
-      font-size:42px;
-    }
+    .oxGrid .btn{ width:110px; height:110px; font-size:42px; }
 
-    /* 5択＝フェイスボタン配置 */
+    /* 5択 */
     .fiveGrid{
       width:min(340px, 80vw);
       aspect-ratio: 1.15 / 1;
@@ -448,7 +411,59 @@
     .posA{ grid-column:3; grid-row:2; }
     .posE{ grid-column:2; grid-row:2; width:92px; height:92px; font-size:32px; }
 
-    /* 決定（Start） */
+    /* テキスト入力（textモード） */
+    .textWrap{
+      width:min(420px, 88vw);
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      padding:14px 14px;
+      border-radius:22px;
+      background:rgba(2,6,23,.55);
+      border:1px solid rgba(255,255,255,.10);
+      box-shadow:0 18px 44px rgba(0,0,0,.35);
+    }
+    .textTitle{
+      font-weight:1000;
+      letter-spacing:.10em;
+      color:rgba(203,213,225,.92);
+      font-size:13px;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
+    }
+    .counter{
+      font-weight:900;
+      color:rgba(203,213,225,.85);
+      letter-spacing:.06em;
+      font-size:12px;
+    }
+    textarea{
+      width:100%;
+      min-height:140px;
+      max-height:220px;
+      resize:none;
+      padding:12px 12px;
+      border-radius:16px;
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(0,0,0,.25);
+      color:#fff;
+      font-size:18px;
+      line-height:1.4;
+      outline:none;
+    }
+    textarea:focus{
+      border-color: rgba(255,255,255,.22);
+      box-shadow: 0 0 0 4px rgba(255,255,255,.08);
+    }
+    .hint{
+      color:rgba(203,213,225,.80);
+      font-size:12px;
+      line-height:1.45;
+    }
+
+    /* 送信ボタン */
     .submit{
       width:min(320px, 84vw);
       height:64px;
@@ -472,7 +487,7 @@
       filter: grayscale(.2);
     }
 
-    /* ロック（送信後） */
+    /* ロック */
     .locked{
       opacity:.55;
       pointer-events:none;
@@ -520,7 +535,7 @@
       font-size:14px;
     }
 
-    /* 送信完了表示 */
+    /* 送信完了 */
     .toast{
       position:fixed;
       left:50%;
@@ -557,12 +572,13 @@
       .btn{ width:76px; height:76px; }
       .oxGrid .btn{ width:98px; height:98px; font-size:40px; }
       .posE{ width:86px; height:86px; }
+      textarea{ min-height:120px; }
     }
   </style>
 </head>
 
 <body>
-  <div id="buildTag">build: 2025-12-27 / student-pad-ui-suck-B1</div>
+  <div id="buildTag">build: 2025-12-27 / student-pad-ui-textfix</div>
 
   <div class="topbar">
     <div class="room" id="roomLabel">ROOM: -</div>
@@ -574,31 +590,27 @@
 
   <div class="stage">
     <div class="controller" id="controller">
-      <div class="hud" id="hud">
+      <div class="hud">
         <span>回答モード：</span><strong id="hudMode">待機</strong>
       </div>
 
       <div class="controls">
-        <!-- 左：D-Pad風（飾り） -->
+        <!-- 左：D-Pad風 -->
         <div class="dpad" aria-hidden="true">
           <div class="dpadCore">
-            <div class="dpadPiece"></div>
-            <div class="dpadPiece"></div>
-            <div class="dpadPiece"></div>
-            <div class="dpadPiece"></div>
-            <div class="dpadPiece center"></div>
-            <div class="dpadPiece"></div>
-            <div class="dpadPiece"></div>
-            <div class="dpadPiece"></div>
-            <div class="dpadPiece"></div>
+            <div class="dpadPiece"></div><div class="dpadPiece"></div><div class="dpadPiece"></div>
+            <div class="dpadPiece"></div><div class="dpadPiece center"></div><div class="dpadPiece"></div>
+            <div class="dpadPiece"></div><div class="dpadPiece"></div><div class="dpadPiece"></div>
           </div>
         </div>
 
-        <!-- 右：ボタン群 -->
+        <!-- 右：操作 -->
         <div class="pad" id="pad">
           <div class="fxRing" id="fxRing"></div>
           <div class="fxRing2" id="fxRing2"></div>
+
           <div id="answer-container"></div>
+
           <button id="submitBtn" class="submit" disabled>START（決定）</button>
         </div>
       </div>
@@ -623,11 +635,7 @@
       apiKey: "AIzaSyBke-wTU16skpbK8z80ddK04tE154dHERQ",
       authDomain: "satosan-41eac.firebaseapp.com",
       databaseURL: "https://satosan-41eac-default-rtdb.asia-southeast1.firebasedatabase.app",
-      projectId: "satosan-41eac",
-      storageBucket: "satosan-41eac.firebasestorage.app",
-      messagingSenderId: "992482993229",
-      appId: "1:992482993229:web:e2c59b078233b0ed16e804",
-      measurementId: "G-VT9FKHN3LT"
+      projectId: "satosan-41eac"
     };
 
     const app = initializeApp(firebaseConfig);
@@ -665,6 +673,7 @@
     let currentMode = null;
     let selected = null;
     let sending = false;
+    let textValue = "";
 
     function showToast(msg){
       toast.textContent = msg;
@@ -687,15 +696,8 @@
       container.classList.remove("locked");
       submitBtn.disabled = true;
       selected = null;
-
+      textValue = "";
       clearTrails();
-
-      container.querySelectorAll(".btn").forEach(b => {
-        b.classList.remove("sel","sucked");
-        b.style.opacity = "";
-        b.style.filter = "";
-        b.style.pointerEvents = "";
-      });
       container.style.pointerEvents = "";
     }
 
@@ -746,6 +748,7 @@
 
       submitBtn.textContent = "START（決定）";
       submitBtn.disabled = true;
+      submitBtn.style.display = "";
     }
 
     function renderFive(choices){
@@ -771,6 +774,53 @@
 
       submitBtn.textContent = "START（決定）";
       submitBtn.disabled = true;
+      submitBtn.style.display = "";
+    }
+
+    function renderText(){
+      unlockUI();
+      container.innerHTML = "";
+      hudMode.textContent = "文字入力";
+      modeText.textContent = "mode: text";
+
+      const wrap = document.createElement("div");
+      wrap.className = "textWrap";
+
+      const title = document.createElement("div");
+      title.className = "textTitle";
+      title.innerHTML = `<span>テキストを入力</span><span class="counter" id="counter">0/200</span>`;
+
+      const ta = document.createElement("textarea");
+      ta.placeholder = "短くでOK（1〜2文）";
+      ta.maxLength = 200;
+      ta.disabled = !isOpen;
+
+      const hint = document.createElement("div");
+      hint.className = "hint";
+      hint.textContent = "※ 送信は1回。先生が「解答終了」を押した後に投影で公開されます。";
+
+      wrap.appendChild(title);
+      wrap.appendChild(ta);
+      wrap.appendChild(hint);
+      container.appendChild(wrap);
+
+      const counterEl = wrap.querySelector("#counter");
+
+      const refresh = () => {
+        textValue = ta.value || "";
+        counterEl.textContent = `${textValue.length}/200`;
+        submitBtn.disabled = (!isOpen) || sending || (textValue.trim().length === 0);
+      };
+
+      ta.addEventListener("input", refresh);
+      refresh();
+
+      submitBtn.textContent = "SEND（送信）";
+      submitBtn.style.display = "";
+      submitBtn.disabled = true;
+
+      // openなら即フォーカス（スマホで強制はしない）
+      if (isOpen) setTimeout(()=>{ try{ ta.focus(); }catch(_){ } }, 50);
     }
 
     function makeTrailClone(selBtn, klass){
@@ -786,8 +836,6 @@
       clone.style.width  = r.width + "px";
       clone.style.height = r.height + "px";
       clone.style.position = "absolute";
-
-      // ちょい発光（残像感）
       clone.style.boxShadow =
         "0 0 0 2px rgba(255,255,255,.14), 0 0 18px rgba(255,255,255,.18), 0 18px 40px rgba(0,0,0,.35)";
 
@@ -800,18 +848,11 @@
       if (!selBtn) return;
 
       clearTrails();
-
-      // リング開始
       controller.classList.add("fx");
-
-      // 残像2枚
       makeTrailClone(selBtn, "t2");
       makeTrailClone(selBtn, "t1");
-
-      // 本体吸い込み
       selBtn.classList.add("sucked");
 
-      // 周囲は軽くフェード
       container.querySelectorAll(".btn").forEach(b => {
         if (b !== selBtn) b.style.opacity = "0.50";
       });
@@ -821,34 +862,51 @@
 
     // 送信
     submitBtn.onclick = async () => {
-      if (!isOpen || !selected || sending) return;
-      sending = true;
+      if (!isOpen || sending) return;
 
-      // 先に操作を止める（演出は出す）
-      submitBtn.disabled = true;
-      container.style.pointerEvents = "none";
+      // modeごとにpayloadを作る
+      let payload = null;
 
-      // 演出
-      playSubmitFX();
+      if (currentMode === "ox" || currentMode === "five"){
+        if (!selected) return;
+        payload = { value: selected, timestamp: Date.now() };
 
-      // DB送信
-      try{
-        const answerRef = ref(db, `rooms/${room}/answers/${userId}`);
-        await set(answerRef, { value: selected, timestamp: Date.now() });
-      }catch(e){
-        sending = false;
-        container.style.pointerEvents = "";
-        unlockUI();
-        showToast("送信失敗…もう一度");
+        sending = true;
+        submitBtn.disabled = true;
+        container.style.pointerEvents = "none";
+        playSubmitFX();
+      } else if (currentMode === "text"){
+        const text = (textValue || "").trim();
+        if (!text) return;
+        payload = { value: text, timestamp: Date.now() };
+
+        sending = true;
+        submitBtn.disabled = true;
+        container.style.pointerEvents = "none";
+        // textは吸い込み演出なし（読みやすさ優先）
+      } else {
         return;
       }
 
-      // 演出が見えるように待ってからロック
+      try{
+        const answerRef = ref(db, `rooms/${room}/answers/${userId}`);
+        await set(answerRef, payload);
+      }catch(e){
+        sending = false;
+        container.style.pointerEvents = "";
+        showToast("送信失敗…もう一度");
+        // openなら再操作可能に戻す
+        if (currentMode === "text") renderText();
+        else if (currentMode === "ox") renderOX(["O","X"]);
+        else if (currentMode === "five") renderFive(["A","B","C","D","E"]);
+        return;
+      }
+
       setTimeout(() => {
         container.style.pointerEvents = "";
         showToast("送信しました ✓");
         lockUI();
-      }, 560);
+      }, (currentMode === "ox" || currentMode === "five") ? 560 : 220);
     };
 
     // activity 監視
@@ -862,9 +920,9 @@
       dot.classList.toggle("open", isOpen);
       dot.classList.toggle("closed", !isOpen);
 
+      // status閉鎖なら overlay（textも同様）
       if (!isOpen){
         setOverlay(true, "先生が出題を開始すると、解答ボタンが使えるようになります。");
-        submitBtn.disabled = true;
       } else {
         setOverlay(false);
       }
@@ -878,13 +936,30 @@
         renderFive(config.choices || ["A","B","C","D","E"]);
         return;
       }
+      if (currentMode === "text") {
+        renderText();
+        return;
+      }
 
-      // その他（text 等）は待機表示に倒す（studentは問題不要方針）
+      // 未知モードは待機に倒す
       hudMode.textContent = "待機";
       modeText.textContent = `mode: ${currentMode || "-"}`;
       container.innerHTML = "";
+      submitBtn.style.display = "";
       submitBtn.disabled = true;
       setOverlay(true, "先生が出題を開始すると、解答ボタンが使えるようになります。");
+    });
+
+    // ★ 自分の回答が消されたら（教員リセット等）、open中は再入力可能にする
+    const myAnswerRef = ref(db, `rooms/${room}/answers/${userId}`);
+    onValue(myAnswerRef, snap => {
+      const v = snap.val();
+      if (v == null && isOpen){
+        // 受付中で自分の回答が無い＝再入力可能
+        if (currentMode === "text") renderText();
+        if (currentMode === "ox") renderOX(["O","X"]);
+        if (currentMode === "five") renderFive(["A","B","C","D","E"]);
+      }
     });
   </script>
 </body>
