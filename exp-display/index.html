@@ -60,7 +60,7 @@
       flex-wrap:wrap;
       justify-content:center;
       gap:10px;
-      margin:18px 0 18px;
+      margin:18px 0 12px;
     }
 
     #prevQuestionBtn{background:#4b5563;}
@@ -78,8 +78,23 @@
       opacity:1 !important;
     }
 
+    /* ステータス */
+    #statusBox{
+      margin: 8px auto 0;
+      max-width: 920px;
+      background:#020617;
+      border:1px solid rgba(255,255,255,0.08);
+      border-radius:18px;
+      padding:12px 14px;
+      color:#cbd5e1;
+      font-size:13px;
+      line-height:1.4;
+    }
+    #statusBox b{ color:#f9fafb; }
+
+    /* プレビュー */
     #preview{
-      margin-top:18px;
+      margin-top:14px;
       padding:18px;
       border-radius:20px;
       background:#020617;
@@ -101,6 +116,7 @@
     .pv-answer{margin-top:12px;font-weight:800;color:#34d399;}
     .pv-explanation{margin-top:6px;font-size:14px;color:#cbd5e1;line-height:1.5;}
 
+    /* QRモーダル */
     #qrModal{
       display:none;
       position:fixed;
@@ -150,6 +166,12 @@
       <button id="importBtn">CSV投入</button>
     </div>
 
+    <div id="statusBox">
+      <div>状態：<b id="stActivity">-</b>　/　出題：<b id="stQid">-</b></div>
+      <div style="margin-top:4px;">ヒント：<b>CSV投入 → QR表示 → display表示 → QRを消す（出題開始）</b></div>
+      <div id="stWarn" style="margin-top:6px;color:#fbbf24;"></div>
+    </div>
+
     <div id="preview">
       <h3>出題プレビュー（教員のみ）</h3>
       <div id="pvQuestion">問題を待っています…</div>
@@ -159,6 +181,7 @@
     </div>
   </div>
 
+  <!-- QRモーダル（教員PC用） -->
   <div id="qrModal">
     <div id="qrInner">
       <h3 style="margin:0 0 12px 0; letter-spacing:.08em;">学生用QRコード</h3>
@@ -180,16 +203,19 @@
       apiKey: "AIzaSyBke-wTU16skpbK8z80ddK04tE154dHERQ",
       authDomain: "satosan-41eac.firebaseapp.com",
       databaseURL: "https://satosan-41eac-default-rtdb.asia-southeast1.firebasedatabase.app",
-      projectId: "satosan-41eac",
-      storageBucket: "satosan-41eac.firebasestorage.app",
-      messagingSenderId: "992482993229",
-      appId: "1:992482993229:web:e2c59b078233b0ed16e804",
-      measurementId: "G-VT9FKHN3LT"
+      projectId: "satosan-41eac"
     };
 
     const app = initializeApp(firebaseConfig);
     const db  = getDatabase(app);
 
+    // ===== 固定URL（ここが効きます：displayが確実に開く） =====
+    const DISPLAY_BASE = "https://qzp04374-code.github.io/quiz-app/exp-display/";
+    const DISPLAY_URL  = DISPLAY_BASE + "display.html";
+    const STUDENT_URL  = DISPLAY_BASE + "student.html";
+    const IMPORT_URL   = DISPLAY_BASE + "import-csv.html";
+
+    // UI
     const roomSelect = document.getElementById("roomSelect");
     const prevBtn = document.getElementById("prevQuestionBtn");
     const nextBtn = document.getElementById("nextQuestionBtn");
@@ -209,24 +235,28 @@
     const pvA = document.getElementById("pvAnswer");
     const pvE = document.getElementById("pvExplanation");
 
+    const stActivity = document.getElementById("stActivity");
+    const stQid = document.getElementById("stQid");
+    const stWarn = document.getElementById("stWarn");
+
     let currentRoom = roomSelect.value;
 
-    let unsubActivity = null;
-    let unsubQid = null;
-    let unsubQuestion = null;
-    let unsubAnswers = null;
-
+    // refs
     const actRef = () => ref(db, `rooms/${currentRoom}/activity`);
     const qidRef = () => ref(db, `rooms/${currentRoom}/quiz/current_question_id`);
     const qRef   = (qid) => ref(db, `rooms/${currentRoom}/questions/${qid}`);
     const ansRef = () => ref(db, `rooms/${currentRoom}/answers`);
     const resRef = () => ref(db, `rooms/${currentRoom}/result`);
 
+    // unsub
+    let unsubActivity = null;
+    let unsubQid = null;
+    let unsubQuestion = null;
+
     function detachAll(){
       if (unsubActivity){unsubActivity();unsubActivity=null;}
       if (unsubQid){unsubQid();unsubQid=null;}
       if (unsubQuestion){unsubQuestion();unsubQuestion=null;}
-      if (unsubAnswers){unsubAnswers();unsubAnswers=null;}
     }
 
     function normMode(x){ return (x === "ox") ? "ox" : "five"; }
@@ -237,27 +267,33 @@
       if (ch && (ch.O || ch.X || ch.o || ch.x)) return "ox";
       return "five";
     }
-
-    function inferChoicesFromMode(mode){
+    function choicesFromMode(mode){
       return (mode === "ox") ? ["O","X"] : ["A","B","C","D","E"];
     }
 
     async function applyActivityForQuestion(qid){
+      stWarn.textContent = "";
       const snap = await get(qRef(qid));
-      const q = snap.val() || {};
+      const q = snap.val();
+
+      if (!q){
+        stWarn.textContent = `⚠️ questions/${qid} がありません。先にCSV投入してください。`;
+        // それでも学生が待機しないように、最低限はopen+choicesだけ入れる
+        const mode = "five";
+        const choices = choicesFromMode(mode);
+        await update(actRef(), { status:"open", qr:false, mode, config:{choices} });
+        await set(ansRef(), {});
+        const init = {}; choices.forEach(c=>init[c]=0);
+        await set(resRef(), init);
+        return;
+      }
+
       const mode = inferModeFromQuestion(q);
-      const choices = inferChoicesFromMode(mode);
+      const choices = choicesFromMode(mode);
 
-      await update(actRef(), {
-        status:"open",
-        qr:false,
-        mode,
-        config:{ choices }
-      });
-
+      await update(actRef(), { status:"open", qr:false, mode, config:{choices} });
       await set(ansRef(), {});
-      const init = {};
-      choices.forEach(c => init[c] = 0);
+      const init = {}; choices.forEach(c=>init[c]=0);
       await set(resRef(), init);
     }
 
@@ -273,4 +309,159 @@
     function attachListeners(){
       detachAll();
 
-      unsubActivity = on Вам(1)
+      // activity監視
+      unsubActivity = onValue(actRef(), snap => {
+        const act = snap.val() || {};
+        const isQR = act.qr === true;
+
+        stActivity.textContent = `${act.status || "-"} / qr=${isQR ? "true":"false"} / mode=${act.mode || "-"}`;
+
+        nextBtn.disabled = isQR;
+        if (isQR) qrOffBtn.classList.add("qr-off-active");
+        else qrOffBtn.classList.remove("qr-off-active");
+      });
+
+      // current_question_id監視 → プレビュー
+      unsubQid = onValue(qidRef(), snap => {
+        const qid = snap.val();
+        stQid.textContent = qid || "-";
+
+        if (!qid){
+          pvQ.textContent = "問題を待っています…";
+          pvC.innerHTML = "";
+          pvA.textContent = "";
+          pvE.textContent = "";
+          if (unsubQuestion){unsubQuestion();unsubQuestion=null;}
+          return;
+        }
+
+        if (unsubQuestion){unsubQuestion();unsubQuestion=null;}
+        unsubQuestion = onValue(qRef(qid), qsnap => {
+          const q = qsnap.val();
+          if (!q){
+            pvQ.textContent = `（${qid} が未登録です：CSV投入してください）`;
+            pvC.innerHTML = "";
+            pvA.textContent = "";
+            pvE.textContent = "";
+            return;
+          }
+
+          pvQ.textContent = q.question || "";
+          pvC.innerHTML = "";
+          pvA.textContent = q.answer ? `正解：${q.answer}` : "";
+          pvE.textContent = q.explanation ? `解説：${q.explanation}` : "";
+
+          if (q.choices && typeof q.choices === "object"){
+            Object.entries(q.choices).forEach(([k,v]) => {
+              const d = document.createElement("div");
+              d.className = "pv-choice";
+              d.textContent = `${String(k).toUpperCase()}. ${v}`;
+              pvC.appendChild(d);
+            });
+          }
+        });
+      });
+    }
+
+    // ルーム変更
+    roomSelect.addEventListener("change", () => {
+      currentRoom = roomSelect.value;
+      qrModal.style.display = "none";
+      stWarn.textContent = "";
+      attachListeners();
+    });
+
+    // display表示（絶対URL）
+    projBtn.onclick = async () => {
+      // displayを開いた瞬間はQR表示が欲しいので強制qr=true
+      await update(actRef(), { qr:true }).catch(()=>{});
+      window.open(`${DISPLAY_URL}?room=${encodeURIComponent(currentRoom)}`, "_blank");
+    };
+
+    // CSV投入（絶対URL）
+    impBtn.onclick = () => {
+      window.open(IMPORT_URL, "_blank");
+    };
+
+    // QR表示（学生URLの絶対指定）
+    qrBtn.onclick = () => {
+      update(actRef(), { qr:true });
+
+      const url = `${STUDENT_URL}?room=${encodeURIComponent(currentRoom)}`;
+      qrDiv.innerHTML = "";
+      // eslint-disable-next-line no-undef
+      new QRCode(qrDiv, { text:url, width:260, height:260 });
+
+      qrModal.style.display = "flex";
+    };
+
+    // QRを消す（＝その場で出題開始）
+    qrOffBtn.onclick = async () => {
+      await update(actRef(), { qr:false });
+      qrModal.style.display = "none";
+      await startCurrentOrQ01(); // ←最初だけ待機を消す
+    };
+
+    closeQR.onclick = () => { qrModal.style.display = "none"; };
+    qrModal.addEventListener("click", (e) => { if (e.target === qrModal) qrModal.style.display = "none"; });
+
+    // 次の問題 ▶
+    nextBtn.onclick = async () => {
+      const qrSnap = await get(ref(db, `rooms/${currentRoom}/activity/qr`));
+      if (qrSnap.val() === true) return;
+
+      const cur = (await get(qidRef())).val();
+      let next = "Q01";
+      if (cur){
+        const m = String(cur).match(/^Q(\d+)$/);
+        if (m) next = `Q${String(Number(m[1]) + 1).padStart(2,"0")}`;
+      }
+      await set(qidRef(), next);
+      await applyActivityForQuestion(next);
+    };
+
+    // 問題戻る ◀
+    prevBtn.onclick = async () => {
+      const cur = (await get(qidRef())).val();
+      if (!cur) return;
+      const m = String(cur).match(/^Q(\d+)$/);
+      if (!m) return;
+      const num = Number(m[1]);
+      if (num <= 1) return;
+
+      const prev = `Q${String(num - 1).padStart(2,"0")}`;
+      await set(qidRef(), prev);
+      await applyActivityForQuestion(prev);
+    };
+
+    // 解答終了
+    stopBtn.onclick = () => {
+      update(actRef(), { status:"closed", qr:false });
+    };
+
+    // 授業終了（2段階＋削除）
+    endBtn.onclick = async () => {
+      const ok1 = confirm("【授業終了】\n\n問題・回答・集計がすべて削除されます。\n本当に終了しますか？");
+      if (!ok1) return;
+      const input = prompt("最終確認：授業を終了する場合は【終了】と入力してください。");
+      if (input !== "終了") { alert("キャンセルしました"); return; }
+
+      const base = `rooms/${currentRoom}`;
+
+      await update(ref(db, `${base}/activity`), { ending:true, qr:false });
+      await new Promise(r => setTimeout(r, 1500));
+
+      await set(ref(db, `${base}/questions`), null);
+      await set(ref(db, `${base}/quiz`), null);
+      await set(ref(db, `${base}/answers`), null);
+      await set(ref(db, `${base}/result`), null);
+      await set(ref(db, `${base}/activity`), null);
+
+      alert("授業を終了しました（データ削除済み）。");
+    };
+
+    // 初期
+    attachListeners();
+  </script>
+</body>
+</html>
