@@ -33,7 +33,6 @@
       overflow:hidden;
     }
 
-    /* build表示（どの版を見てるか事故防止） */
     #buildTag{
       position:fixed; right:12px; bottom:10px;
       opacity:.55; font-size:12px; z-index:9999;
@@ -42,14 +41,20 @@
       backdrop-filter: blur(8px);
     }
 
-    body.closed .grid{ grid-template-columns: 1.6fr 1fr; }
+    #debugBox{
+      position:fixed; left:12px; bottom:10px;
+      max-width:min(560px, 92vw);
+      opacity:.78; font-size:12px; z-index:9999;
+      background:rgba(0,0,0,.35); border:1px solid rgba(255,255,255,.08);
+      padding:8px 10px; border-radius:14px;
+      white-space:pre-wrap;
+      display:none;
+    }
 
     .wrap{
       height:100vh;
       display:flex;
       flex-direction:column;
-      align-items:stretch;
-      justify-content:flex-start;
       padding:16px 16px 14px;
       box-sizing:border-box;
       gap:10px;
@@ -180,13 +185,6 @@
       box-shadow:0 0 0 3px rgba(34,197,94,.15);
     }
 
-    @keyframes pulseGreen {
-      0%   { box-shadow:0 0 0 0 rgba(34,197,94,.55); }
-      70%  { box-shadow:0 0 0 14px rgba(34,197,94,0); }
-      100% { box-shadow:0 0 0 0 rgba(34,197,94,0); }
-    }
-    body.closed .choice.correct{ animation:pulseGreen 1.3s infinite; }
-
     #answerBox{
       display:none;
       margin-top:10px;
@@ -213,7 +211,7 @@
 
     #rightPanel{ display:flex; flex-direction:column; gap:10px; min-height:0; }
 
-    /* ===== 縦棒チャート固定 ===== */
+    /* 縦棒チャート */
     #vchartWrap{
       flex:1;
       min-height:0;
@@ -239,15 +237,13 @@
     }
     .col{
       width:100%;
-      max-width:60px;
+      max-width:64px;
       display:flex;
       flex-direction:column;
       align-items:center;
       justify-content:flex-end;
       gap:6px;
     }
-    body.closed .col{ max-width:74px; }
-
     .count{
       font-size:14px;
       font-weight:900;
@@ -257,8 +253,6 @@
       text-align:center;
       white-space:nowrap;
     }
-    body.closed .count{ font-size:16px; }
-
     .bar{
       width:100%;
       border-radius:12px 12px 6px 6px;
@@ -275,10 +269,6 @@
       font-weight:900;
       color:var(--muted);
       letter-spacing:.06em;
-    }
-    body.closed .correctBar{
-      animation:pulseGreen 1.3s infinite;
-      border-radius:16px 16px 10px 10px;
     }
 
     /* QR */
@@ -321,44 +311,14 @@
       margin:8px 0 8px;
     }
     #qrcode canvas{
-      width:min(560px, 70vw) !important;
-      height:min(560px, 70vw) !important;
+      width:min(520px, 68vw) !important;
+      height:min(520px, 68vw) !important;
       border-radius:18px;
       background:#fff;
       padding:8px;
       box-sizing:border-box;
     }
     #qrCount{ margin-top:6px; color:rgba(203,213,225,.9); font-size:14px; }
-
-    #ending{
-      position:fixed;
-      inset:0;
-      display:none;
-      align-items:center;
-      justify-content:center;
-      z-index:1000;
-      background:rgba(0,0,0,.88);
-    }
-    #ending.show{ display:flex; }
-
-    #toast{
-      position:fixed;
-      left:50%;
-      top:16px;
-      transform:translateX(-50%);
-      background:rgba(17,24,39,.92);
-      border:1px solid rgba(255,255,255,.12);
-      padding:10px 14px;
-      border-radius:999px;
-      color:#f9fafb;
-      font-weight:900;
-      letter-spacing:.06em;
-      z-index:1200;
-      opacity:0;
-      pointer-events:none;
-      transition:opacity .25s ease;
-      box-shadow:0 18px 50px rgba(0,0,0,.55);
-    }
 
     @media (max-width: 980px){
       .grid{ grid-template-columns: 1fr; }
@@ -368,9 +328,8 @@
 </head>
 
 <body>
-  <div id="buildTag">build: 2025-12-27 / answers集計 / vchart</div>
-
-  <div id="toast">解答終了 → 正解公開</div>
+  <div id="buildTag">build: 2025-12-27 / aggfix</div>
+  <div id="debugBox"></div>
 
   <div id="qrLayer">
     <div class="qrBox">
@@ -378,21 +337,6 @@
       <div class="qrHint">スマホで読み取って参加</div>
       <div id="qrcode"></div>
       <div id="qrCount">参加中 0人</div>
-    </div>
-  </div>
-
-  <div id="ending">
-    <div style="
-      background:rgba(17,24,39,.65);
-      border:1px solid rgba(255,255,255,.12);
-      border-radius:26px;
-      padding:28px 26px;
-      width:min(860px, 92vw);
-      text-align:center;
-      box-shadow:0 24px 80px rgba(0,0,0,.8);
-    ">
-      <div style="font-size:44px;font-weight:900;letter-spacing:.06em;">授業終了します</div>
-      <div style="margin-top:8px;color:var(--muted);font-size:18px;">ご協力ありがとうございました。</div>
     </div>
   </div>
 
@@ -453,12 +397,14 @@
 
     const url = new URL(location.href);
     const room = url.searchParams.get("room") || "kyoto-01";
+    const debug = (url.searchParams.get("debug") === "1");
+
+    const debugBox = document.getElementById("debugBox");
+    if (debug) debugBox.style.display = "block";
 
     const roomLabel   = document.getElementById("roomLabel");
     const statusLabel = document.getElementById("statusLabel");
     const countLabel  = document.getElementById("countLabel");
-
-    const leftScroll = document.getElementById("leftScroll");
 
     const qEl = document.getElementById("question");
     const cEl = document.getElementById("choices");
@@ -473,12 +419,9 @@
     const qrDiv   = document.getElementById("qrcode");
     const qrCount = document.getElementById("qrCount");
 
-    const ending = document.getElementById("ending");
-    const toast  = document.getElementById("toast");
-
     // ---- Sound ----
     const soundBtn = document.getElementById("soundBtn");
-    const se = new Audio("poyon.mp3");
+    const se = new Audio("poyon.mp3"); // display.html と同じフォルダに置く
     se.preload = "auto";
     se.volume = 0.55;
     let soundEnabled = false;
@@ -514,22 +457,23 @@
     function drawQR(){
       qrDiv.innerHTML = "";
       // eslint-disable-next-line no-undef
-      new QRCode(qrDiv, { text: studentUrl, width: 540, height: 540 });
+      new QRCode(qrDiv, { text: studentUrl, width: 520, height: 520 });
     }
     drawQR();
 
+    // ---- state ----
     let isQR = true;
     let currentStatus = "-";
-    let lastStatus = null;
-    let currentQuestion = null;
-
-    // ★ここが肝：choicesの順序を activity から保持（なければ問題から推定）
     let currentMode = null;
-    let currentChoices = ["A","B","C","D","E"];
 
-    function showToast(){
-      toast.style.opacity = "1";
-      setTimeout(()=> toast.style.opacity = "0", 1200);
+    // 集計対象の並び（必ず何か入るよう補完）
+    let choiceOrder = ["A","B","C","D","E"];
+
+    // ★モードからchoicesを補完（ここが今回の修正ポイント）
+    function defaultChoicesFromMode(mode){
+      if (mode === "ox") return ["O","X"];
+      if (mode === "five") return ["A","B","C","D","E"];
+      return ["A","B","C","D","E"];
     }
 
     function showQR(){
@@ -537,19 +481,12 @@
       qrLayer.classList.remove("hidden");
       document.getElementById("mainGrid").style.visibility = "hidden";
     }
-
     function hideQRWithFade(){
       isQR = false;
       qrLayer.classList.add("hidden");
       setTimeout(()=>{
         if (!isQR) document.getElementById("mainGrid").style.visibility = "visible";
       }, 460);
-    }
-
-    function placeAnswerBoxTop(isTop){
-      if (!leftScroll) return;
-      if (isTop) leftScroll.insertBefore(answerBox, cEl);
-      else leftScroll.appendChild(answerBox);
     }
 
     function colorOf(label){
@@ -588,20 +525,6 @@
       });
     }
 
-    function renderAnswerBox(q){
-      const show = (currentStatus === "closed") && q && (q.answer || q.explanation);
-      if (!show){
-        answerBox.classList.remove("show");
-        answerLine.textContent = "";
-        explanationLine.textContent = "";
-        return;
-      }
-      answerBox.classList.add("show");
-      answerLine.textContent = q.answer ? `正解：${String(q.answer).toUpperCase()}` : "正解：—";
-      explanationLine.textContent = q.explanation ? `解説：${q.explanation}` : "";
-    }
-
-    // ★縦棒：choices順で固定表示
     function renderVChart(counts, order){
       vchart.innerHTML = "";
 
@@ -614,10 +537,6 @@
       const entries = ord.map(k => [String(k).toUpperCase(), Number((counts||{})[k]||0)]);
       const max = Math.max(...entries.map(([,v])=>v), 1);
       const total = entries.reduce((s,[,v]) => s + (Number(v)||0), 0) || 1;
-
-      const correctKey = (currentQuestion && currentQuestion.answer)
-        ? String(currentQuestion.answer).trim().toUpperCase()
-        : null;
 
       entries.forEach(([lab, val]) => {
         const col = document.createElement("div");
@@ -633,14 +552,9 @@
         const h = Math.max(12, Math.round((val / max) * 250));
         bar.style.height = `${h}px`;
 
-        if (currentStatus === "closed" && correctKey && lab === correctKey){
-          bar.classList.add("correctBar");
-        }
-
         const fill = document.createElement("div");
         fill.className = "barFill";
         fill.style.background = colorOf(lab);
-
         bar.appendChild(fill);
 
         const label = document.createElement("div");
@@ -655,7 +569,56 @@
       });
     }
 
-    // ===== 参加人数 + 集計（answers直集計） =====
+    // activity：status/qr/mode/config.choices を確実に反映
+    onValue(activityRef, snap => {
+      const a = snap.val() || {};
+      currentStatus = a.status || "-";
+      currentMode = a.mode || null;
+
+      statusLabel.textContent = `status: ${currentStatus}`;
+
+      // qr
+      if (a.qr === true) showQR();
+      else hideQRWithFade();
+
+      // ★choices補完：config.choices が無い場合でも mode から必ず作る
+      const cfgChoices = (a.config && Array.isArray(a.config.choices)) ? a.config.choices : null;
+      if (cfgChoices && cfgChoices.length){
+        choiceOrder = cfgChoices.map(x => String(x).trim().toUpperCase());
+      } else if (currentMode){
+        choiceOrder = defaultChoicesFromMode(currentMode);
+      }
+
+      if (debug){
+        debugBox.textContent =
+          `debug\nroom=${room}\nmode=${currentMode}\nstatus=${currentStatus}\nchoiceOrder=${JSON.stringify(choiceOrder)}`;
+      }
+    });
+
+    // 問題表示（なくても集計は動く）
+    let unsubQ = null;
+    onValue(qidRef, snap => {
+      const qid = snap.val();
+      if (!qid){
+        qEl.textContent = "（問題を待っています…）";
+        cEl.innerHTML = "";
+        return;
+      }
+      if (unsubQ) unsubQ();
+      unsubQ = onValue(qRef(qid), qsnap => {
+        const q = qsnap.val();
+        if (!q){
+          qEl.textContent = "（問題データが見つかりません）";
+          cEl.innerHTML = "";
+          return;
+        }
+        qEl.textContent = q.question || "";
+        const ck = q.answer ? String(q.answer).trim().toUpperCase() : null;
+        renderChoices(q.choices || {}, ck, currentStatus === "closed");
+      });
+    });
+
+    // answers：ここで “確実に” 集計（想定外キーも拾う）
     onValue(answersRef, snap => {
       const ans = snap.val() || {};
       const keys = Object.keys(ans);
@@ -664,18 +627,18 @@
       countLabel.textContent = `参加中 ${n}人`;
       qrCount.textContent = `参加中 ${n}人`;
 
-      // 音：回答数増加で鳴らす（要：音ONクリック）
       if (soundEnabled && n > lastAnswerTotal){
         se.currentTime = 0;
         se.play().catch(()=>{});
       }
       lastAnswerTotal = n;
 
-      // ★ここで集計を作る（index/resultに依存しない）
+      // counts 初期化
       const counts = {};
-      (currentChoices || []).forEach(c => counts[c] = 0);
+      (choiceOrder || []).forEach(c => counts[c] = 0);
 
-      // 学生は {value, timestamp} 形式で投げる:contentReference[oaicite:1]{index=1}
+      // 送られてきた value を読む:contentReference[oaicite:1]{index=1}
+      let lastSeen = null;
       keys.forEach(uid => {
         const v = ans[uid];
         let val = null;
@@ -684,88 +647,22 @@
         if (!val) return;
 
         const key = String(val).trim().toUpperCase();
-        if (counts[key] !== undefined) counts[key] += 1;
+        lastSeen = key;
+
+        // ★想定外キーでも表示する（ここが「人数だけ増える」を潰す）
+        if (counts[key] === undefined){
+          counts[key] = 0;
+          choiceOrder = [...choiceOrder, key];
+        }
+        counts[key] += 1;
       });
 
-      // textモードは人数だけ（必要なら後で一覧も）
-      if (currentMode === "text"){
-        renderVChart({ "回答数": n }, ["回答数"]);
-      } else {
-        renderVChart(counts, currentChoices);
+      renderVChart(counts, choiceOrder);
+
+      if (debug){
+        debugBox.textContent =
+          `debug\nroom=${room}\nmode=${currentMode}\nstatus=${currentStatus}\nchoiceOrder=${JSON.stringify(choiceOrder)}\nlastSeen=${lastSeen}\ncounts=${JSON.stringify(counts)}`;
       }
-    });
-
-    // activity：qr/status/ending/mode/choices
-    onValue(activityRef, snap => {
-      const a = snap.val() || {};
-
-      currentStatus = a.status || "-";
-      statusLabel.textContent = `status: ${currentStatus}`;
-      document.body.classList.toggle("closed", currentStatus === "closed");
-      placeAnswerBoxTop(currentStatus === "closed");
-
-      // mode / choices を更新（ここが集計の基準）
-      currentMode = a.mode || null;
-      const cfgChoices = (a.config && Array.isArray(a.config.choices)) ? a.config.choices : null;
-      if (cfgChoices && cfgChoices.length) currentChoices = cfgChoices.map(x => String(x).toUpperCase());
-
-      if (a.ending === true) ending.classList.add("show");
-      else ending.classList.remove("show");
-
-      const q = (a.qr === true);
-      if (q) showQR();
-      else hideQRWithFade();
-
-      if (lastStatus !== "closed" && currentStatus === "closed") showToast();
-      lastStatus = currentStatus;
-
-      renderAnswerBox(currentQuestion);
-      if (currentQuestion && currentQuestion.choices){
-        const ck = currentQuestion.answer ? String(currentQuestion.answer).trim().toUpperCase() : null;
-        renderChoices(currentQuestion.choices, ck, currentStatus === "closed");
-      }
-    });
-
-    // 問題表示
-    let unsubQ = null;
-    onValue(qidRef, snap => {
-      const qid = snap.val();
-      if (!qid){
-        currentQuestion = null;
-        qEl.textContent = "（問題を待っています…）";
-        cEl.innerHTML = "";
-        renderAnswerBox(null);
-        placeAnswerBoxTop(false);
-        return;
-      }
-
-      if (unsubQ) unsubQ();
-      unsubQ = onValue(qRef(qid), qsnap => {
-        const q = qsnap.val();
-        if (!q){
-          currentQuestion = null;
-          qEl.textContent = "（問題データが見つかりません）";
-          cEl.innerHTML = "";
-          renderAnswerBox(null);
-          placeAnswerBoxTop(false);
-          return;
-        }
-
-        currentQuestion = q;
-        qEl.textContent = q.question || "";
-
-        // ★問題に choices があるなら、それを優先して並び順に使う
-        if (q.choices && typeof q.choices === "object"){
-          const ord = Object.keys(q.choices).map(k => String(k).toUpperCase());
-          if (ord.length) currentChoices = ord;
-        }
-
-        const correctKey = q.answer ? String(q.answer).trim().toUpperCase() : null;
-
-        placeAnswerBoxTop(currentStatus === "closed");
-        renderChoices(q.choices || {}, correctKey, currentStatus === "closed");
-        renderAnswerBox(q);
-      });
     });
   </script>
 </body>
