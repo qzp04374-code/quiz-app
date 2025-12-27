@@ -2,12 +2,12 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>ClassSync Student</title>
 
   <style>
     :root{
-      /* display/index と同じ色（踏襲） */
+      /* 既存の色（display/indexと揃える） */
       --color-o:#34c759;
       --color-x:#ff3b30;
       --color-a:#0a84ff;
@@ -17,10 +17,9 @@
       --color-e:#ff375f;
 
       --bg:#050608;
-      --line:rgba(255,255,255,.10);
       --ink:#f9fafb;
       --muted:rgba(203,213,225,.85);
-
+      --line:rgba(255,255,255,.10);
       --shadow: 0 18px 60px rgba(0,0,0,.65);
     }
 
@@ -35,17 +34,15 @@
         var(--bg);
       color:var(--ink);
       font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",sans-serif;
-      overflow:hidden;
+      overflow:hidden; /* はみ出し対策 */
+      touch-action: manipulation;
     }
 
-    /* 上部ステータス */
+    /* top bar */
     .topbar{
       position:fixed;
       top:12px; left:12px; right:12px;
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      gap:10px;
+      display:flex; justify-content:space-between; align-items:center; gap:10px;
       padding:10px 12px;
       border-radius:18px;
       background:rgba(17,24,39,.55);
@@ -54,46 +51,23 @@
       box-shadow:0 18px 60px rgba(0,0,0,.45);
       z-index:10;
     }
-    .room{
-      font-weight:1000;
-      letter-spacing:.10em;
-      font-size:14px;
-      white-space:nowrap;
-    }
+    .room{font-weight:1000; letter-spacing:.10em; font-size:14px; white-space:nowrap;}
     .status{
-      font-weight:900;
-      font-size:13px;
-      color:var(--muted);
-      letter-spacing:.06em;
-      display:flex;
-      gap:10px;
-      align-items:center;
-      white-space:nowrap;
+      display:flex; gap:10px; align-items:center;
+      font-weight:900; font-size:13px; color:var(--muted);
+      letter-spacing:.06em; white-space:nowrap;
     }
     .pill{
-      display:inline-flex;
-      align-items:center;
-      gap:8px;
-      padding:6px 10px;
-      border-radius:999px;
+      display:inline-flex; align-items:center; gap:8px;
+      padding:6px 10px; border-radius:999px;
       border:1px solid rgba(255,255,255,.10);
       background:rgba(2,6,23,.45);
     }
-    .dot{
-      width:8px;height:8px;border-radius:50%;
-      background:#9ca3af;
-      box-shadow:0 0 0 3px rgba(156,163,175,.15);
-    }
-    .dot.open{
-      background:#22c55e;
-      box-shadow:0 0 0 3px rgba(34,197,94,.18), 0 0 16px rgba(34,197,94,.35);
-    }
-    .dot.closed{
-      background:#ef4444;
-      box-shadow:0 0 0 3px rgba(239,68,68,.18), 0 0 16px rgba(239,68,68,.25);
-    }
+    .dot{width:8px;height:8px;border-radius:50%; background:#9ca3af; box-shadow:0 0 0 3px rgba(156,163,175,.15);}
+    .dot.open{background:#22c55e; box-shadow:0 0 0 3px rgba(34,197,94,.18), 0 0 16px rgba(34,197,94,.35);}
+    .dot.closed{background:#ef4444; box-shadow:0 0 0 3px rgba(239,68,68,.18), 0 0 16px rgba(239,68,68,.25);}
 
-    /* 画面中央：コントローラー本体 */
+    /* stage */
     .stage{
       height:100%;
       display:flex;
@@ -102,50 +76,42 @@
       padding:88px 14px 18px;
     }
 
-    .controller{
-      width:min(720px, 94vw);
-      height:min(520px, 72vh);
-      position:relative;
-      border-radius:48px;
+    .padShell{
+      width:min(520px, 94vw);
+      height:min(660px, 80vh);
+      border-radius:44px;
       background:
-        radial-gradient(100% 120% at 50% 20%, rgba(255,255,255,.06), transparent 55%),
+        radial-gradient(100% 120% at 50% 15%, rgba(255,255,255,.06), transparent 55%),
         linear-gradient(180deg, rgba(17,24,39,.92), rgba(2,6,23,.88));
       border:1px solid rgba(255,255,255,.10);
-      box-shadow: var(--shadow);
+      box-shadow:var(--shadow);
       overflow:hidden;
-      padding:18px;
+      padding:16px;
       display:flex;
       flex-direction:column;
-      justify-content:space-between;
       gap:12px;
+      position:relative;
     }
 
-    /* グリップ */
-    .controller::before,
-    .controller::after{
+    /* グリップ風（左右下だけ、D-padは無し） */
+    .padShell::before,.padShell::after{
       content:"";
       position:absolute;
-      top:64%;
-      width:44%;
-      height:60%;
+      bottom:-22%;
+      width:52%; height:54%;
       border-radius:60px;
       background:
         radial-gradient(90% 80% at 50% 10%, rgba(255,255,255,.05), transparent 60%),
-        linear-gradient(180deg, rgba(255,255,255,.04), rgba(0,0,0,.22));
-      border:1px solid rgba(255,255,255,.08);
-      z-index:0;
+        linear-gradient(180deg, rgba(255,255,255,.03), rgba(0,0,0,.22));
+      border:1px solid rgba(255,255,255,.06);
+      z-index:0; opacity:.85;
     }
-    .controller::before{ left:-14%; transform:rotate(10deg); }
-    .controller::after { right:-14%; transform:rotate(-10deg); }
+    .padShell::before{left:-22%; transform:rotate(10deg);}
+    .padShell::after{right:-22%; transform:rotate(-10deg);}
+    .padShell > *{position:relative; z-index:1;}
 
-    .controller > *{ position:relative; z-index:1; }
-
-    /* 中央表示 */
     .hud{
-      display:flex;
-      justify-content:center;
-      align-items:center;
-      gap:10px;
+      display:flex; justify-content:center; align-items:center; gap:10px;
       padding:10px 12px;
       border-radius:18px;
       background:rgba(2,6,23,.55);
@@ -155,77 +121,33 @@
       color:rgba(203,213,225,.92);
       text-align:center;
     }
-    .hud strong{
-      color:#fff;
-      letter-spacing:.12em;
-    }
+    .hud strong{color:#fff; letter-spacing:.12em;}
 
-    /* メイン操作領域 */
-    .controls{
-      flex:1;
-      display:grid;
-      grid-template-columns: 1fr 1fr;
-      gap:14px;
-      min-height:0;
-      align-items:center;
-    }
-
-    /* 左：D-Pad風（装飾） */
-    .dpad{
-      height:100%;
-      min-height:240px;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      opacity:.9;
-    }
-    .dpadCore{
-      width:min(220px, 44vw);
-      aspect-ratio:1/1;
-      display:grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      grid-template-rows: 1fr 1fr 1fr;
-      gap:10px;
-      padding:10px;
-    }
-    .dpadPiece{
-      border-radius:18px;
-      background:rgba(255,255,255,.04);
+    .padArea{
+      flex:1; min-height:0;
+      border-radius:24px;
+      background:rgba(2,6,23,.45);
       border:1px solid rgba(255,255,255,.08);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
-    }
-    .dpadPiece.center{
-      border-radius:22px;
-      background:rgba(255,255,255,.06);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 18px 40px rgba(0,0,0,.25);
-    }
-
-    /* 右：ボタン群 */
-    .pad{
-      height:100%;
-      min-height:240px;
+      padding:14px;
       display:flex;
       flex-direction:column;
       justify-content:center;
       align-items:center;
-      gap:12px;
-      position:relative; /* FX用 */
+      gap:14px;
+      position:relative;
+      overflow:hidden;
     }
 
-    /* ===== B1：強め吸い込み演出（ox/five送信時） ===== */
-    .fxRing, .fxRing2{
-      position:absolute;
-      left:50%;
-      top:50%;
-      width:18px;
-      height:18px;
+    /* FX */
+    .fxRing,.fxRing2{
+      position:absolute; left:50%; top:50%;
+      width:18px; height:18px;
       transform:translate(-50%,-50%);
       border-radius:999px;
       pointer-events:none;
       opacity:0;
       z-index:6;
       background: radial-gradient(circle, rgba(255,255,255,.95), rgba(255,255,255,0) 62%);
-      filter: blur(.1px);
     }
     .fxRing2{
       width:16px; height:16px;
@@ -234,100 +156,74 @@
       z-index:5;
       filter: blur(.4px);
     }
-    .fxRing::after,
-    .fxRing2::after{
-      content:"";
-      position:absolute;
-      inset:-10px;
+    .fxRing::after,.fxRing2::after{
+      content:""; position:absolute; inset:-10px;
       border-radius:999px;
       border:2px solid rgba(255,255,255,.22);
       opacity:0;
     }
-    .fxRing2::after{
-      border-color: rgba(168,85,247,.18);
-      inset:-14px;
-      border-width: 3px;
+    .fxRing2::after{border-color:rgba(168,85,247,.18); inset:-14px; border-width:3px;}
+
+    .padShell.fx .fxRing{opacity:1; animation:ringPop 520ms cubic-bezier(.12,.9,.1,1) forwards;}
+    .padShell.fx .fxRing::after{animation:ringOutline 520ms cubic-bezier(.12,.9,.1,1) forwards;}
+    .padShell.fx .fxRing2{opacity:1; animation:ringPop2 600ms cubic-bezier(.12,.9,.1,1) forwards;}
+    .padShell.fx .fxRing2::after{animation:ringOutline2 600ms cubic-bezier(.12,.9,.1,1) forwards;}
+
+    @keyframes ringPop{
+      0%{transform:translate(-50%,-50%) scale(.55); opacity:0;}
+      12%{opacity:1;}
+      65%{transform:translate(-50%,-50%) scale(12.5); opacity:.55;}
+      100%{transform:translate(-50%,-50%) scale(16.0); opacity:0;}
     }
-    .controller.fx .fxRing{
-      opacity:1;
-      animation: ringPopB1 520ms cubic-bezier(.12,.9,.1,1) forwards;
+    @keyframes ringOutline{
+      0%{opacity:0; transform:scale(.55);}
+      18%{opacity:.65;}
+      70%{opacity:.35; transform:scale(13.0);}
+      100%{opacity:0; transform:scale(16.5);}
     }
-    .controller.fx .fxRing::after{
-      animation: ringOutlineB1 520ms cubic-bezier(.12,.9,.1,1) forwards;
+    @keyframes ringPop2{
+      0%{transform:translate(-50%,-50%) scale(.5); opacity:0;}
+      15%{opacity:1;}
+      70%{transform:translate(-50%,-50%) scale(10.8); opacity:.45;}
+      100%{transform:translate(-50%,-50%) scale(14.8); opacity:0;}
     }
-    .controller.fx .fxRing2{
-      opacity:1;
-      animation: ringPopB1b 600ms cubic-bezier(.12,.9,.1,1) forwards;
-    }
-    .controller.fx .fxRing2::after{
-      animation: ringOutlineB1b 600ms cubic-bezier(.12,.9,.1,1) forwards;
-    }
-    @keyframes ringPopB1{
-      0%   { transform:translate(-50%,-50%) scale(.55); opacity:0; }
-      12%  { opacity:1; }
-      65%  { transform:translate(-50%,-50%) scale(12.5); opacity:.55; }
-      100% { transform:translate(-50%,-50%) scale(16.0); opacity:0; }
-    }
-    @keyframes ringOutlineB1{
-      0%   { opacity:0; transform:scale(.55); }
-      18%  { opacity:.65; }
-      70%  { opacity:.35; transform:scale(13.0); }
-      100% { opacity:0; transform:scale(16.5); }
-    }
-    @keyframes ringPopB1b{
-      0%   { transform:translate(-50%,-50%) scale(.5); opacity:0; }
-      15%  { opacity:1; }
-      70%  { transform:translate(-50%,-50%) scale(10.8); opacity:.45; }
-      100% { transform:translate(-50%,-50%) scale(14.8); opacity:0; }
-    }
-    @keyframes ringOutlineB1b{
-      0%   { opacity:0; transform:scale(.5); }
-      20%  { opacity:.55; }
-      72%  { opacity:.28; transform:scale(11.6); }
-      100% { opacity:0; transform:scale(15.4); }
+    @keyframes ringOutline2{
+      0%{opacity:0; transform:scale(.5);}
+      20%{opacity:.55;}
+      72%{opacity:.28; transform:scale(11.6);}
+      100%{opacity:0; transform:scale(15.4);}
     }
 
     .trail{
-      position:absolute;
-      border-radius:999px;
-      pointer-events:none;
-      z-index:7;
-      will-change: transform, opacity, filter;
-      transform-origin:center;
-      filter: blur(.2px);
+      position:absolute; border-radius:999px;
+      pointer-events:none; z-index:7;
       mix-blend-mode: screen;
+      filter: blur(.2px);
+      will-change: transform, opacity, filter;
     }
-    .trail.t1{ opacity:.55; animation: trail1 520ms cubic-bezier(.12,.9,.1,1) forwards; }
-    .trail.t2{ opacity:.35; animation: trail2 560ms cubic-bezier(.12,.9,.1,1) forwards; }
+    .trail.t1{opacity:.55; animation:trail1 520ms cubic-bezier(.12,.9,.1,1) forwards;}
+    .trail.t2{opacity:.35; animation:trail2 560ms cubic-bezier(.12,.9,.1,1) forwards;}
     @keyframes trail1{
-      0%   { transform:translate(0,0) scale(1.00) rotate(0deg);   opacity:.55; filter: blur(.2px); }
-      35%  { transform:translate(6px,10px) scale(.78) rotate(180deg); opacity:.48; filter: blur(.6px); }
-      70%  { transform:translate(12px,22px) scale(.28) rotate(520deg); opacity:.22; filter: blur(1.2px); }
-      100% { transform:translate(18px,34px) scale(.06) rotate(900deg); opacity:0;    filter: blur(1.8px); }
+      0%{transform:translate(0,0) scale(1) rotate(0deg); opacity:.55;}
+      35%{transform:translate(6px,10px) scale(.78) rotate(180deg); opacity:.48;}
+      70%{transform:translate(12px,22px) scale(.28) rotate(520deg); opacity:.22;}
+      100%{transform:translate(18px,34px) scale(.06) rotate(900deg); opacity:0;}
     }
     @keyframes trail2{
-      0%   { transform:translate(-2px,2px) scale(1.00) rotate(0deg);   opacity:.35; filter: blur(.3px); }
-      40%  { transform:translate(4px,14px) scale(.72) rotate(210deg); opacity:.28; filter: blur(.8px); }
-      75%  { transform:translate(10px,26px) scale(.22) rotate(620deg); opacity:.14; filter: blur(1.4px); }
-      100% { transform:translate(16px,38px) scale(.05) rotate(980deg); opacity:0;    filter: blur(2.0px); }
+      0%{transform:translate(-2px,2px) scale(1) rotate(0deg); opacity:.35;}
+      40%{transform:translate(4px,14px) scale(.72) rotate(210deg); opacity:.28;}
+      75%{transform:translate(10px,26px) scale(.22) rotate(620deg); opacity:.14;}
+      100%{transform:translate(16px,38px) scale(.05) rotate(980deg); opacity:0;}
     }
 
-    /* ボタン共通 */
+    /* buttons */
     .btn{
       -webkit-tap-highlight-color: transparent;
-      appearance:none;
-      border:none;
-      cursor:pointer;
-      user-select:none;
-      outline:none;
-
+      appearance:none; border:none;
+      cursor:pointer; user-select:none; outline:none;
       width:84px; height:84px;
       border-radius:999px;
-      color:#0b1020;
-      font-weight:1100;
-      font-size:30px;
-      letter-spacing:.06em;
-
+      font-weight:1100; font-size:30px; letter-spacing:.06em;
       background: rgba(255,255,255,.88);
       box-shadow:
         inset 0 10px 18px rgba(255,255,255,.35),
@@ -336,16 +232,13 @@
       transform: translateY(0);
       transition: transform .10s ease, filter .12s ease, box-shadow .12s ease, opacity .15s ease;
       position:relative;
-      will-change: transform, opacity, filter;
+      will-change: transform, opacity;
     }
     .btn::after{
-      content:"";
-      position:absolute;
-      inset:10px;
+      content:""; position:absolute; inset:10px;
       border-radius:999px;
       background: radial-gradient(circle at 30% 25%, rgba(255,255,255,.55), rgba(255,255,255,0) 55%);
-      opacity:.85;
-      pointer-events:none;
+      opacity:.85; pointer-events:none;
     }
     .btn:active{
       transform: translateY(3px) scale(.985);
@@ -363,19 +256,15 @@
         0 18px 40px rgba(0,0,0,.55);
       transform: translateY(-2px) scale(1.05);
     }
-    .btn.sucked{
-      pointer-events:none;
-      animation: suckInB1 520ms cubic-bezier(.12,.9,.1,1) forwards;
-    }
-    @keyframes suckInB1{
-      0%{ transform: translateY(-2px) scale(1.05) rotate(0deg); opacity:1; filter: blur(0); }
-      18%{ transform: translateY(1px) scale(.90) rotate(180deg); opacity:1; filter: blur(.2px); }
-      50%{ transform: translateY(12px) scale(.42) rotate(540deg); opacity:.70; filter: blur(1.0px); }
-      80%{ transform: translateY(24px) scale(.12) rotate(980deg); opacity:.25; filter: blur(1.6px); }
-      100%{ transform: translateY(32px) scale(.05) rotate(1260deg); opacity:0; filter: blur(2.1px); }
+    .btn.sucked{pointer-events:none; animation:suckIn 520ms cubic-bezier(.12,.9,.1,1) forwards;}
+    @keyframes suckIn{
+      0%{transform: translateY(-2px) scale(1.05) rotate(0deg); opacity:1; filter: blur(0);}
+      18%{transform: translateY(1px) scale(.90) rotate(180deg); opacity:1; filter: blur(.2px);}
+      50%{transform: translateY(12px) scale(.42) rotate(540deg); opacity:.70; filter: blur(1px);}
+      80%{transform: translateY(24px) scale(.12) rotate(980deg); opacity:.25; filter: blur(1.6px);}
+      100%{transform: translateY(32px) scale(.05) rotate(1260deg); opacity:0; filter: blur(2.1px);}
     }
 
-    /* 色 */
     .btn.O { background: var(--color-o); color:#0b1020; }
     .btn.X { background: var(--color-x); color:#fff; }
     .btn.A { background: var(--color-a); color:#fff; }
@@ -392,11 +281,11 @@
       align-items:center;
       justify-items:center;
     }
-    .oxGrid .btn{ width:110px; height:110px; font-size:42px; }
+    .oxGrid .btn{width:112px; height:112px; font-size:44px;}
 
-    /* 5択 */
+    /* 5択：右側ボタンだけ（ダイヤ配置） */
     .fiveGrid{
-      width:min(340px, 80vw);
+      width:min(360px, 86vw);
       aspect-ratio: 1.15 / 1;
       display:grid;
       grid-template-columns: 1fr 1fr 1fr;
@@ -411,17 +300,17 @@
     .posA{ grid-column:3; grid-row:2; }
     .posE{ grid-column:2; grid-row:2; width:92px; height:92px; font-size:32px; }
 
-    /* テキスト入力（textモード） */
+    /* text */
     .textWrap{
       width:min(420px, 88vw);
       display:flex;
       flex-direction:column;
       gap:10px;
-      padding:14px 14px;
+      padding:14px;
       border-radius:22px;
-      background:rgba(2,6,23,.55);
+      background:rgba(0,0,0,.18);
       border:1px solid rgba(255,255,255,.10);
-      box-shadow:0 18px 44px rgba(0,0,0,.35);
+      box-shadow:0 18px 44px rgba(0,0,0,.25);
     }
     .textTitle{
       font-weight:1000;
@@ -433,18 +322,13 @@
       align-items:center;
       gap:10px;
     }
-    .counter{
-      font-weight:900;
-      color:rgba(203,213,225,.85);
-      letter-spacing:.06em;
-      font-size:12px;
-    }
+    .counter{font-weight:900; color:rgba(203,213,225,.85); letter-spacing:.06em; font-size:12px;}
     textarea{
       width:100%;
-      min-height:140px;
-      max-height:220px;
+      min-height:150px;
+      max-height:240px;
       resize:none;
-      padding:12px 12px;
+      padding:12px;
       border-radius:16px;
       border:1px solid rgba(255,255,255,.10);
       background:rgba(0,0,0,.25);
@@ -457,15 +341,11 @@
       border-color: rgba(255,255,255,.22);
       box-shadow: 0 0 0 4px rgba(255,255,255,.08);
     }
-    .hint{
-      color:rgba(203,213,225,.80);
-      font-size:12px;
-      line-height:1.45;
-    }
+    .hint{color:rgba(203,213,225,.80); font-size:12px; line-height:1.45;}
 
-    /* 送信ボタン */
+    /* START/SEND */
     .submit{
-      width:min(320px, 84vw);
+      width:min(340px, 90vw);
       height:64px;
       border-radius:999px;
       border:1px solid rgba(255,255,255,.12);
@@ -481,26 +361,14 @@
       transition: transform .10s ease, filter .12s ease, opacity .15s ease;
     }
     .submit:active{ transform: translateY(2px); filter: brightness(.98); }
-    .submit:disabled{
-      opacity:.45;
-      cursor:not-allowed;
-      filter: grayscale(.2);
-    }
+    .submit:disabled{ opacity:.45; cursor:not-allowed; filter: grayscale(.2); }
 
-    /* ロック */
-    .locked{
-      opacity:.55;
-      pointer-events:none;
-      filter: grayscale(.15);
-    }
+    .locked{opacity:.55; pointer-events:none; filter: grayscale(.15);}
 
-    /* 受付前 overlay */
+    /* overlay: closed中 */
     .overlay{
-      position:absolute;
-      inset:0;
-      display:flex;
-      align-items:center;
-      justify-content:center;
+      position:absolute; inset:0;
+      display:flex; align-items:center; justify-content:center;
       padding:22px;
       text-align:center;
       background:rgba(0,0,0,.42);
@@ -508,12 +376,9 @@
       opacity:0;
       pointer-events:none;
       transition: opacity .18s ease;
-      z-index:3;
+      z-index:30;
     }
-    .overlay.show{
-      opacity:1;
-      pointer-events:auto;
-    }
+    .overlay.show{opacity:1; pointer-events:auto;}
     .overlayCard{
       width:min(520px, 92vw);
       border-radius:26px;
@@ -522,24 +387,12 @@
       border:1px solid rgba(255,255,255,.10);
       box-shadow:0 24px 80px rgba(0,0,0,.65);
     }
-    .overlayCard h3{
-      margin:0 0 8px 0;
-      letter-spacing:.10em;
-      font-weight:1100;
-      font-size:18px;
-    }
-    .overlayCard p{
-      margin:0;
-      color:rgba(203,213,225,.9);
-      line-height:1.5;
-      font-size:14px;
-    }
+    .overlayCard h3{margin:0 0 8px 0; letter-spacing:.10em; font-weight:1100; font-size:18px;}
+    .overlayCard p{margin:0; color:rgba(203,213,225,.9); line-height:1.5; font-size:14px;}
 
-    /* 送信完了 */
+    /* toast */
     .toast{
-      position:fixed;
-      left:50%;
-      bottom:16px;
+      position:fixed; left:50%; bottom:16px;
       transform:translateX(-50%);
       background:rgba(17,24,39,.92);
       border:1px solid rgba(255,255,255,.12);
@@ -552,14 +405,14 @@
       opacity:0;
       pointer-events:none;
       transition: opacity .18s ease;
-      z-index:20;
+      z-index:50;
       white-space:nowrap;
     }
-    .toast.show{ opacity:1; }
+    .toast.show{opacity:1;}
 
     #buildTag{
       position:fixed; right:10px; bottom:10px;
-      opacity:.55; font-size:12px; z-index:30;
+      opacity:.60; font-size:12px; z-index:60;
       background:rgba(0,0,0,.35);
       border:1px solid rgba(255,255,255,.08);
       padding:6px 10px;
@@ -568,17 +421,17 @@
     }
 
     @media (max-height: 640px){
-      .controller{ height:min(520px, 78vh); }
+      .padShell{ height:min(660px, 84vh); }
       .btn{ width:76px; height:76px; }
       .oxGrid .btn{ width:98px; height:98px; font-size:40px; }
       .posE{ width:86px; height:86px; }
-      textarea{ min-height:120px; }
+      textarea{ min-height:130px; }
     }
   </style>
 </head>
 
 <body>
-  <div id="buildTag">build: 2025-12-27 / student-pad-ui-textfix</div>
+  <div id="buildTag">build: 2025-12-28 / student-one-side-pad-v3</div>
 
   <div class="topbar">
     <div class="room" id="roomLabel">ROOM: -</div>
@@ -589,33 +442,19 @@
   </div>
 
   <div class="stage">
-    <div class="controller" id="controller">
+    <div class="padShell" id="padShell">
       <div class="hud">
         <span>回答モード：</span><strong id="hudMode">待機</strong>
       </div>
 
-      <div class="controls">
-        <!-- 左：D-Pad風 -->
-        <div class="dpad" aria-hidden="true">
-          <div class="dpadCore">
-            <div class="dpadPiece"></div><div class="dpadPiece"></div><div class="dpadPiece"></div>
-            <div class="dpadPiece"></div><div class="dpadPiece center"></div><div class="dpadPiece"></div>
-            <div class="dpadPiece"></div><div class="dpadPiece"></div><div class="dpadPiece"></div>
-          </div>
-        </div>
+      <div class="padArea" id="padArea">
+        <div class="fxRing" id="fxRing"></div>
+        <div class="fxRing2" id="fxRing2"></div>
 
-        <!-- 右：操作 -->
-        <div class="pad" id="pad">
-          <div class="fxRing" id="fxRing"></div>
-          <div class="fxRing2" id="fxRing2"></div>
-
-          <div id="answer-container"></div>
-
-          <button id="submitBtn" class="submit" disabled>START（決定）</button>
-        </div>
+        <div id="answer-container"></div>
+        <button id="submitBtn" class="submit" disabled>START（決定）</button>
       </div>
 
-      <!-- 待機/閉鎖 overlay -->
       <div id="overlay" class="overlay">
         <div class="overlayCard">
           <h3>待機中</h3>
@@ -644,34 +483,31 @@
     const url  = new URL(window.location.href);
     const room = url.searchParams.get("room") || "kyoto-01";
 
-    // UI refs
-    const controller = document.getElementById("controller");
-    const pad = document.getElementById("pad");
-    const roomLabel = document.getElementById("roomLabel");
-    const dot = document.getElementById("dot");
-    const statusText = document.getElementById("statusText");
-    const modeText = document.getElementById("modeText");
-    const hudMode = document.getElementById("hudMode");
+    const padShell    = document.getElementById("padShell");
+    const padArea     = document.getElementById("padArea");
+    const roomLabel   = document.getElementById("roomLabel");
+    const dot         = document.getElementById("dot");
+    const statusText  = document.getElementById("statusText");
+    const modeText    = document.getElementById("modeText");
+    const hudMode     = document.getElementById("hudMode");
 
-    const container = document.getElementById("answer-container");
-    const submitBtn = document.getElementById("submitBtn");
-    const overlay = document.getElementById("overlay");
+    const container   = document.getElementById("answer-container");
+    const submitBtn   = document.getElementById("submitBtn");
+    const overlay     = document.getElementById("overlay");
     const overlayText = document.getElementById("overlayText");
-    const toast = document.getElementById("toast");
+    const toast       = document.getElementById("toast");
 
     roomLabel.textContent = `ROOM: ${room}`;
 
-    // userId 永続
     let userId = localStorage.getItem("student_user_id");
     if (!userId) {
       userId = "user_" + Math.random().toString(36).slice(2, 10);
       localStorage.setItem("student_user_id", userId);
     }
 
-    // state
     let isOpen = false;
-    let currentMode = null;
-    let selected = null;
+    let currentMode = null;       // ox / five / text
+    let selected = null;          // O/X/A-E
     let sending = false;
     let textValue = "";
 
@@ -687,12 +523,12 @@
     }
 
     function clearTrails(){
-      pad.querySelectorAll(".trail").forEach(el => el.remove());
+      padArea.querySelectorAll(".trail").forEach(el => el.remove());
     }
 
     function unlockUI(){
       sending = false;
-      controller.classList.remove("fx");
+      padShell.classList.remove("fx");
       container.classList.remove("locked");
       submitBtn.disabled = true;
       selected = null;
@@ -748,7 +584,6 @@
 
       submitBtn.textContent = "START（決定）";
       submitBtn.disabled = true;
-      submitBtn.style.display = "";
     }
 
     function renderFive(choices){
@@ -774,7 +609,6 @@
 
       submitBtn.textContent = "START（決定）";
       submitBtn.disabled = true;
-      submitBtn.style.display = "";
     }
 
     function renderText(){
@@ -811,35 +645,28 @@
         counterEl.textContent = `${textValue.length}/200`;
         submitBtn.disabled = (!isOpen) || sending || (textValue.trim().length === 0);
       };
-
       ta.addEventListener("input", refresh);
       refresh();
 
       submitBtn.textContent = "SEND（送信）";
-      submitBtn.style.display = "";
       submitBtn.disabled = true;
 
-      // openなら即フォーカス（スマホで強制はしない）
       if (isOpen) setTimeout(()=>{ try{ ta.focus(); }catch(_){ } }, 50);
     }
 
     function makeTrailClone(selBtn, klass){
-      const padRect = pad.getBoundingClientRect();
+      const areaRect = padArea.getBoundingClientRect();
       const r = selBtn.getBoundingClientRect();
-
       const clone = selBtn.cloneNode(true);
       clone.classList.remove("sel");
       clone.classList.add("trail", klass);
-
-      clone.style.left = (r.left - padRect.left) + "px";
-      clone.style.top  = (r.top  - padRect.top)  + "px";
+      clone.style.left = (r.left - areaRect.left) + "px";
+      clone.style.top  = (r.top  - areaRect.top)  + "px";
       clone.style.width  = r.width + "px";
       clone.style.height = r.height + "px";
       clone.style.position = "absolute";
-      clone.style.boxShadow =
-        "0 0 0 2px rgba(255,255,255,.14), 0 0 18px rgba(255,255,255,.18), 0 18px 40px rgba(0,0,0,.35)";
-
-      pad.appendChild(clone);
+      clone.style.boxShadow = "0 0 0 2px rgba(255,255,255,.14), 0 0 18px rgba(255,255,255,.18), 0 18px 40px rgba(0,0,0,.35)";
+      padArea.appendChild(clone);
       clone.addEventListener("animationend", () => clone.remove());
     }
 
@@ -848,29 +675,27 @@
       if (!selBtn) return;
 
       clearTrails();
-      controller.classList.add("fx");
+      padShell.classList.add("fx");
+
       makeTrailClone(selBtn, "t2");
       makeTrailClone(selBtn, "t1");
-      selBtn.classList.add("sucked");
 
+      selBtn.classList.add("sucked");
       container.querySelectorAll(".btn").forEach(b => {
         if (b !== selBtn) b.style.opacity = "0.50";
       });
 
-      setTimeout(() => controller.classList.remove("fx"), 650);
+      setTimeout(() => padShell.classList.remove("fx"), 650);
     }
 
-    // 送信
     submitBtn.onclick = async () => {
       if (!isOpen || sending) return;
 
-      // modeごとにpayloadを作る
       let payload = null;
 
       if (currentMode === "ox" || currentMode === "five"){
         if (!selected) return;
         payload = { value: selected, timestamp: Date.now() };
-
         sending = true;
         submitBtn.disabled = true;
         container.style.pointerEvents = "none";
@@ -879,26 +704,23 @@
         const text = (textValue || "").trim();
         if (!text) return;
         payload = { value: text, timestamp: Date.now() };
-
         sending = true;
         submitBtn.disabled = true;
         container.style.pointerEvents = "none";
-        // textは吸い込み演出なし（読みやすさ優先）
       } else {
         return;
       }
 
       try{
-        const answerRef = ref(db, `rooms/${room}/answers/${userId}`);
-        await set(answerRef, payload);
+        await set(ref(db, `rooms/${room}/answers/${userId}`), payload);
       }catch(e){
         sending = false;
         container.style.pointerEvents = "";
         showToast("送信失敗…もう一度");
-        // openなら再操作可能に戻す
+        // 再描画
         if (currentMode === "text") renderText();
-        else if (currentMode === "ox") renderOX(["O","X"]);
-        else if (currentMode === "five") renderFive(["A","B","C","D","E"]);
+        if (currentMode === "ox") renderOX(["O","X"]);
+        if (currentMode === "five") renderFive(["A","B","C","D","E"]);
         return;
       }
 
@@ -909,7 +731,7 @@
       }, (currentMode === "ox" || currentMode === "five") ? 560 : 220);
     };
 
-    // activity 監視
+    // activity監視（mode + open/closed）
     const activityRef = ref(db, `rooms/${room}/activity`);
     onValue(activityRef, snap => {
       const data = snap.val() || {};
@@ -920,42 +742,27 @@
       dot.classList.toggle("open", isOpen);
       dot.classList.toggle("closed", !isOpen);
 
-      // status閉鎖なら overlay（textも同様）
-      if (!isOpen){
-        setOverlay(true, "先生が出題を開始すると、解答ボタンが使えるようになります。");
-      } else {
-        setOverlay(false);
-      }
+      if (!isOpen) setOverlay(true, "先生が出題を開始すると、解答ボタンが使えるようになります。");
+      else setOverlay(false);
 
       const config = data.config || {};
-      if (currentMode === "ox") {
-        renderOX(config.choices || ["O","X"]);
-        return;
-      }
-      if (currentMode === "five") {
-        renderFive(config.choices || ["A","B","C","D","E"]);
-        return;
-      }
-      if (currentMode === "text") {
-        renderText();
-        return;
-      }
+      if (currentMode === "ox")   return renderOX(config.choices || ["O","X"]);
+      if (currentMode === "five") return renderFive(config.choices || ["A","B","C","D","E"]);
+      if (currentMode === "text") return renderText();
 
-      // 未知モードは待機に倒す
+      // modeが無い（初期/待機）
       hudMode.textContent = "待機";
       modeText.textContent = `mode: ${currentMode || "-"}`;
       container.innerHTML = "";
-      submitBtn.style.display = "";
       submitBtn.disabled = true;
       setOverlay(true, "先生が出題を開始すると、解答ボタンが使えるようになります。");
     });
 
-    // ★ 自分の回答が消されたら（教員リセット等）、open中は再入力可能にする
+    // 自分の回答が消されたら再入力可（open中）
     const myAnswerRef = ref(db, `rooms/${room}/answers/${userId}`);
     onValue(myAnswerRef, snap => {
       const v = snap.val();
       if (v == null && isOpen){
-        // 受付中で自分の回答が無い＝再入力可能
         if (currentMode === "text") renderText();
         if (currentMode === "ox") renderOX(["O","X"]);
         if (currentMode === "five") renderFive(["A","B","C","D","E"]);
