@@ -20,6 +20,7 @@
       --color-c:#ff9f0a;
       --color-d:#bf5af2;
       --color-e:#ff375f;
+
       --ok:#22c55e;
     }
 
@@ -32,7 +33,12 @@
       overflow:hidden;
     }
 
-    /* 上寄せ固定（下すぎ問題の根本対策） */
+    /* ===== A案：解答終了時のレイアウト微調整 ===== */
+    body.closed .grid{
+      grid-template-columns: 1.6fr 1fr;
+    }
+
+    /* ===== 画面：上寄せ固定 ===== */
     .wrap{
       height:100vh;
       display:flex;
@@ -161,36 +167,46 @@
     .badge.O{background:var(--color-o);}
     .badge.X{background:var(--color-x); color:#fff;}
 
-    /* 正解強調（解答終了時） */
+    /* 正解強調（枠） */
     .choice.correct{
       border:2px solid rgba(34,197,94,.85);
       box-shadow:0 0 0 3px rgba(34,197,94,.15);
     }
-    .choice.correct .badge{
-      outline:3px solid rgba(255,255,255,.18);
+
+    /* A案：正解パルス（解答終了時だけ） */
+    @keyframes pulseGreen {
+      0%   { box-shadow:0 0 0 0 rgba(34,197,94,.55); }
+      70%  { box-shadow:0 0 0 14px rgba(34,197,94,0); }
+      100% { box-shadow:0 0 0 0 rgba(34,197,94,0); }
+    }
+    body.closed .choice.correct{
+      animation:pulseGreen 1.3s infinite;
     }
 
-    /* 解答解説ボックス（status=closedで表示） */
+    /* ===== 解答解説：授業用に大きく ===== */
     #answerBox{
       display:none;
-      margin-top:12px;
-      padding:14px 14px;
-      border-radius:18px;
-      background:rgba(2,6,23,.72);
-      border:1px solid rgba(34,197,94,.35);
+      margin-top:14px;
+      padding:18px 18px;
+      border-radius:20px;
+      background:rgba(2,6,23,.78);
+      border:1px solid rgba(34,197,94,.45);
     }
     #answerBox.show{ display:block; }
+
     #answerLine{
-      font-size:22px;
-      font-weight:900;
+      font-size:34px;
+      font-weight:1000;
       color:var(--ok);
-      margin:0 0 6px 0;
+      margin:0 0 10px 0;
+      letter-spacing:.04em;
     }
     #explanationLine{
       margin:0;
-      font-size:18px;
+      font-size:26px;
       line-height:1.45;
       color:#e5e7eb;
+      white-space:pre-wrap;
     }
 
     /* 右：縦棒（立て）集計 */
@@ -235,20 +251,26 @@
       justify-content:flex-end;
       gap:6px;
     }
+    body.closed .col{ max-width:78px; }
+
     .count{
       font-size:16px;
       font-weight:900;
       color:#e5e7eb;
-      line-height:1;
-      min-height:18px;
+      line-height:1.1;
+      min-height:22px;
+      text-align:center;
+      white-space:nowrap;
     }
+    body.closed .count{ font-size:18px; }
+
     .bar{
       width:100%;
       border-radius:12px 12px 6px 6px;
       background:rgba(255,255,255,.12);
       position:relative;
       overflow:hidden;
-      height:12px; /* min */
+      height:12px;
       transition:height .2s ease;
       box-shadow:0 10px 24px rgba(0,0,0,.35);
     }
@@ -264,7 +286,12 @@
       letter-spacing:.06em;
     }
 
-    /* QRレイヤー（QR中は問題を出さない） */
+    body.closed .correctBar{
+      animation:pulseGreen 1.3s infinite;
+      border-radius:16px 16px 10px 10px;
+    }
+
+    /* ===== QRレイヤー（QR中は問題を出さない） ===== */
     #qrLayer{
       position:fixed;
       inset:0;
@@ -283,20 +310,20 @@
     .qrBox{
       width:min(920px, 94vw);
       border-radius:28px;
-      padding:26px 22px 18px;
+      padding:22px 22px 16px;
       background:var(--panel);
       border:1px solid rgba(255,255,255,.10);
       box-shadow:0 24px 80px rgba(0,0,0,.75);
       text-align:center;
     }
     .qrTitle{
-      margin:0 0 8px 0;
+      margin:0 0 6px 0;
       font-size:22px;
       letter-spacing:.10em;
       font-weight:900;
     }
     .qrHint{
-      margin:0 0 12px 0;
+      margin:0 0 10px 0;
       color:var(--muted);
       font-size:16px;
     }
@@ -304,18 +331,19 @@
       display:flex;
       justify-content:center;
       align-items:center;
-      margin:10px 0 10px;
+      margin:8px 0 8px;
     }
+    /* ★上下切れ対策：少しだけ小さく */
     #qrcode canvas{
-      width:min(760px, 82vw) !important;
-      height:auto !important;
+      width:min(700px, 78vw) !important;
+      height:min(700px, 78vw) !important;
       border-radius:18px;
       background:#fff;
-      padding:10px;
+      padding:8px;
       box-sizing:border-box;
     }
     #qrCount{
-      margin-top:8px;
+      margin-top:6px;
       color:rgba(203,213,225,.9);
       font-size:14px;
     }
@@ -351,16 +379,42 @@
       font-size:18px;
     }
 
+    /* トースト（解答終了→正解公開） */
+    #toast{
+      position:fixed;
+      left:50%;
+      top:18px;
+      transform:translateX(-50%);
+      background:rgba(17,24,39,.92);
+      border:1px solid rgba(255,255,255,.12);
+      padding:10px 14px;
+      border-radius:999px;
+      color:#f9fafb;
+      font-weight:900;
+      letter-spacing:.06em;
+      z-index:1200;
+      opacity:0;
+      pointer-events:none;
+      transition:opacity .25s ease;
+      box-shadow:0 18px 50px rgba(0,0,0,.55);
+    }
+
     @media (max-width: 980px){
       .grid{ grid-template-columns: 1fr; }
       #question{ font-size:38px; }
       .choice{ font-size:20px; }
+      #answerLine{ font-size:30px; }
+      #explanationLine{ font-size:22px; }
       .col{ max-width:56px; }
+      body.closed .col{ max-width:64px; }
     }
   </style>
 </head>
 
 <body>
+  <!-- トースト -->
+  <div id="toast">解答終了 → 正解公開</div>
+
   <!-- QR -->
   <div id="qrLayer">
     <div class="qrBox">
@@ -395,12 +449,14 @@
         <div class="secTitle">問題</div>
         <div id="leftScroll">
           <p id="question">（問題を待っています…）</p>
-          <div id="choices"></div>
 
+          <!-- 解答解説（通常はchoicesの下／解答終了時だけJSで上へ移動） -->
           <div id="answerBox">
             <p id="answerLine"></p>
             <p id="explanationLine"></p>
           </div>
+
+          <div id="choices"></div>
         </div>
       </div>
 
@@ -442,6 +498,8 @@
     const statusLabel = document.getElementById("statusLabel");
     const countLabel  = document.getElementById("countLabel");
 
+    const leftScroll = document.getElementById("leftScroll");
+
     const qEl = document.getElementById("question");
     const cEl = document.getElementById("choices");
 
@@ -456,6 +514,7 @@
     const qrCount = document.getElementById("qrCount");
 
     const ending = document.getElementById("ending");
+    const toast  = document.getElementById("toast");
 
     roomLabel.textContent = `ROOM: ${room}`;
 
@@ -463,29 +522,37 @@
     const qidRef      = ref(db, `rooms/${room}/quiz/current_question_id`);
     const resultRef   = ref(db, `rooms/${room}/result`);
     const answersRef  = ref(db, `rooms/${room}/answers`);
-
     const qRef = (qid) => ref(db, `rooms/${room}/questions/${qid}`);
 
     // display起動で強制QR
     update(activityRef, { qr: true }).catch(()=>{});
 
-    // フルURL（固定）
+    // フルURL固定
     const studentUrl = `https://qzp04374-code.github.io/quiz-app/exp-display/student.html?room=${encodeURIComponent(room)}`;
     function drawQR(){
       qrDiv.innerHTML = "";
-      new QRCode(qrDiv, { text: studentUrl, width: 720, height: 720 });
+      // ★少し小さく（上下切れ対策）
+      // eslint-disable-next-line no-undef
+      new QRCode(qrDiv, { text: studentUrl, width: 650, height: 650 });
     }
     drawQR();
 
     let isQR = true;
     let currentStatus = "-";
+    let lastStatus = null;
     let currentQuestion = null; // {question, choices, answer, explanation}
+
+    function showToast(){
+      toast.style.opacity = "1";
+      setTimeout(()=> toast.style.opacity = "0", 1200);
+    }
 
     function showQR(){
       isQR = true;
       qrLayer.classList.remove("hidden");
       document.getElementById("mainGrid").style.visibility = "hidden";
     }
+
     function hideQRWithFade(){
       isQR = false;
       qrLayer.classList.add("hidden");
@@ -494,7 +561,16 @@
       }, 460);
     }
 
-    // 色
+    /* 解答終了時だけ：解説を問題直下（choicesの前）へ移動 */
+    function placeAnswerBoxTop(isTop){
+      if (!leftScroll) return;
+      if (isTop){
+        leftScroll.insertBefore(answerBox, cEl); // answerBox を choices の前へ
+      } else {
+        leftScroll.appendChild(answerBox);       // answerBox を一番下へ
+      }
+    }
+
     function colorOf(label){
       const css = getComputedStyle(document.documentElement);
       switch(label){
@@ -509,7 +585,6 @@
       }
     }
 
-    // choices描画（解答終了時は正解に枠）
     function renderChoices(choicesObj, correctKey, showCorrect){
       cEl.innerHTML = "";
       const entries = Object.entries(choicesObj || {});
@@ -518,10 +593,7 @@
 
         const row = document.createElement("div");
         row.className = "choice";
-
-        if (showCorrect && correctKey && key === correctKey) {
-          row.classList.add("correct");
-        }
+        if (showCorrect && correctKey && key === correctKey) row.classList.add("correct");
 
         const b = document.createElement("div");
         b.className = `badge ${key}`;
@@ -537,7 +609,6 @@
     }
 
     function renderAnswerBox(q){
-      // status=closed かつ answer/explanation がある時だけ出す
       const show = (currentStatus === "closed") && q && (q.answer || q.explanation);
       if (!show){
         answerBox.classList.remove("show");
@@ -550,15 +621,22 @@
       explanationLine.textContent = q.explanation ? `解説：${q.explanation}` : "";
     }
 
-    // 縦棒チャート
     function renderVChart(counts){
       vchart.innerHTML = "";
-      const entries = Object.entries(counts || {}).map(([k,v]) => [String(k).trim().toUpperCase(), Number(v)||0]);
+      const entries = Object.entries(counts || {})
+        .map(([k,v]) => [String(k).trim().toUpperCase(), Number(v)||0]);
+
       if (!entries.length){
         vchart.innerHTML = `<div style="color:rgba(203,213,225,.9);">（集計待ち）</div>`;
         return;
       }
+
       const max = Math.max(...entries.map(([,v])=>v), 1);
+      const total = entries.reduce((s,[,v]) => s + (Number(v)||0), 0) || 1;
+
+      const correctKey = (currentQuestion && currentQuestion.answer)
+        ? String(currentQuestion.answer).trim().toUpperCase()
+        : null;
 
       entries.forEach(([lab, val]) => {
         const col = document.createElement("div");
@@ -566,13 +644,18 @@
 
         const cnt = document.createElement("div");
         cnt.className = "count";
-        cnt.textContent = val;
+        const pct = Math.round((val / total) * 100);
+        cnt.textContent = `${val}（${pct}%）`;
 
         const bar = document.createElement("div");
         bar.className = "bar";
-        // 高さ（右1/3なので、縦棒の見栄えを優先）
-        const h = Math.max(12, Math.round((val / max) * 260)); // 最大260px
+
+        const h = Math.max(12, Math.round((val / max) * 260));
         bar.style.height = `${h}px`;
+
+        if (currentStatus === "closed" && correctKey && lab === correctKey){
+          bar.classList.add("correctBar");
+        }
 
         const fill = document.createElement("div");
         fill.className = "barFill";
@@ -592,7 +675,7 @@
       });
     }
 
-    // 参加人数表示
+    // 参加人数
     onValue(answersRef, snap => {
       const ans = snap.val() || {};
       const n = Object.keys(ans).length;
@@ -606,6 +689,11 @@
       currentStatus = a.status || "-";
       statusLabel.textContent = `status: ${currentStatus}`;
 
+      document.body.classList.toggle("closed", currentStatus === "closed");
+
+      // 解答終了時だけ：解説を上へ
+      placeAnswerBoxTop(currentStatus === "closed");
+
       if (a.ending === true) ending.classList.add("show");
       else ending.classList.remove("show");
 
@@ -613,12 +701,15 @@
       if (q) showQR();
       else hideQRWithFade();
 
-      // status変化（open→closed）で解答解説の表示状態を更新
+      // 解答終了に入った瞬間だけトースト
+      if (lastStatus !== "closed" && currentStatus === "closed") showToast();
+      lastStatus = currentStatus;
+
+      // 状態更新に合わせて再描画
       renderAnswerBox(currentQuestion);
-      // 正解枠の再描画（closed時）
       if (currentQuestion && currentQuestion.choices){
-        const correctKey = currentQuestion.answer ? String(currentQuestion.answer).trim().toUpperCase() : null;
-        renderChoices(currentQuestion.choices, correctKey, currentStatus === "closed");
+        const ck = currentQuestion.answer ? String(currentQuestion.answer).trim().toUpperCase() : null;
+        renderChoices(currentQuestion.choices, ck, currentStatus === "closed");
       }
     });
 
@@ -631,6 +722,7 @@
         qEl.textContent = "（問題を待っています…）";
         cEl.innerHTML = "";
         renderAnswerBox(null);
+        placeAnswerBoxTop(false);
         return;
       }
 
@@ -642,6 +734,7 @@
           qEl.textContent = "（問題データが見つかりません）";
           cEl.innerHTML = "";
           renderAnswerBox(null);
+          placeAnswerBoxTop(false);
           return;
         }
 
@@ -650,6 +743,9 @@
         qEl.textContent = q.question || "";
         const correctKey = q.answer ? String(q.answer).trim().toUpperCase() : null;
 
+        // 解答終了中なら解説は上に、そうでなければ下に
+        placeAnswerBoxTop(currentStatus === "closed");
+
         renderChoices(q.choices || {}, correctKey, currentStatus === "closed");
         renderAnswerBox(q);
       });
@@ -657,8 +753,7 @@
 
     // 集計（縦棒）
     onValue(resultRef, snap => {
-      const r = snap.val() || {};
-      renderVChart(r);
+      renderVChart(snap.val() || {});
     });
   </script>
 </body>
