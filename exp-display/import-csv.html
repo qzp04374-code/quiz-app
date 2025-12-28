@@ -1,327 +1,132 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ClassSync CSV Import</title>
-  <style>
-    :root{
-      --bg:#050608;
-      --panel:#111827;
-      --panel2:#020617;
-      --line:rgba(255,255,255,.10);
-      --ink:#f9fafb;
-      --muted:rgba(203,213,225,.85);
-    }
-    *{box-sizing:border-box;}
-    body{
-      margin:0;
-      background:var(--bg);
-      color:var(--ink);
-      font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",sans-serif;
-      padding:22px 14px;
-      display:flex;
-      justify-content:center;
-    }
-    .card{
-      width:min(900px, 96vw);
-      background:rgba(17,24,39,.92);
-      border:1px solid rgba(255,255,255,.08);
-      border-radius:26px;
-      padding:18px 16px;
-      box-shadow:0 18px 70px rgba(0,0,0,.65);
-    }
-    h2{margin:0 0 10px 0; text-align:center; letter-spacing:.12em;}
-    .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:center; margin:10px 0;}
-    input[type="file"]{
-      padding:10px;
-      border-radius:14px;
-      border:1px solid rgba(255,255,255,.12);
-      background:rgba(2,6,23,.65);
-      color:var(--ink);
-    }
-    textarea{
-      width:100%;
-      min-height:220px;
-      resize:vertical;
-      padding:12px;
-      border-radius:18px;
-      border:1px solid rgba(255,255,255,.12);
-      background:rgba(2,6,23,.65);
-      color:var(--ink);
-      font-size:14px;
-      line-height:1.4;
-      outline:none;
-    }
-    .btnRow{display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:10px;}
-    button{
-      padding:12px 18px;
-      border-radius:999px;
-      border:none;
-      cursor:pointer;
-      color:#fff;
-      background:#374151;
-      font-weight:1100;
-      letter-spacing:.06em;
-      box-shadow:0 10px 26px rgba(0,0,0,.45);
-    }
-    .primary{background:linear-gradient(135deg,#22c55e,#06b6d4);}
-    .danger{background:linear-gradient(135deg,#dc2626,#991b1b);}
-    .ghost{background:#334155;}
-    .note{
-      margin-top:10px;
-      padding:12px 12px;
-      border-radius:18px;
-      border:1px solid rgba(255,255,255,.10);
-      background:rgba(2,6,23,.50);
-      color:rgba(203,213,225,.92);
-      font-size:13px;
-      line-height:1.5;
-    }
-    code{background:rgba(0,0,0,.25); padding:2px 6px; border-radius:8px;}
-    #log{
-      margin-top:10px;
-      font-size:13px;
-      color:rgba(203,213,225,.92);
-      white-space:pre-wrap;
-    }
-    #buildTag{
-      margin-top:10px;
-      text-align:right;
-      opacity:.55;
-      font-size:12px;
-      letter-spacing:.06em;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ClassSync CSV Import</title>
+
+<style>
+  body{
+    background:#050608;
+    color:#f9fafb;
+    font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",sans-serif;
+    margin:0;
+    padding:24px;
+  }
+  h2{ text-align:center; }
+  textarea{
+    width:100%;
+    height:260px;
+    background:#020617;
+    color:#e5e7eb;
+    border-radius:14px;
+    border:1px solid rgba(255,255,255,.12);
+    padding:14px;
+    box-sizing:border-box;
+    font-family:monospace;
+    font-size:14px;
+  }
+  button{
+    margin-top:12px;
+    padding:12px 20px;
+    border-radius:999px;
+    border:none;
+    background:#0ea5e9;
+    color:white;
+    font-size:15px;
+    cursor:pointer;
+  }
+  #log{
+    margin-top:14px;
+    font-size:14px;
+    color:#cbd5e1;
+    white-space:pre-wrap;
+  }
+</style>
 </head>
+
 <body>
-  <div class="card">
-    <h2>CSV投入</h2>
-    <div class="row">
-      <div id="roomInfo" style="font-weight:1100; letter-spacing:.10em;">ROOM: -</div>
-    </div>
+<h2>CSV → questions 投入</h2>
 
-    <div class="note">
-      <b>推奨CSV列（ヘッダーあり）</b><br>
-      <code>question_id,mode,question,choiceA,choiceB,choiceC,choiceD,choiceE,answer,explanation</code><br><br>
-      <b>mode は柔軟に解釈します</b>：<br>
-      - ○×：<code>ox</code> / <code>o/x</code> / <code>○×</code><br>
-      - 5択：<code>five</code> / <code>5</code> / <code>5択</code><br>
-      - 文字：<code>text</code> / <code>文字</code> / <code>文字入力</code> / <code>free</code><br><br>
-      <b>重要：</b> choiceA〜E が全部空なら <b>自動で文字入力</b>になります。<br><br>
-      投入先：<code>rooms/&lt;room&gt;/questions/&lt;question_id&gt;</code> と、順序 <code>rooms/&lt;room&gt;/quiz/order</code>
-    </div>
+<textarea id="csvInput" placeholder="ここにCSVを貼り付けてください"></textarea>
+<button id="importBtn">Firebase に投入</button>
+<div id="log"></div>
 
-    <div class="row">
-      <input type="file" id="file" accept=".csv,text/csv" />
-      <button class="ghost" id="loadSample">サンプル挿入</button>
-    </div>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-    <textarea id="csv" placeholder="ここにCSVを貼り付けてもOK（ファイルでもOK）"></textarea>
+const firebaseConfig = {
+  apiKey: "AIzaSyBke-wTU16skpbK8z80ddK04tE154dHERQ",
+  databaseURL: "https://satosan-41eac-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "satosan-41eac"
+};
 
-    <div class="btnRow">
-      <button class="danger" id="wipe">既存questionsを削除</button>
-      <button class="primary" id="import">投入（questions + order）</button>
-    </div>
+const app = initializeApp(firebaseConfig);
+const db  = getDatabase(app);
 
-    <div id="log"></div>
-    <div id="buildTag">build: 2025-12-28 / import-csv-textfix</div>
-  </div>
+const room = new URLSearchParams(location.search).get("room") || "kyoto-01";
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getDatabase, ref, set, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+const log = msg => document.getElementById("log").textContent += msg + "\n";
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyBke-wTU16skpbK8z80ddK04tE154dHERQ",
-      authDomain: "satosan-41eac.firebaseapp.com",
-      databaseURL: "https://satosan-41eac-default-rtdb.asia-southeast1.firebasedatabase.app",
-      projectId: "satosan-41eac"
+function norm(h){
+  return h.trim().toLowerCase().replace(/-/g,"_");
+}
+
+document.getElementById("importBtn").onclick = async () => {
+  const text = document.getElementById("csvInput").value.trim();
+  if (!text){ alert("CSVが空です"); return; }
+
+  const lines = text.split(/\r?\n/).filter(l => l.trim());
+  const rawHeaders = lines[0].split(",").map(norm);
+
+  const idx = name => rawHeaders.indexOf(name);
+
+  const qidIdx = idx("question_id");
+  const qIdx   = idx("question");
+  const ansIdx = idx("answer");
+  const expIdx = idx("explanation");
+  const modeIdx= idx("mode");
+
+  if (qidIdx < 0 || qIdx < 0){
+    alert("question-id / question 列が見つかりません");
+    return;
+  }
+
+  let count = 0;
+  const out = {};
+
+  for (let i=1;i<lines.length;i++){
+    const cols = lines[i].split(",");
+    const qid = cols[qidIdx]?.trim();
+    if (!qid) continue;
+
+    const mode = (cols[modeIdx]||"").trim().toLowerCase();
+
+    const q = {
+      question: cols[qIdx] || "",
+      answer: cols[ansIdx] || "",
+      explanation: cols[expIdx] || "",
+      mode: mode || undefined
     };
 
-    const app = initializeApp(firebaseConfig);
-    const db  = getDatabase(app);
-
-    const url = new URL(window.location.href);
-    const room = url.searchParams.get("room") || "kyoto-01";
-
-    document.getElementById("roomInfo").textContent = `ROOM: ${room}`;
-
-    const fileEl = document.getElementById("file");
-    const csvEl  = document.getElementById("csv");
-    const logEl  = document.getElementById("log");
-
-    function log(s){ logEl.textContent = s; }
-
-    function parseCSV(text){
-      const rows = [];
-      let cur = "", inQ = false;
-      const out = [];
-      for (let i=0;i<text.length;i++){
-        const ch = text[i];
-        const nxt = text[i+1];
-        if (ch === '"' && inQ && nxt === '"'){ cur += '"'; i++; continue; }
-        if (ch === '"'){ inQ = !inQ; continue; }
-        if (!inQ && ch === ','){ out.push(cur); cur=""; continue; }
-        if (!inQ && (ch === '\n' || ch === '\r')){
-          if (ch === '\r' && nxt === '\n') i++;
-          out.push(cur); cur="";
-          rows.push(out.splice(0,out.length));
-          continue;
-        }
-        cur += ch;
-      }
-      if (cur.length || out.length){
-        out.push(cur);
-        rows.push(out);
-      }
-      return rows.filter(r => r.some(c => String(c||"").trim().length));
-    }
-
-    function normalizeHeader(h){
-      return String(h||"").trim().toLowerCase();
-    }
-
-    function toObj(rows){
-      const header = rows[0].map(h=>normalizeHeader(h));
-      const list = [];
-      for (let i=1;i<rows.length;i++){
-        const r = rows[i];
-        const obj = {};
-        header.forEach((h,idx)=> obj[h]= String(r[idx] ?? "").trim());
-        list.push(obj);
-      }
-      return list;
-    }
-
-    function pick(rec, keys){
-      for (const k of keys){
-        const kk = normalizeHeader(k);
-        if (rec[kk] != null && String(rec[kk]).trim() !== "") return String(rec[kk]).trim();
-      }
-      return "";
-    }
-
-    function normalizeMode(raw){
-      const s = String(raw||"").trim().toLowerCase();
-      if (!s) return "";
-      if (["ox","o/x","oxmode","○×","◯×","まるばつ","マルバツ","2","2択","二択"].includes(s)) return "ox";
-      if (["five","5","5択","五択","abcde","choice5"].includes(s)) return "five";
-      if (["text","free","文字","文字入力","テキスト","記述","自由記述","入力"].includes(s)) return "text";
-      // 含む判定
-      if (s.includes("text") || s.includes("文字") || s.includes("記述")) return "text";
-      if (s.includes("ox") || s.includes("○") || s.includes("×") || s.includes("2択")) return "ox";
-      if (s.includes("five") || s.includes("5") || s.includes("五") || s.includes("abcde")) return "five";
-      return s; // 最後の手段（ただしstudent側で一致しないので、基本は上で吸収される想定）
-    }
-
-    function buildQuestion(rec){
-      const id = pick(rec, ["question_id","id","qid","問題id","問題id(任意)"]);
-      if (!id) return null;
-
-      // mode列名の揺れを吸収
-      const rawMode = pick(rec, ["mode","type","形式","モード"]);
-      const mode = normalizeMode(rawMode);
-
-      const question = pick(rec, ["question","q","問題","設問"]);
-      const answer = pick(rec, ["answer","正解","解答"]);
-      const explanation = pick(rec, ["explanation","解説","説明"]);
-
-      const A = pick(rec, ["choicea","a","選択肢a","選択肢1"]);
-      const B = pick(rec, ["choiceb","b","選択肢b","選択肢2"]);
-      const C = pick(rec, ["choicec","c","選択肢c","選択肢3"]);
-      const D = pick(rec, ["choiced","d","選択肢d","選択肢4"]);
-      const E = pick(rec, ["choicee","e","選択肢e","選択肢5"]);
-
-      const allChoicesEmpty = [A,B,C,D,E].every(v => !String(v||"").trim());
-
-      // ★ここが肝：choicesが全部空なら text
-      let m = mode;
-      if (!m){
-        if (allChoicesEmpty) m = "text";
-        else if (A && B && !C && !D && !E) m = "ox";
-        else m = "five";
-      }
-      if (allChoicesEmpty) m = "text";
-
-      const q = { question, answer, explanation, mode: m };
-
-      if (m === "ox"){
-        q.choices = { "O": A || "○", "X": B || "✕" };
-      } else if (m === "five"){
-        q.choices = { "A": A, "B": B, "C": C, "D": D, "E": E };
-      } else if (m === "text"){
-        // choicesなし
-      } else {
-        // 予期しない mode は text 扱いに寄せる（studentが確実に動く）
-        q.mode = "text";
-      }
-
-      return { id, q };
-    }
-
-    async function wipeAll(){
-      await set(ref(db, `rooms/${room}/questions`), {});
-      await set(ref(db, `rooms/${room}/quiz/order`), null);
-      await set(ref(db, `rooms/${room}/quiz/current_question_id`), null);
-      log("既存questionsを削除しました。");
-    }
-
-    document.getElementById("wipe").onclick = async ()=> {
-      if (!confirm("既存questionsを削除します。よろしいですか？")) return;
-      await wipeAll();
-    };
-
-    document.getElementById("loadSample").onclick = ()=> {
-      csvEl.value =
-`question_id,mode,question,choiceA,choiceB,choiceC,choiceD,choiceE,answer,explanation
-Q01,ox,今日は集中できている？,できている,できていない,,,,O,状況確認です
-Q02,five,一番大事なのは？,安全,速度,丁寧さ,根拠,共有,A,安全が最優先
-Q03,text,ひとこと感想（1文）,,,,,,,
-`;
-      log("サンプルを挿入しました。");
-    };
-
-    fileEl.addEventListener("change", async ()=>{
-      const f = fileEl.files?.[0];
-      if (!f) return;
-      const text = await f.text();
-      csvEl.value = text;
-      log(`ファイル読み込み：${f.name}`);
-    });
-
-    document.getElementById("import").onclick = async ()=>{
-      const text = csvEl.value || "";
-      if (!text.trim()){
-        log("CSVが空です。");
-        return;
-      }
-      const rows = parseCSV(text);
-      if (rows.length < 2){
-        log("CSV行が不足しています（ヘッダー＋1行以上）。");
-        return;
-      }
-      const list = toObj(rows);
-
-      const qObj = {};
-      const order = [];
-
-      list.forEach(rec=>{
-        const built = buildQuestion(rec);
-        if (!built) return;
-        qObj[built.id] = built.q;
-        order.push(built.id);
+    // choices（text 以外）
+    if (mode !== "text"){
+      const choices = {};
+      ["a","b","c","d","e"].forEach((k,n)=>{
+        const v = cols[idx("choice"+k.toUpperCase())];
+        if (v) choices[k.toUpperCase()] = v;
       });
+      if (Object.keys(choices).length) q.choices = choices;
+    }
 
-      await set(ref(db, `rooms/${room}/questions`), qObj);
-      await set(ref(db, `rooms/${room}/quiz/order`), order);
+    out[qid] = q;
+    count++;
+  }
 
-      // 安全：出題前の状態
-      await update(ref(db, `rooms/${room}/activity`), { status:"closed", qr:true, mode:null, ending:false }).catch(()=>{});
-      await set(ref(db, `rooms/${room}/quiz/current_question_id`), null);
-
-      log(`投入完了：${order.length}問（text自動判定対応）\n先頭例：${order.slice(0,5).join(", ")}`);
-    };
-  </script>
+  await set(ref(db, `rooms/${room}/questions`), out);
+  log(`投入完了：${count}問（question-id / text 両対応）`);
+};
+</script>
 </body>
 </html>
