@@ -1,65 +1,279 @@
-// ================================
-// 授業モード：問題出題（CSV mode 尊重・text完全対応）
-// ================================
-async function startQuizQuestion(qid){
-  if (!qid) return;
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ClassSync Teacher Control</title>
 
-  await set(qidRef(), qid);
-  await clearAnswers();
+  <style>
+    :root{
+      --bg:#050608;
+      --panel:#111827;
+      --panel2:#020617;
+      --line:rgba(255,255,255,.10);
+      --ink:#f9fafb;
+      --muted:#cbd5e1;
 
-  const qs = await get(questionRef(qid));
-  const q = qs.val() || {};
+      --color-o:#34c759;
+      --color-x:#ff3b30;
+      --color-a:#0a84ff;
+      --color-b:#30d158;
+      --color-c:#ff9f0a;
+      --color-d:#bf5af2;
+      --color-e:#ff375f;
 
-  // =====================================
-  // ★最重要：CSVで指定された mode を最優先
-  // =====================================
-  let mode = (q.mode || "").toLowerCase().trim();
-
-  // mode が無い場合のみ推定（保険）
-  if (!mode){
-    const keys = q.choices
-      ? Object.keys(q.choices).map(k => String(k).toUpperCase())
-      : [];
-
-    if (keys.includes("O") && keys.includes("X") && keys.length <= 2){
-      mode = "ox";
-    } else if (["A","B","C","D","E"].every(k => keys.includes(k))){
-      mode = "five";
-    } else {
-      mode = "text";
+      --danger:#ef4444;
+      --danger2:#991b1b;
+      --info:#0ea5e9;
+      --indigo:#6366f1;
+      --gray:#4b5563;
     }
-  }
 
-  // =====================================
-  // mode ごとの config
-  // =====================================
-  let config = null;
+    body{
+      font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",sans-serif;
+      margin:0;
+      min-height:100vh;
+      background:var(--bg);
+      display:flex;
+      justify-content:center;
+      padding:32px 0;
+      color:var(--ink);
+    }
 
-  if (mode === "ox"){
-    config = { choices: ["O","X"] };
-  } else if (mode === "five"){
-    config = { choices: ["A","B","C","D","E"] };
-  } else if (mode === "text"){
-    config = { type: "text" };
-  } else {
-    // 想定外は text に退避（安全側）
-    mode = "text";
-    config = { type: "text" };
-  }
+    .card{
+      background:var(--panel);
+      border-radius:24px;
+      padding:26px 22px 30px;
+      max-width:1180px;
+      width:100%;
+      box-shadow:0 18px 60px rgba(0,0,0,.65);
+      border:1px solid rgba(255,255,255,.04);
+      box-sizing:border-box;
+    }
 
-  // =====================================
-  // activity 更新（出題開始）
-  // =====================================
-  await update(activityRef(), {
-    status: "open",
-    qr: false,
-    view: "quiz",
-    mode: mode,
-    config: config
-  });
+    h2{
+      margin:0 0 14px 0;
+      text-align:center;
+      letter-spacing:.10em;
+      font-weight:900;
+    }
 
-  setQuickActive(null);
-  quickState.textContent = "授業モード：問題表示";
+    .topRow{
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-bottom:14px;
+    }
 
-  console.log(`[Quiz] ${qid} / mode=${mode}`, config);
-}
+    select, button{
+      border:none;
+      font-size:14px;
+      border-radius:999px;
+      padding:10px 18px;
+      box-sizing:border-box;
+    }
+
+    select{
+      background:var(--panel2);
+      color:#e5e7eb;
+      border:1px solid rgba(255,255,255,.12);
+      outline:none;
+    }
+
+    button{
+      cursor:pointer;
+      color:#fff;
+      background:#374151;
+      box-shadow:0 10px 30px rgba(0,0,0,.35);
+      transition:transform .12s ease, filter .12s ease, box-shadow .12s ease, opacity .12s ease;
+    }
+    button:active{ transform:scale(.97); filter:brightness(.98); }
+    button:disabled{ opacity:.45; cursor:not-allowed; box-shadow:none; }
+
+    .button-row{
+      display:flex;
+      flex-wrap:wrap;
+      justify-content:center;
+      gap:10px;
+      margin: 12px 0 16px;
+    }
+
+    #prevQuestionBtn { background: var(--gray); }
+    #nextQuestionBtn { background: linear-gradient(135deg, var(--color-o), #06b6d4); }
+    #stopBtn { background: var(--danger); }
+    #endClassBtn { background: linear-gradient(135deg,var(--danger),var(--danger2)); }
+    #qrBtn { background: var(--info); }
+    #projectionBtn { background: linear-gradient(135deg,var(--indigo),#a855f7); }
+    #importBtn { background: linear-gradient(135deg,var(--color-c),#f97316); }
+
+    #preview{
+      margin-top:18px;
+      padding:18px;
+      border-radius:20px;
+      background: var(--panel2);
+      border:1px solid rgba(255,255,255,.08);
+    }
+    .pv-choice{ margin-left:12px; margin-bottom:4px; }
+    .pv-answer{ margin-top:12px; font-weight:900; color:var(--color-o); }
+    .pv-explanation{ margin-top:6px; font-size:14px; white-space:pre-wrap; }
+  </style>
+</head>
+
+<body>
+  <div class="card">
+    <h2>教員画面</h2>
+
+    <div class="topRow">
+      ルーム：
+      <select id="roomSelect">
+        <option value="kyoto-01">kyoto-01</option>
+      </select>
+    </div>
+
+    <div class="button-row">
+      <button id="prevQuestionBtn">問題戻る ◀</button>
+      <button id="nextQuestionBtn">次の問題 ▶</button>
+      <button id="stopBtn">解答終了</button>
+      <button id="endClassBtn">授業終了</button>
+      <button id="qrBtn">QRコード</button>
+      <button id="projectionBtn">display表示</button>
+      <button id="importBtn">CSV投入</button>
+    </div>
+
+    <div id="preview">
+      <h3>出題プレビュー（教員のみ）</h3>
+      <div id="pvQuestion">問題を待っています…</div>
+      <div id="pvChoices"></div>
+      <div id="pvAnswer" class="pv-answer"></div>
+      <div id="pvExplanation" class="pv-explanation"></div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getDatabase, ref, set, update, remove, onValue, get } from
+      "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBke-wTU16skpbK8z80ddK04tE154dHERQ",
+      databaseURL: "https://satosan-41eac-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "satosan-41eac"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db  = getDatabase(app);
+
+    const roomSelect = document.getElementById("roomSelect");
+    let currentRoom = roomSelect.value;
+
+    const qEl = document.getElementById("pvQuestion");
+    const cEl = document.getElementById("pvChoices");
+    const aEl = document.getElementById("pvAnswer");
+    const eEl = document.getElementById("pvExplanation");
+
+    function activityRef(){ return ref(db, `rooms/${currentRoom}/activity`); }
+    function answersRef(){ return ref(db, `rooms/${currentRoom}/answers`); }
+    function qidRef(){ return ref(db, `rooms/${currentRoom}/quiz/current_question_id`); }
+    function questionsRef(){ return ref(db, `rooms/${currentRoom}/questions`); }
+    function questionRef(qid){ return ref(db, `rooms/${currentRoom}/questions/${qid}`); }
+
+    async function clearAnswers(){
+      await set(answersRef(), {});
+    }
+
+    async function refreshOrder(){
+      const snap = await get(questionsRef());
+      return Object.keys(snap.val() || {}).sort();
+    }
+
+    // ================================
+    // ★ 修正済：CSV mode を尊重する出題処理
+    // ================================
+    async function startQuizQuestion(qid){
+      if (!qid) return;
+
+      await set(qidRef(), qid);
+      await clearAnswers();
+
+      const qs = await get(questionRef(qid));
+      const q = qs.val() || {};
+
+      let mode = (q.mode || "").toLowerCase().trim();
+
+      if (!mode){
+        const keys = q.choices ? Object.keys(q.choices).map(k => k.toUpperCase()) : [];
+        if (keys.includes("O") && keys.includes("X")) mode = "ox";
+        else if (["A","B","C","D","E"].every(k => keys.includes(k))) mode = "five";
+        else mode = "text";
+      }
+
+      let config = null;
+      if (mode === "ox")   config = { choices:["O","X"] };
+      if (mode === "five") config = { choices:["A","B","C","D","E"] };
+      if (mode === "text") config = { type:"text" };
+
+      await update(activityRef(), {
+        status:"open",
+        qr:false,
+        view:"quiz",
+        mode,
+        config
+      });
+    }
+
+    document.getElementById("nextQuestionBtn").onclick = async () => {
+      const order = await refreshOrder();
+      const cur = (await get(qidRef())).val();
+      const i = order.indexOf(cur);
+      const next = i < 0 ? order[0] : order[i + 1];
+      if (next) startQuizQuestion(next);
+    };
+
+    document.getElementById("prevQuestionBtn").onclick = async () => {
+      const order = await refreshOrder();
+      const cur = (await get(qidRef())).val();
+      const i = order.indexOf(cur);
+      const prev = i > 0 ? order[i - 1] : order[0];
+      if (prev) startQuizQuestion(prev);
+    };
+
+    document.getElementById("stopBtn").onclick = async () => {
+      await update(activityRef(), { status:"closed" });
+    };
+
+    document.getElementById("endClassBtn").onclick = async () => {
+      if (!confirm("授業終了します。データを削除しますか？")) return;
+      await remove(ref(db, `rooms/${currentRoom}`));
+      alert("授業データを削除しました。");
+    };
+
+    onValue(qidRef(), snap => {
+      const qid = snap.val();
+      if (!qid){
+        qEl.textContent = "（問題未選択）";
+        cEl.innerHTML = "";
+        aEl.textContent = "";
+        eEl.textContent = "";
+        return;
+      }
+      onValue(questionRef(qid), qsnap => {
+        const q = qsnap.val() || {};
+        qEl.textContent = q.question || "";
+        cEl.innerHTML = "";
+        if (q.choices){
+          Object.entries(q.choices).forEach(([k,v])=>{
+            const d = document.createElement("div");
+            d.className = "pv-choice";
+            d.textContent = `${k}. ${v}`;
+            cEl.appendChild(d);
+          });
+        }
+        aEl.textContent = q.answer ? `正解：${q.answer}` : "";
+        eEl.textContent = q.explanation ? `解説：${q.explanation}` : "";
+      });
+    });
+  </script>
+</body>
+</html>
