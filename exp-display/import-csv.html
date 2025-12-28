@@ -104,7 +104,7 @@ function parseCSV(text){
   if (lines.length < 2) throw new Error("CSVの行数が足りません");
 
   const headers = lines[0].split(",").map(normalizeHeader);
-  const idx = name => headers.indexOf(name);
+  const idx = name => headers.indexOf(normalizeHeader(name));
 
   const qidIdx = idx("question_id");
   const qIdx   = idx("question");
