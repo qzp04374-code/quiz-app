@@ -10,17 +10,13 @@
       --bg:#050608;
       --panel:#111827;
       --panel2:#020617;
-      --line:rgba(255,255,255,.10);
       --ink:#f9fafb;
       --muted:#cbd5e1;
 
       --color-o:#34c759;
       --color-x:#ff3b30;
-      --color-a:#0a84ff;
-      --color-b:#30d158;
       --color-c:#ff9f0a;
       --color-d:#bf5af2;
-      --color-e:#ff375f;
 
       --danger:#ef4444;
       --danger2:#991b1b;
@@ -80,6 +76,7 @@
       color:#e5e7eb;
       border:1px solid rgba(255,255,255,.12);
       outline:none;
+      min-width: 180px;
     }
 
     button{
@@ -178,21 +175,15 @@
 </head>
 
 <body>
-  <div id="buildTag">build: 2025-12-28 / teacher-recover-v1</div>
+  <div id="buildTag">build: 2025-12-28 / teacher-roomlist-js-v1</div>
 
   <div class="card">
     <h2>教員画面</h2>
 
     <div class="topRow">
       ルーム：
-      <select id="roomSelect">
-       <option value="kyoto-01">Kyoto-01</option>
-       <option value="kyoto-02">Kyoto-02</option>
-       <option value="sendai-01">Sendai-01</option>
-       <option value="sendai-02">Sendai-02</option>
-       <option value="nagoya-01">Nagoya-01</option>
-       <option value="nagoya-02">Nagoya-02</option>
-    </select>
+      <!-- ★ optionはJSで生成（削除事故防止） -->
+      <select id="roomSelect"></select>
     </div>
 
     <!-- クイック投票 -->
@@ -243,9 +234,47 @@
     const app = initializeApp(firebaseConfig);
     const db  = getDatabase(app);
 
+    // =========================================================
+    // ルーム定義（★ここだけ触ればOK）
+    // =========================================================
     const roomSelect = document.getElementById("roomSelect");
-    let currentRoom = roomSelect.value;
 
+    const ROOMS = [
+      { id: "kyoto-01",  label: "Kyoto-01"  },
+      { id: "kyoto-02",  label: "Kyoto-02"  },
+      { id: "sendai-01", label: "Sendai-01" },
+      { id: "sendai-02", label: "Sendai-02" },
+      { id: "nagoya-01", label: "Nagoya-01" },
+      { id: "nagoya-02", label: "Nagoya-02" },
+    ];
+
+    function buildRoomOptions(){
+      roomSelect.innerHTML = "";
+      for (const r of ROOMS){
+        const opt = document.createElement("option");
+        opt.value = r.id;
+        opt.textContent = r.label;
+        roomSelect.appendChild(opt);
+      }
+    }
+
+    // 初期ルーム：URL ?room → localStorage → 先頭
+    const url = new URL(location.href);
+    const urlRoom = url.searchParams.get("room");
+    const savedRoom = localStorage.getItem("cs_teacher_room");
+
+    buildRoomOptions();
+
+    let currentRoom =
+      (urlRoom && ROOMS.some(r => r.id === urlRoom)) ? urlRoom :
+      (savedRoom && ROOMS.some(r => r.id === savedRoom)) ? savedRoom :
+      ROOMS[0].id;
+
+    roomSelect.value = currentRoom;
+
+    // =========================================================
+    // DOM
+    // =========================================================
     const quickState = document.getElementById("quickState");
 
     const pvQuestion = document.getElementById("pvQuestion");
@@ -262,6 +291,9 @@
     const btnQ5   = document.getElementById("quick5Btn");
     const btnQT   = document.getElementById("quickTextBtn");
 
+    // =========================================================
+    // Firebase refs helper
+    // =========================================================
     function activityRef(room=currentRoom){ return ref(db, `rooms/${room}/activity`); }
     function answersRef(room=currentRoom){ return ref(db, `rooms/${room}/answers`); }
     function qidRef(room=currentRoom){ return ref(db, `rooms/${room}/quiz/current_question_id`); }
@@ -284,7 +316,9 @@
       return k;
     }
 
-    // ===== ★修正箇所：CSVの mode を尊重（既存仕様を維持）=====
+    // =========================================================
+    // 出題（quiz）
+    // =========================================================
     async function startQuizQuestion(qid){
       if (!qid) return;
 
@@ -316,7 +350,9 @@
       });
     }
 
-    // ===== 追加：クイック投票（集計のみ）=====
+    // =========================================================
+    // クイック投票（poll）
+    // =========================================================
     async function startQuickPoll(mode){
       await clearAnswers();
       let config = null;
@@ -333,35 +369,9 @@
       });
     }
 
-    // ===== 追加：QRトグル（QR解除時に出題可能状態を保証）=====
-    async function toggleQR(){
-      const isQR = (state.activity?.qr === true);
-      if (!isQR){
-        // QR表示
-        await update(activityRef(), { qr:true });
-        return;
-      }
-
-      // QR解除 → “出題可能状態” を必ず作る
-      const patch = { qr:false };
-
-      const st = state.activity?.status || null;
-      const vw = state.activity?.view || null;
-      const md = state.activity?.mode  || null;
-
-      if (!st || st === "-" ) patch.status = "open";
-      if (!vw) patch.view = "quiz"; // 既にquiz/pollなら維持したいので、未定義のみ補完
-      if (!md){
-        // 未定義なら「まず動く」最小構成を入れる（口頭Q&A想定）
-        patch.view = "poll";
-        patch.mode = "five";
-        patch.config = { choices:["A","B","C","D","E"] };
-      }
-
-      await update(activityRef(), patch);
-    }
-
-    // ===== 追加：教員プレビュー同期 =====
+    // =========================================================
+    // QRトグル（QR解除時に出題可能状態を保証）
+    // =========================================================
     const state = {
       activity: {},
       latestQid: null,
@@ -371,6 +381,33 @@
       unsubQuestion: null
     };
 
+    async function toggleQR(){
+      const isQR = (state.activity?.qr === true);
+      if (!isQR){
+        await update(activityRef(), { qr:true });
+        return;
+      }
+
+      const patch = { qr:false };
+
+      const st = state.activity?.status || null;
+      const vw = state.activity?.view || null;
+      const md = state.activity?.mode  || null;
+
+      if (!st) patch.status = "open";
+      if (!vw) patch.view = "quiz";
+      if (!md){
+        patch.view = "poll";
+        patch.mode = "five";
+        patch.config = { choices:["A","B","C","D","E"] };
+      }
+
+      await update(activityRef(), patch);
+    }
+
+    // =========================================================
+    // 教員プレビュー
+    // =========================================================
     function renderPreview(){
       const a = state.activity || {};
       const view = a.view || "quiz";
@@ -378,9 +415,9 @@
       const mode = a.mode || "-";
       const qr = (a.qr === true);
 
-      quickState.textContent = `view:${view} / status:${status} / mode:${mode}${qr ? " / QR" : ""}`;
+      quickState.textContent = `room:${currentRoom} / view:${view} / status:${status} / mode:${mode}${qr ? " / QR" : ""}`;
 
-      // 教員側の誤操作抑止（QR中は操作を少し制限）
+      // QR中は操作抑止（事故軽減）
       const lock = (a.qr === true);
       btnPrev.disabled = lock;
       btnNext.disabled = lock;
@@ -389,7 +426,6 @@
       btnQ5.disabled = lock;
       btnQT.disabled = lock;
 
-      // プレビュー
       if (view === "poll"){
         pvQuestion.textContent = "（クイック投票：問題表示なし / 集計のみ）";
         pvChoices.innerHTML = "";
@@ -417,7 +453,6 @@
 
       pvQuestion.textContent = q.question || "";
 
-      // choices
       pvChoices.innerHTML = "";
       if (q.choices && typeof q.choices === "object"){
         Object.entries(q.choices).forEach(([k, v]) => {
@@ -428,7 +463,6 @@
         });
       }
 
-      // 正解・解説（“解答終了”後に表示：displayと揃える）
       if ((a.status || "") === "closed"){
         const ans = (q.answer || "").toString().trim().toUpperCase();
         pvAnswer.textContent = ans ? `正解：${uiLabel(ans)}` : "正解：—";
@@ -467,18 +501,14 @@
       state.latestQid = null;
       state.question = null;
 
-      // activity
       state.unsubActivity = onValue(activityRef(room), snap => {
         state.activity = snap.val() || {};
         renderPreview();
-
-        // quiz中ならQIDを反映（poll中は保持だけ）
         if ((state.activity.view || "quiz") !== "poll"){
           subscribeQuestion(state.latestQid);
         }
       });
 
-      // qid（保持）
       state.unsubQid = onValue(qidRef(room), snap => {
         state.latestQid = snap.val() || null;
         if ((state.activity.view || "quiz") !== "poll"){
@@ -491,8 +521,14 @@
       renderPreview();
     }
 
-    // ===== イベント配線（ここが消えていたのが主因）=====
-    roomSelect.onchange = () => attachRoom(roomSelect.value);
+    // =========================================================
+    // イベント配線
+    // =========================================================
+    roomSelect.onchange = () => {
+      currentRoom = roomSelect.value;
+      localStorage.setItem("cs_teacher_room", currentRoom);
+      attachRoom(currentRoom);
+    };
 
     btnNext.onclick = async () => {
       const order = await refreshOrder();
@@ -536,7 +572,6 @@
       );
     };
 
-    // ★修正：roomを渡す（kyoto-02でも誤爆しない）
     document.getElementById("importBtn").onclick = () => {
       window.open(
         `https://qzp04374-code.github.io/quiz-app/exp-display/import-csv.html?room=${encodeURIComponent(currentRoom)}`,
