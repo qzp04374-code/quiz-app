@@ -14,6 +14,7 @@
       --ink:#f9fafb;
       --muted:#cbd5e1;
 
+      /* 番号(文字)と色の対応 */
       --color-o:#34c759;
       --color-x:#ff3b30;
       --color-a:#0a84ff;
@@ -90,7 +91,51 @@
       transition:transform .12s ease, filter .12s ease, box-shadow .12s ease, opacity .12s ease;
     }
     button:active{ transform:scale(.97); filter:brightness(.98); }
-    button:disabled{ opacity:.45; cursor:not-allowed; box-shadow:none; }
+    button:disabled{
+      opacity:.45;
+      cursor:not-allowed;
+      box-shadow:none;
+      transform:none;
+    }
+
+    /* クイック投票 */
+    .quickWrap{
+      margin: 10px auto 18px;
+      padding: 14px 12px 12px;
+      border-radius: 22px;
+      background: rgba(2,6,23,.55);
+      border:1px solid rgba(255,255,255,.08);
+    }
+    .quickTitle{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      padding-bottom:10px;
+      color: var(--muted);
+      font-weight:900;
+      letter-spacing:.10em;
+      font-size:13px;
+    }
+    .quickRow{
+      display:flex;
+      justify-content:center;
+      gap:14px;
+      flex-wrap:wrap;
+    }
+    .qbtn{
+      width:100px;
+      height:100px;
+      border-radius:9999px;
+      display:flex;
+      flex-direction:column;
+      justify-content:center;
+      align-items:center;
+      gap:6px;
+      border:1px solid rgba(255,255,255,.10);
+    }
+    .q2{ background: linear-gradient(135deg, var(--color-o), #06b6d4); }
+    .q5{ background: linear-gradient(135deg, var(--color-d), #a855f7); }
+    .qt{ background: linear-gradient(135deg, var(--color-c), #f59e0b); color:#111827; }
 
     .button-row{
       display:flex;
@@ -129,9 +174,24 @@
       ルーム：
       <select id="roomSelect">
         <option value="kyoto-01">kyoto-01</option>
+        <option value="kyoto-02">kyoto-02</option>
       </select>
     </div>
 
+    <!-- クイック投票 -->
+    <div class="quickWrap">
+      <div class="quickTitle">
+        <span>クイック投票（集計のみ）</span>
+        <span id="quickState">—</span>
+      </div>
+      <div class="quickRow">
+        <button id="quick2Btn" class="qbtn q2">○✕</button>
+        <button id="quick5Btn" class="qbtn q5">ABCDE</button>
+        <button id="quickTextBtn" class="qbtn qt">TEXT</button>
+      </div>
+    </div>
+
+    <!-- 授業操作 -->
     <div class="button-row">
       <button id="prevQuestionBtn">問題戻る ◀</button>
       <button id="nextQuestionBtn">次の問題 ▶</button>
@@ -142,6 +202,7 @@
       <button id="importBtn">CSV投入</button>
     </div>
 
+    <!-- プレビュー -->
     <div id="preview">
       <h3>出題プレビュー（教員のみ）</h3>
       <div id="pvQuestion">問題を待っています…</div>
@@ -168,11 +229,6 @@
     const roomSelect = document.getElementById("roomSelect");
     let currentRoom = roomSelect.value;
 
-    const qEl = document.getElementById("pvQuestion");
-    const cEl = document.getElementById("pvChoices");
-    const aEl = document.getElementById("pvAnswer");
-    const eEl = document.getElementById("pvExplanation");
-
     function activityRef(){ return ref(db, `rooms/${currentRoom}/activity`); }
     function answersRef(){ return ref(db, `rooms/${currentRoom}/answers`); }
     function qidRef(){ return ref(db, `rooms/${currentRoom}/quiz/current_question_id`); }
@@ -188,9 +244,7 @@
       return Object.keys(snap.val() || {}).sort();
     }
 
-    // ================================
-    // ★ 修正済：CSV mode を尊重する出題処理
-    // ================================
+    // ===== ★修正箇所：CSVの mode を尊重 =====
     async function startQuizQuestion(qid){
       if (!qid) return;
 
@@ -201,18 +255,17 @@
       const q = qs.val() || {};
 
       let mode = (q.mode || "").toLowerCase().trim();
-
       if (!mode){
         const keys = q.choices ? Object.keys(q.choices).map(k => k.toUpperCase()) : [];
-        if (keys.includes("O") && keys.includes("X")) mode = "ox";
+        if (keys.length === 2 && keys.includes("O") && keys.includes("X")) mode = "ox";
         else if (["A","B","C","D","E"].every(k => keys.includes(k))) mode = "five";
         else mode = "text";
       }
 
       let config = null;
-      if (mode === "ox")   config = { choices:["O","X"] };
-      if (mode === "five") config = { choices:["A","B","C","D","E"] };
       if (mode === "text") config = { type:"text" };
+      else if (mode === "ox") config = { choices:["O","X"] };
+      else if (mode === "five") config = { choices:["A","B","C","D","E"] };
 
       await update(activityRef(), {
         status:"open",
@@ -244,36 +297,27 @@
     };
 
     document.getElementById("endClassBtn").onclick = async () => {
-      if (!confirm("授業終了します。データを削除しますか？")) return;
+      const ok1 = confirm("授業終了します。データを削除しますか？（1/2）");
+      if (!ok1) return;
+      const ok2 = confirm("本当に削除しますか？（2/2）");
+      if (!ok2) return;
       await remove(ref(db, `rooms/${currentRoom}`));
       alert("授業データを削除しました。");
     };
 
-    onValue(qidRef(), snap => {
-      const qid = snap.val();
-      if (!qid){
-        qEl.textContent = "（問題未選択）";
-        cEl.innerHTML = "";
-        aEl.textContent = "";
-        eEl.textContent = "";
-        return;
-      }
-      onValue(questionRef(qid), qsnap => {
-        const q = qsnap.val() || {};
-        qEl.textContent = q.question || "";
-        cEl.innerHTML = "";
-        if (q.choices){
-          Object.entries(q.choices).forEach(([k,v])=>{
-            const d = document.createElement("div");
-            d.className = "pv-choice";
-            d.textContent = `${k}. ${v}`;
-            cEl.appendChild(d);
-          });
-        }
-        aEl.textContent = q.answer ? `正解：${q.answer}` : "";
-        eEl.textContent = q.explanation ? `解説：${q.explanation}` : "";
-      });
-    });
+    document.getElementById("projectionBtn").onclick = () => {
+      window.open(
+        `https://qzp04374-code.github.io/quiz-app/exp-display/display.html?room=${encodeURIComponent(currentRoom)}`,
+        "_blank"
+      );
+    };
+
+    document.getElementById("importBtn").onclick = () => {
+      window.open(
+        `https://qzp04374-code.github.io/quiz-app/exp-display/import-csv.html`,
+        "_blank"
+      );
+    };
   </script>
 </body>
 </html>
