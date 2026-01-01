@@ -811,7 +811,7 @@
 
     /* ★QIDを表示処理に回す関数（poll中にQIDが来ても保持して、quizに戻ったら必ず適用） */
     function applyCurrentQid(){
-      if (currentView === "quiz") return;
+      if (currentView !== "quiz") return;
 
       const qid = latestQid;
 
