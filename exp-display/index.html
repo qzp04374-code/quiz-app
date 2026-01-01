@@ -208,6 +208,10 @@
       <button id="qrBtn">QRコード</button>
       <button id="projectionBtn">display表示</button>
       <button id="importBtn">CSV投入</button>
+      <button id="t20Btn">⏱20</button>
+      <button id="t30Btn">⏱30</button>
+      <button id="t60Btn">⏱60</button>
+      <button id="tOffBtn">⏹Timer</button> 
     </div>
 
     <!-- プレビュー -->
@@ -287,6 +291,11 @@
     const btnStop = document.getElementById("stopBtn");
     const btnQR   = document.getElementById("qrBtn");
 
+    const btnT20  = document.getElementById("t20Btn");
+    const btnT30  = document.getElementById("t30Btn");
+    const btnT60  = document.getElementById("t60Btn");
+    const btnTOff = document.getElementById("tOffBtn");
+
     const btnQ2   = document.getElementById("quick2Btn");
     const btnQ5   = document.getElementById("quick5Btn");
     const btnQT   = document.getElementById("quickTextBtn");
@@ -347,6 +356,7 @@
         view:"quiz",
         mode,
         config
+        timer:{ running:false }
       });
     }
 
@@ -366,7 +376,26 @@
         view:"poll",
         mode,
         config
+        timer:{ running:false }
       });
+    }
+
+    // =========================================================
+    // タイマー（解答終了カウントダウン）
+    // =========================================================
+    async function startTimer(sec){
+       await update(activityRef(), {
+        timer: {
+          running: true,
+          endsAt: Date.now() + sec * 1000,
+          durationSec: sec,
+          autoClose: true
+        }
+      });
+    }
+
+    async function stopTimer(){
+      await update(activityRef(), { timer: { running: false } });
     }
 
     // =========================================================
@@ -574,6 +603,11 @@
     btnQ2.onclick = async () => { await startQuickPoll("ox"); };
     btnQ5.onclick = async () => { await startQuickPoll("five"); };
     btnQT.onclick = async () => { await startQuickPoll("text"); };
+
+    btnT20.onclick  = () => startTimer(20);
+    btnT30.onclick  = () => startTimer(30);
+    btnT60.onclick  = () => startTimer(60);
+    btnTOff.onclick = () => stopTimer();
 
     document.getElementById("projectionBtn").onclick = () => {
       window.open(
