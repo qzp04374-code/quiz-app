@@ -899,6 +899,9 @@
       currentStatus = a.status || "-";
       currentMode = a.mode || null;
       currentView = a.view || "quiz";
+      timerState = a.timer || null;
+      if (timerState && timerState.running && timerState.endsAt) ensureTimerTick();
+      else stopTimerTick();
 
       statusLabel.textContent = `status: ${currentStatus}`;
       document.body.classList.toggle("poll", currentView === "poll");
