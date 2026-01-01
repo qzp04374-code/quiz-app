@@ -175,7 +175,7 @@
 </head>
 
 <body>
-  <div id="buildTag">build: 2025-12-28 / teacher-roomlist-js-v1</div>
+  <div id="buildTag">build: 2025-12-29 / teacher-standby-v1</div>
 
   <div class="card">
     <h2>教員画面</h2>
@@ -370,7 +370,7 @@
     }
 
     // =========================================================
-    // QRトグル（QR解除時に出題可能状態を保証）
+    // QRトグル（★QR解除→standbyへ）
     // =========================================================
     const state = {
       activity: {},
@@ -383,26 +383,21 @@
 
     async function toggleQR(){
       const isQR = (state.activity?.qr === true);
+
+      // QRを表示
       if (!isQR){
-        await update(activityRef(), { qr:true });
+        await update(activityRef(), { qr:true, view:"qr" });
         return;
       }
 
-      const patch = { qr:false };
-
-      const st = state.activity?.status || null;
-      const vw = state.activity?.view || null;
-      const md = state.activity?.mode  || null;
-
-      if (!st) patch.status = "open";
-      if (!vw) patch.view = "quiz";
-      if (!md){
-        patch.view = "poll";
-        patch.mode = "five";
-        patch.config = { choices:["A","B","C","D","E"] };
-      }
-
-      await update(activityRef(), patch);
+      // QRを消す → スタンバイ（問題は出さない／学生も待機）
+      await update(activityRef(), {
+        qr:false,
+        view:"standby",
+        status:"ready",
+        mode:null,
+        config:null
+      });
     }
 
     // =========================================================
@@ -415,7 +410,8 @@
       const mode = a.mode || "-";
       const qr = (a.qr === true);
 
-      quickState.textContent = `room:${currentRoom} / view:${view} / status:${status} / mode:${mode}${qr ? " / QR" : ""}`;
+      quickState.textContent =
+        `room:${currentRoom} / view:${view} / status:${status} / mode:${mode}${qr ? " / QR" : ""}`;
 
       // QR中は操作抑止（事故軽減）
       const lock = (a.qr === true);
@@ -426,6 +422,16 @@
       btnQ5.disabled = lock;
       btnQT.disabled = lock;
 
+      // ★standby
+      if (view === "standby"){
+        pvQuestion.textContent = "（スタンバイ中… 次の問題を待っています）";
+        pvChoices.innerHTML = "";
+        pvAnswer.textContent = "";
+        pvExplanation.textContent = "";
+        return;
+      }
+
+      // poll
       if (view === "poll"){
         pvQuestion.textContent = "（クイック投票：問題表示なし / 集計のみ）";
         pvChoices.innerHTML = "";
@@ -504,14 +510,18 @@
       state.unsubActivity = onValue(activityRef(room), snap => {
         state.activity = snap.val() || {};
         renderPreview();
-        if ((state.activity.view || "quiz") !== "poll"){
+
+        // ★quiz のときだけ問題を購読（poll/standby/qrは無視）
+        if ((state.activity.view || "quiz") === "quiz"){
           subscribeQuestion(state.latestQid);
         }
       });
 
       state.unsubQid = onValue(qidRef(room), snap => {
         state.latestQid = snap.val() || null;
-        if ((state.activity.view || "quiz") !== "poll"){
+
+        // ★quiz のときだけ問題を購読（poll/standby/qrは無視）
+        if ((state.activity.view || "quiz") === "quiz"){
           subscribeQuestion(state.latestQid);
         }else{
           renderPreview();
