@@ -882,9 +882,14 @@
         qEl.textContent = "（口頭Q&A：集計のみ）";
         cEl.innerHTML = "";
         updateAnswerUI();
-      } else {
-        updateAnswerUI();
-      }
+        } else if (currentView === "standby"){
+          currentQuestion = null;
+          qEl.textContent = "（スタンバイ中… 先生の操作を待っています）";
+          cEl.innerHTML = "";
+          updateAnswerUI();
+        } else {
+          updateAnswerUI();
+        }
 
       // ★重要：poll→quizになった瞬間に、保持していたQIDを必ず反映（Q1欠落を防ぐ）
       applyCurrentQid();
