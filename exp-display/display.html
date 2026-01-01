@@ -422,6 +422,7 @@
       <div class="meta">
         <span id="statusLabel">status: -</span>
         <span id="countLabel">参加中 0人</span>
+        <span id="timerLabel" style="font-weight:1000;">⏱ --:--</span>
         <button id="soundBtn" class="soundBtn">🔈 音OFF（タップでON）</button>
       </div>
     </div>
@@ -478,7 +479,8 @@
     const roomLabel   = document.getElementById("roomLabel");
     const statusLabel = document.getElementById("statusLabel");
     const countLabel  = document.getElementById("countLabel");
-
+    const timerLabel  = document.getElementById("timerLabel");
+    
     const leftScroll = document.getElementById("leftScroll");
     const qEl = document.getElementById("question");
     const cEl = document.getElementById("choices");
@@ -583,6 +585,48 @@
     let currentQuestion = null;
 
     let lastAnswers = {};
+    
+    // ===== Timer =====
+    let timerState = null;
+    let timerInterval = null;
+    let lastAutoClosedAt = 0;
+
+    function fmt2(n){ return String(n).padStart(2,"0"); }
+    function fmtRemain(ms){
+      const s = Math.max(0, Math.ceil(ms/1000));
+      const m = Math.floor(s/60);
+      const r = s % 60;
+      return `${fmt2(m)}:${fmt2(r)}`;
+    }
+
+    function stopTimerTick(){
+      if (timerInterval){ clearInterval(timerInterval); timerInterval = null; }
+      if (timerLabel) timerLabel.textContent = "⏱ --:--";
+    }
+
+    function ensureTimerTick(){
+      if (timerInterval) return;
+      timerInterval = setInterval(async () => {
+        if (!timerState || !timerState.running || !timerState.endsAt){
+          stopTimerTick();
+          return;
+        }    
+
+        const remain = timerState.endsAt - Date.now();
+        if (timerLabel) timerLabel.textContent = `⏱ ${fmtRemain(remain)}`;
+
+        // 0秒で自動 close（open かつ QRでない時だけ）
+        if (remain <= 0 && timerState.autoClose && currentStatus === "open" && isQR === false){
+          const now = Date.now();
+          // 連打防止
+          if (now - lastAutoClosedAt > 1500){
+            lastAutoClosedAt = now;
+            await update(activityRef, { status:"closed" }).catch(()=>{});
+          }
+        }
+      }, 250);
+    }
+
 
     /* ★Q1欠落対策：最後のQIDを保持し、poll→quizで必ず表示処理を回す */
     let latestQid = null;
@@ -895,7 +939,7 @@
       applyCurrentQid();
 
       // 即再描画
-      recomputeAndRenderFromAnswers(lastAnswers);
+      // recomputeAndRenderFromAnswers(lastAnswers);
     });
 
     // qid：常に保持し、quiz状態なら即適用
