@@ -557,6 +557,33 @@
       return k;
     }
 
+    // ===== ABのみ問題を OX に統一する（display側の正規化）=====
+    function isABOnlyChoices(obj){
+      if (!obj || typeof obj !== "object") return false;
+      const ks = Object.keys(obj).map(k => String(k).trim().toUpperCase()).sort();
+      return ks.length === 2 && ks[0] === "A" && ks[1] === "B";
+    }
+
+    function mapABtoOXKey(k){
+      const key = String(k).trim().toUpperCase();
+      if (key === "A") return "O";
+      if (key === "B") return "X";
+      return key;
+    }
+
+    function normalizeChoicesObj(choicesObj){
+      // A/Bのみなら O/X に変換して返す（表示も集計も統一）
+      if (!isABOnlyChoices(choicesObj)) return { obj: choicesObj, mapAB: false };
+
+      const A = choicesObj.A ?? choicesObj.a ?? "";
+      const B = choicesObj.B ?? choicesObj.b ?? "";
+      return {
+        mapAB: true,
+        obj: { O: A, X: B }
+      };
+    }
+
+
     roomLabel.textContent = `ROOM: ${room}`;
 
     const activityRef = ref(db, `rooms/${room}/activity`);
@@ -842,12 +869,19 @@
         else if (v && typeof v === "object" && typeof v.value === "string") val = v.value;
         if (!val) return;
 
-        const key = String(val).trim().toUpperCase();
-        if (counts[key] === undefined){
-          // 想定外 choice（前の問題の残骸など）
-          return; // 集計に含めない
-        }
-        counts[key] += 1;
+    let key = String(val).trim().toUpperCase();
+
+    // ★ABのみ問題は display上はOXに統一（A→O / B→X）
+    if (Array.isArray(choiceOrder) && choiceOrder.length === 2 &&
+        choiceOrder.includes("O") && choiceOrder.includes("X")){
+      key = mapABtoOXKey(key);
+    }
+
+    if (counts[key] === undefined){
+      return; // 想定外は無視
+    }
+    counts[key] += 1;
+
       });
 
       renderVChart(counts, choiceOrder);
@@ -882,14 +916,22 @@
         currentQuestion = q;
         qEl.textContent = q.question || "";
 
-        if (q.choices && typeof q.choices === "object"){
-          const ord = Object.keys(q.choices).map(k => String(k).toUpperCase());
-          if (ord.length) choiceOrder = ord;
-        }
+    // choices正規化（ABのみ → OXへ）
+    const norm = normalizeChoicesObj(q.choices || {});
+    const choicesForUI = norm.obj;
 
-        const ck = q.answer ? String(q.answer).trim().toUpperCase() : null;
-        renderChoices(q.choices || {}, ck, currentStatus === "closed");
-        updateAnswerUI();
+    // choiceOrder も正規化後のキーにする
+    if (choicesForUI && typeof choicesForUI === "object"){
+      const ord = Object.keys(choicesForUI).map(k => String(k).trim().toUpperCase());
+      if (ord.length) choiceOrder = ord;
+    }
+
+    // 正解キーも変換（ABのみなら A→O / B→X）
+    let ck = q.answer ? String(q.answer).trim().toUpperCase() : null;
+    if (norm.mapAB && ck) ck = mapABtoOXKey(ck);
+
+    renderChoices(choicesForUI || {}, ck, currentStatus === "closed");
+    updateAnswerUI();
       });
     }
 
@@ -919,6 +961,11 @@
         choiceOrder = cfgChoices.map(x => String(x).trim().toUpperCase());
       } else if (currentMode){
         choiceOrder = defaultChoicesFromMode(currentMode);
+      }
+
+      // ★configがABのみでも display上はOXへ統一（A/B → O/X）
+      if (choiceOrder.length === 2 && choiceOrder.includes("A") && choiceOrder.includes("B")){
+        choiceOrder = ["O","X"];
       }
 
       if (lastStatus !== "closed" && currentStatus === "closed") showToast();
