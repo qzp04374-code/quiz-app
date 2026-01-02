@@ -950,6 +950,8 @@
 
     renderChoices(choicesForUI || {}, ck, currentStatus === "closed");
     updateAnswerUI();
+    recomputeAndRenderFromAnswers(lastAnswers);
+
     // ★問題が切り替わったら、今ある回答で集計を即再描画（回答が増えなくても棒が切り替わる）
     recomputeAndRenderFromAnswers(lastAnswers);
 
