@@ -701,7 +701,10 @@
         return;
       }
       answerBox.classList.add("show");
-      const ans = q.answer ? String(q.answer).trim().toUpperCase() : "";
+      let ans = q.answer ? String(q.answer).trim().toUpperCase() : "";
+      const normAns = normalizeChoicesObj(q.choices || {});
+      if (normAns.mapAB && ans) ans = mapABtoOXKey(ans);
+
       answerLine.textContent = ans ? `正解：${uiLabel(ans)}` : "正解：—";
       explanationLine.textContent = q.explanation ? `解説：${q.explanation}` : "";
     }
@@ -947,6 +950,9 @@
 
     renderChoices(choicesForUI || {}, ck, currentStatus === "closed");
     updateAnswerUI();
+    // ★問題が切り替わったら、今ある回答で集計を即再描画（回答が増えなくても棒が切り替わる）
+    recomputeAndRenderFromAnswers(lastAnswers);
+
       });
     }
 
