@@ -844,8 +844,8 @@
 
         const key = String(val).trim().toUpperCase();
         if (counts[key] === undefined){
-          counts[key] = 0;
-          choiceOrder = [...choiceOrder, key];
+          // 想定外 choice（前の問題の残骸など）
+          return; // 集計に含めない
         }
         counts[key] += 1;
       });
