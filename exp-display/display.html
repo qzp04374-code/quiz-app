@@ -870,8 +870,11 @@
       textBox.classList.remove("show");
       textList.innerHTML = "";
 
-      const counts = {};
-      (choiceOrder || []).forEach(c => counts[c] = 0);
+    const effectiveOrder = getEffectiveChoiceOrder();
+
+    const counts = {};
+    (effectiveOrder || []).forEach(c => counts[c] = 0);
+
 
       keys.forEach(uid => {
         const v = ans[uid];
@@ -882,9 +885,9 @@
 
     let key = String(val).trim().toUpperCase();
 
-    // ★ABのみ問題は display上はOXに統一（A→O / B→X）
-    if (Array.isArray(choiceOrder) && choiceOrder.length === 2 &&
-        choiceOrder.includes("O") && choiceOrder.includes("X")){
+    // ★集計の基準がOXのときは A/B を O/X に統一
+    if (Array.isArray(effectiveOrder) && effectiveOrder.length === 2 &&
+        effectiveOrder.includes("O") && effectiveOrder.includes("X")){
       key = mapABtoOXKey(key);
     }
 
@@ -895,7 +898,8 @@
 
       });
 
-      renderVChart(counts, choiceOrder);
+      renderVChart(counts, effectiveOrder);
+
     }
 
     /* ★QIDを表示処理に回す関数（poll中にQIDが来ても保持して、quizに戻ったら必ず適用） */
