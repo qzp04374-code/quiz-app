@@ -828,6 +828,17 @@
       }
     }
 
+        function getEffectiveChoiceOrder(){
+      // quiz中は「今表示している問題」のchoicesを最優先（=右の集計も必ず一致させる）
+      if (currentView === "quiz" && currentQuestion && currentQuestion.choices && typeof currentQuestion.choices === "object"){
+        const norm = normalizeChoicesObj(currentQuestion.choices || {});
+        const ord = Object.keys(norm.obj || {}).map(k => String(k).trim().toUpperCase());
+        if (ord.length) return ord;
+      }
+      // poll/standby等は従来通り activity由来
+      return Array.isArray(choiceOrder) ? choiceOrder : [];
+    }
+
     function recomputeAndRenderFromAnswers(ans){
       const keys = Object.keys(ans || {});
       const n = keys.length;
