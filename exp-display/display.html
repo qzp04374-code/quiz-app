@@ -575,6 +575,11 @@
     se.preload = "auto";
     se.volume = 0.6;
 
+    // ===== SE: closed gong（同ディレクトリ）=====
+    const gong = new Audio("./gong.mp3"); // ※ファイル名は gong.mp3 推奨
+    gong.preload = "auto";
+    gong.volume = 0.8;
+
     let soundEnabled = false;
     let soundUnlocked = false;
     let lastAnswerTotal = 0;
@@ -614,6 +619,14 @@
       try{
         se.currentTime = 0;
         se.play().catch(()=>{});
+      }catch(_){}
+    }
+
+    function playGong(){
+      if (!soundEnabled || !soundUnlocked) return;
+      try{
+        gong.currentTime = 0;
+        gong.play().catch(()=>{});
       }catch(_){}
     }
 
@@ -1075,7 +1088,10 @@ function applyCurrentQid(){
         choiceOrder = ["O","X"];
       }
 
-      if (lastStatus !== "closed" && currentStatus === "closed") showToast();
+      if (lastStatus !== "closed" && currentStatus === "closed") {
+        showToast();
+　　　　　playGong();
+      }
       lastStatus = currentStatus;
 
       if (currentView === "poll"){
