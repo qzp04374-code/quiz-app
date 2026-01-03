@@ -580,6 +580,11 @@
     gong.preload = "auto";
     gong.volume = 0.8;
 
+    // ===== SE: countdown（同ディレクトリ）=====
+    const cd = new Audio("./countdown.mp3");
+    cd.preload = "auto";
+    cd.volume = 0.7;
+
     let soundEnabled = false;
     let soundUnlocked = false;
     let lastAnswerTotal = 0;
@@ -629,6 +634,14 @@
         gong.play().catch(()=>{});
       }catch(_){}
     }
+
+    function playCountdown(){
+    if (!soundEnabled || !soundUnlocked) return;
+    try{
+      cd.currentTime = 0;
+      cd.play().catch(()=>{});
+    }catch(_){}
+  }
 
     function uiLabel(key){
       const k = String(key).trim().toUpperCase();
@@ -697,6 +710,7 @@
     let timerState = null;
     let timerInterval = null;
     let lastAutoClosedAt = 0;
+    let lastCountdownSec = null; // 直前に鳴らした秒（3/2/1の連打防止）
 
     function fmt2(n){ return String(n).padStart(2,"0"); }
     function fmtRemain(ms){
@@ -738,6 +752,17 @@
         // 0秒で自動 close（open かつ QRでない時だけ）
         if (remain <= 0 && timerState.autoClose && currentStatus === "open" && isQR === false){
           const now = Date.now();
+
+        const remain = timerState.endsAt - Date.now();
+    
+        // ===== 残り3,2,1秒でカウントダウン音（各1回） =====
+        const secLeft = Math.max(0, Math.ceil(remain / 1000));
+        if (timerState.autoClose && currentStatus === "open" && isQR === false){
+          if ((secLeft === 3 || secLeft === 2 || secLeft === 1) && lastCountdownSec !== secLeft){
+            playCountdown();          // ★ここで音を鳴らす
+            lastCountdownSec = secLeft; // 同じ秒で連打しない
+          }
+          
           // 連打防止
           if (now - lastAutoClosedAt > 1500){
             lastAutoClosedAt = now;
@@ -746,7 +771,10 @@
         }
       }, 250);
     }
-
+    
+      // 4秒以上に戻ったらリセット（次のカウントダウン開始に備える）
+      if (secLeft > 3) lastCountdownSec = null;
+    }
 
     /* ★Q1欠落対策：最後のQIDを保持し、poll→quizで必ず表示処理を回す */
     let latestQid = null;
