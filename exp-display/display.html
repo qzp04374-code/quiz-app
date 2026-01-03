@@ -907,7 +907,15 @@
 
     /* ★QIDを表示処理に回す関数（poll中にQIDが来ても保持して、quizに戻ったら必ず適用） */
     function applyCurrentQid(){
-      if (currentView !== "quiz") return;
+      // quiz以外（poll/standby/qr）に入ったら、前の問題購読を必ず止める
+      if (currentView !== "quiz"){
+        if (unsubQ) { unsubQ(); unsubQ = null; }
+        return;
+      }
+
+      const qid = latestQid;
+
+      if (unsubQ) { unsubQ(); unsubQ = null; }
 
       const qid = latestQid;
 
