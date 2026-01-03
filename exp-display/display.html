@@ -727,6 +727,8 @@
       // ★追加
       if (timerBar) timerBar.style.width = "0%";
       document.body.classList.remove("timer-running", "timer-urgent");
+
+      lastCountdownSec = null;
     }
 
     function ensureTimerTick(){
