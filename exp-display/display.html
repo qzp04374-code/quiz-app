@@ -1002,6 +1002,9 @@ function applyCurrentQid(){
         currentQuestion = null;
         qEl.textContent = "（口頭Q&A：集計のみ）";
         cEl.innerHTML = "";
+        
+        // ★追加：pollへ入った瞬間に、現answersで即描画（TEXTも含む）
+        recomputeAndRenderFromAnswers(lastAnswers);
         updateAnswerUI();
         } else if (currentView === "standby"){
           currentQuestion = null;
@@ -1016,7 +1019,10 @@ function applyCurrentQid(){
       applyCurrentQid();
 
       // 即再描画
-      if (a.qr !== true) recomputeAndRenderFromAnswers(lastAnswers);
+      if (a.qr !== true){
+        // view/mode/statusが変わったタイミングで即描画（TEXTのclosed表示を確実に反映）
+        recomputeAndRenderFromAnswers(lastAnswers);
+      }
     });
 
     // qid：常に保持し、quiz状態なら即適用
