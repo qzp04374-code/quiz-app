@@ -537,6 +537,7 @@
     const statusLabel = document.getElementById("statusLabel");
     const countLabel  = document.getElementById("countLabel");
     const timerLabel  = document.getElementById("timerLabel");
+    const timerBar = document.getElementById("timerBar");
     
     const leftScroll = document.getElementById("leftScroll");
     const qEl = document.getElementById("question");
@@ -749,9 +750,6 @@
             playCountdown();
             lastCountdownSec = secLeft; // 同じ秒で連打しない
           }
-          // 4秒以上に戻ったらリセット（次のカウントダウン開始に備える）
-          if (secLeft > 3) lastCountdownSec = null;
-        }
 
         // 表示更新
         if (timerLabel) timerLabel.textContent = `⏱ ${fmtRemain(remain)}`;
