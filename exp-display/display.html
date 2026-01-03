@@ -1016,7 +1016,7 @@ function applyCurrentQid(){
       applyCurrentQid();
 
       // 即再描画
-      // recomputeAndRenderFromAnswers(lastAnswers);
+      if (a.qr !== true) recomputeAndRenderFromAnswers(lastAnswers);
     });
 
     // qid：常に保持し、quiz状態なら即適用
