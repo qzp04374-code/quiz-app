@@ -906,41 +906,37 @@
     }
 
     /* ★QIDを表示処理に回す関数（poll中にQIDが来ても保持して、quizに戻ったら必ず適用） */
-    function applyCurrentQid(){
-      // quiz以外（poll/standby/qr）に入ったら、前の問題購読を必ず止める
-      if (currentView !== "quiz"){
-        if (unsubQ) { unsubQ(); unsubQ = null; }
-        return;
-      }
+function applyCurrentQid(){
+  // quiz以外（poll/standby/qr）に入ったら、前の問題購読を必ず止める
+  if (currentView !== "quiz"){
+    if (unsubQ) { unsubQ(); unsubQ = null; }
+    return;
+  }
 
-      const qid = latestQid;
+  const qid = latestQid;
 
-      if (unsubQ) { unsubQ(); unsubQ = null; }
+  if (unsubQ) { unsubQ(); unsubQ = null; }
 
-      const qid = latestQid;
+  if (!qid){
+    currentQuestion = null;
+    qEl.textContent = "（問題を待っています…）";
+    cEl.innerHTML = "";
+    updateAnswerUI();
+    return;
+  }
 
-      if (unsubQ) { unsubQ(); unsubQ = null; }
+  unsubQ = onValue(qRef(qid), qsnap => {
+    const q = qsnap.val();
+    if (!q){
+      currentQuestion = null;
+      qEl.textContent = "（問題データが見つかりません）";
+      cEl.innerHTML = "";
+      updateAnswerUI();
+      return;
+    }
 
-      if (!qid){
-        currentQuestion = null;
-        qEl.textContent = "（問題を待っています…）";
-        cEl.innerHTML = "";
-        updateAnswerUI();
-        return;
-      }
-
-      unsubQ = onValue(qRef(qid), qsnap => {
-        const q = qsnap.val();
-        if (!q){
-          currentQuestion = null;
-          qEl.textContent = "（問題データが見つかりません）";
-          cEl.innerHTML = "";
-          updateAnswerUI();
-          return;
-        }
-
-        currentQuestion = q;
-        qEl.textContent = q.question || "";
+    currentQuestion = q;
+    qEl.textContent = q.question || "";
 
     // choices正規化（ABのみ → OXへ）
     const norm = normalizeChoicesObj(q.choices || {});
@@ -958,13 +954,12 @@
 
     renderChoices(choicesForUI || {}, ck, currentStatus === "closed");
     updateAnswerUI();
-    recomputeAndRenderFromAnswers(lastAnswers);
 
-    // ★問題が切り替わったら、今ある回答で集計を即再描画（回答が増えなくても棒が切り替わる）
+    // ★問題が切り替わったら、今ある回答で集計を即再描画
     recomputeAndRenderFromAnswers(lastAnswers);
+  });
+}
 
-      });
-    }
 
     // activity
     onValue(activityRef, snap => {
@@ -1003,6 +998,7 @@
       lastStatus = currentStatus;
 
       if (currentView === "poll"){
+        if (unsubQ) { unsubQ(); unsubQ = null; }
         currentQuestion = null;
         qEl.textContent = "（口頭Q&A：集計のみ）";
         cEl.innerHTML = "";
