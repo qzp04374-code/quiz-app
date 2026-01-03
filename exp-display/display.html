@@ -750,9 +750,11 @@
             playCountdown();
             lastCountdownSec = secLeft; // 同じ秒で連打しない
           }
+          if (secLeft > 3) lastCountdownSec = null;
+        } // ← ★必須：この } を入れる
 
-        // 表示更新
-        if (timerLabel) timerLabel.textContent = `⏱ ${fmtRemain(remain)}`;
+          // 表示更新
+          if (timerLabel) timerLabel.textContent = `⏱ ${fmtRemain(remain)}`;
 
         // ★残り%でバーを縮める
         if (timerBar && timerState && timerState.durationSec){
