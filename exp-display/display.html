@@ -144,6 +144,12 @@
     /* 左（授業モード用） */
     #leftPanel{ display:flex; flex-direction:column; gap:10px; min-height:0; }
     #leftScroll{ min-height:0; overflow:hidden; }
+    /* 解答終了（closed）時は、左側をスクロール可能にして選択肢が切れないようにする */
+    body.closed #leftScroll{
+      overflow:auto;
+      padding-right:8px; /* スクロールバーの余白（任意） */
+    }
+
     #question{
       margin:0;
       font-size:clamp(30px, 4.1vw, 44px);
