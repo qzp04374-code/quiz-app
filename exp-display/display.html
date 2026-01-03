@@ -774,12 +774,8 @@
           }
         }
       }, 250);
-    }
-    
-      // 4秒以上に戻ったらリセット（次のカウントダウン開始に備える）
-      if (secLeft > 3) lastCountdownSec = null;
-    }
-
+    } 
+     
     /* ★Q1欠落対策：最後のQIDを保持し、poll→quizで必ず表示処理を回す */
     let latestQid = null;
     let unsubQ = null;
