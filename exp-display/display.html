@@ -502,6 +502,16 @@
 
     const toast  = document.getElementById("toast");
 
+    /* =========================================================
+   固定メモ（壊さない最優先事項）
+   - displayは「構造（activity / question）」で描画を決める
+   - answersはUI構造を決めない（数えるだけ／正規ソースは rooms/{room}/answers）
+   - quiz：集計のchoice順は currentQuestion.choices を優先（問題と集計の一致を保証）
+   - poll：集計のchoice順は activity.config.choices（なければ mode から補完）
+   - view/mode/status が変わったら必ず再描画（poll TEXTのclosed表示も含む）
+   - pollに入ったら quizの問題購読は必ず解除（unsubQ）
+   ========================================================= */
+
     // ===== Sound: poyon.mp3（同ディレクトリ） =====
     const soundBtn = document.getElementById("soundBtn");
     const se = new Audio("./poyon.mp3");
