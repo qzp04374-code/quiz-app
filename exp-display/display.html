@@ -406,6 +406,51 @@
       #leftScroll{ overflow:auto; }
       body.poll #leftPanel{ display:none !important; }
     }
+
+    /* =========================
+       Timer Progress Bar
+       ========================= */
+    #timerBarWrap{
+      width: 180px;              /* バーの横幅（好みで調整） */
+      height: 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.10);
+      border: 1px solid rgba(255,255,255,.12);
+      overflow: hidden;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.08);
+    }
+
+    #timerBar{
+      height: 100%;
+      width: 0%;
+      border-radius: 999px;
+      transform-origin: left;
+      transition: width .15s linear;
+      background: linear-gradient(90deg,
+        rgba(34,197,94,.95),   /* green */
+        rgba(245,158,11,.95),  /* amber */
+        rgba(239,68,68,.95)    /* red */
+      );
+      box-shadow: 0 10px 28px rgba(0,0,0,.28);
+    }
+
+    /* タイマー動作中は数字を少し強調 */
+    body.timer-running #timerLabel{
+      color:#fff;
+      text-shadow: 0 0 16px rgba(255,255,255,.18);
+    }
+
+    /* 残りわずかの注意喚起（任意：あとでONにできる） */
+    body.timer-urgent #timerBar{
+      animation: timerPulse .7s infinite;
+    }
+    @keyframes timerPulse{
+      0%   { filter: brightness(1.0); }
+      50%  { filter: brightness(1.35); }
+      100% { filter: brightness(1.0); }
+    }
+
+    
   </style>
 </head>
 
@@ -429,7 +474,13 @@
         <span id="statusLabel">status: -</span>
         <span id="countLabel">参加中 0人</span>
         <span id="timerLabel" style="font-weight:1000;">⏱ --:--</span>
+
+        <div id="timerBarWrap" aria-hidden="true">
+          <div id="timerBar"></div>
+        </div>
+        
         <button id="soundBtn" class="soundBtn">🔈 音OFF（タップでON）</button>
+
       </div>
     </div>
 
@@ -645,6 +696,10 @@
     function stopTimerTick(){
       if (timerInterval){ clearInterval(timerInterval); timerInterval = null; }
       if (timerLabel) timerLabel.textContent = "⏱ --:--";
+
+      // ★追加
+      if (timerBar) timerBar.style.width = "0%";
+      document.body.classList.remove("timer-running", "timer-urgent");
     }
 
     function ensureTimerTick(){
@@ -657,6 +712,15 @@
 
         const remain = timerState.endsAt - Date.now();
         if (timerLabel) timerLabel.textContent = `⏱ ${fmtRemain(remain)}`;
+        // ★残り%でバーを縮める
+        if (timerBar && timerState && timerState.durationSec){
+          const totalMs = timerState.durationSec * 1000;
+          const ratio = Math.max(0, Math.min(1, remain / totalMs)); // 1→0
+          timerBar.style.width = `${Math.round(ratio * 100)}%`;
+
+        // 残り10秒で点滅（要らなければ消してOK）
+        document.body.classList.toggle("timer-urgent", remain <= 10_000 && remain > 0);
+      }
 
         // 0秒で自動 close（open かつ QRでない時だけ）
         if (remain <= 0 && timerState.autoClose && currentStatus === "open" && isQR === false){
@@ -986,6 +1050,7 @@ function applyCurrentQid(){
       timerState = a.timer || null;
       if (timerState && timerState.running && timerState.endsAt) ensureTimerTick();
       else stopTimerTick();
+      document.body.classList.toggle("timer-running", !!(timerState && timerState.running && timerState.endsAt));
 
       statusLabel.textContent = `status: ${currentStatus}`;
       document.body.classList.toggle("poll", currentView === "poll");
