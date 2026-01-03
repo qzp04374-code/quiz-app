@@ -731,38 +731,42 @@
 
     function ensureTimerTick(){
       if (timerInterval) return;
+  
       timerInterval = setInterval(async () => {
         if (!timerState || !timerState.running || !timerState.endsAt){
           stopTimerTick();
           return;
-        }    
+        }
 
         const remain = timerState.endsAt - Date.now();
+
+        // ===== 残り3,2,1秒でカウントダウン音（各1回） =====
+        const secLeft = Math.max(0, Math.ceil(remain / 1000));
+        if (timerState.autoClose && currentStatus === "open" && isQR === false){
+          if ((secLeft === 3 || secLeft === 2 || secLeft === 1) && lastCountdownSec !== secLeft){
+            playCountdown();
+            lastCountdownSec = secLeft; // 同じ秒で連打しない
+          }
+          // 4秒以上に戻ったらリセット（次のカウントダウン開始に備える）
+          if (secLeft > 3) lastCountdownSec = null;
+        }
+
+        // 表示更新
         if (timerLabel) timerLabel.textContent = `⏱ ${fmtRemain(remain)}`;
+
         // ★残り%でバーを縮める
         if (timerBar && timerState && timerState.durationSec){
           const totalMs = timerState.durationSec * 1000;
           const ratio = Math.max(0, Math.min(1, remain / totalMs)); // 1→0
           timerBar.style.width = `${Math.round(ratio * 100)}%`;
 
-        // 残り10秒で点滅（要らなければ消してOK）
-        document.body.classList.toggle("timer-urgent", remain <= 10_000 && remain > 0);
-      }
+          // 残り10秒で点滅（要らなければ消してOK）
+          document.body.classList.toggle("timer-urgent", remain <= 10_000 && remain > 0);
+        }
 
         // 0秒で自動 close（open かつ QRでない時だけ）
         if (remain <= 0 && timerState.autoClose && currentStatus === "open" && isQR === false){
           const now = Date.now();
-
-        const remain = timerState.endsAt - Date.now();
-    
-        // ===== 残り3,2,1秒でカウントダウン音（各1回） =====
-        const secLeft = Math.max(0, Math.ceil(remain / 1000));
-        if (timerState.autoClose && currentStatus === "open" && isQR === false){
-          if ((secLeft === 3 || secLeft === 2 || secLeft === 1) && lastCountdownSec !== secLeft){
-            playCountdown();          // ★ここで音を鳴らす
-            lastCountdownSec = secLeft; // 同じ秒で連打しない
-          }
-          
           // 連打防止
           if (now - lastAutoClosedAt > 1500){
             lastAutoClosedAt = now;
