@@ -712,6 +712,7 @@
     let timerInterval = null;
     let lastAutoClosedAt = 0;
     let lastCountdownSec = null; // 直前に鳴らした秒（3/2/1の連打防止）
+    let countdownPlayed = false; // 残り3秒で1回だけ鳴らす用
 
     function fmt2(n){ return String(n).padStart(2,"0"); }
     function fmtRemain(ms){
@@ -721,7 +722,7 @@
       return `${fmt2(m)}:${fmt2(r)}`;
     }
 
-    function {
+    function stopTimerTick() {
       if (timerInterval){ clearInterval(timerInterval); timerInterval = null; }
       if (timerLabel) timerLabel.textContent = "⏱ --:--";
 
@@ -730,6 +731,7 @@
       document.body.classList.remove("timer-running", "timer-urgent");
 
       lastCountdownSec = null;
+      countdownPlayed = false;
     }
 
     function ensureTimerTick(){
@@ -1092,7 +1094,7 @@ function applyCurrentQid(){
       currentView = a.view || "quiz";
       timerState = a.timer || null;
       if (timerState && timerState.running && timerState.endsAt) ensureTimerTick();
-      else ;
+      else stopTimerTick();
       document.body.classList.toggle("timer-running", !!(timerState && timerState.running && timerState.endsAt));
 
       statusLabel.textContent = `status: ${currentStatus}`;
