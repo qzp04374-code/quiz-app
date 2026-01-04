@@ -721,7 +721,7 @@
       return `${fmt2(m)}:${fmt2(r)}`;
     }
 
-    function stopTimerTick(){
+    function {
       if (timerInterval){ clearInterval(timerInterval); timerInterval = null; }
       if (timerLabel) timerLabel.textContent = "⏱ --:--";
 
@@ -737,21 +737,21 @@
   
       timerInterval = setInterval(async () => {
         if (!timerState || !timerState.running || !timerState.endsAt){
-          stopTimerTick();
+          ;
           return;
         }
 
         const remain = timerState.endsAt - Date.now();
 
-        // ===== 残り3,2,1秒でカウントダウン音（各1回） =====
-        const secLeft = Math.max(0, Math.ceil(remain / 1000));
+        // ===== 残り3秒に入った瞬間に1回だけカウントダウン音（mp3内で 3,2,1,0）=====
         if (timerState.autoClose && currentStatus === "open" && isQR === false){
-          if ((secLeft === 3 || secLeft === 2 || secLeft === 1) && lastCountdownSec !== secLeft){
+          if (remain <= 3000 && remain > 0 && !countdownPlayed){
             playCountdown();
-            lastCountdownSec = secLeft; // 同じ秒で連打しない
+            countdownPlayed = true;
           }
-          if (secLeft > 3) lastCountdownSec = null;
-        } // ← ★必須：この } を入れる
+          // 3秒より前に戻ったら（次のタイマー開始など）リセット
+            if (remain > 3000) countdownPlayed = false;
+        }
 
           // 表示更新
           if (timerLabel) timerLabel.textContent = `⏱ ${fmtRemain(remain)}`;
@@ -1092,7 +1092,7 @@ function applyCurrentQid(){
       currentView = a.view || "quiz";
       timerState = a.timer || null;
       if (timerState && timerState.running && timerState.endsAt) ensureTimerTick();
-      else stopTimerTick();
+      else ;
       document.body.classList.toggle("timer-running", !!(timerState && timerState.running && timerState.endsAt));
 
       statusLabel.textContent = `status: ${currentStatus}`;
