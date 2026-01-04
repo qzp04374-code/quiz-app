@@ -159,6 +159,12 @@
       text-align:left;
       padding:0 2px;
     }
+    
+    /* 問題文の縮小下限（JSがここまでしか下げない） */
+    :root{
+      --q-min-px: 20; /* 好みで 18〜24 くらい */
+    }
+
     #choices{
       margin-top:10px;
       display:grid;
@@ -706,6 +712,41 @@
     let currentQuestion = null;
 
     let lastAnswers = {};
+
+    // ===== Auto-fit question text (ONLY question) =====
+    function fitQuestionToLeftScroll({
+      minPx = 20,     // これ以下には縮めない（好みで18〜24）
+      step = 2,       // 2pxずつ縮める
+      maxLoops = 30,  // 無限ループ防止
+    } = {}) {
+    if (!leftScroll || !qEl) return;
+
+      // 前問の縮小が残らないように毎回リセット
+      qEl.style.fontSize = "";
+
+      // DOM反映後に測る
+      requestAnimationFrame(() => {
+        let loops = 0;
+        let fontSize = parseFloat(getComputedStyle(qEl).fontSize);
+
+        // #leftScroll の中身がはみ出している間だけ縮める
+        // overflow:hiddenでもscrollHeightは増えるので判定可能
+        while (leftScroll.scrollHeight > leftScroll.clientHeight &&
+               fontSize > minPx &&
+               loops < maxLoops) {
+          fontSize -= step;
+          qEl.style.fontSize = `${fontSize}px`;
+          loops++;
+        }
+      });
+    }
+
+    // 連続呼び出しをまとめる（描画のたびに暴れないように）
+    let _fitReq = 0;
+    function requestFitQuestion() {
+      cancelAnimationFrame(_fitReq);
+      _fitReq = requestAnimationFrame(() => fitQuestionToLeftScroll());
+    }
     
     // ===== Timer =====
     let timerState = null;
@@ -1082,6 +1123,7 @@ function applyCurrentQid(){
 
     // ★問題が切り替わったら、今ある回答で集計を即再描画
     recomputeAndRenderFromAnswers(lastAnswers);
+    requestFitQuestion();
   });
 }
 
