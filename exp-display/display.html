@@ -824,7 +824,6 @@ ttsSpeakBtn.onclick = async () => {
   ttsBtn.textContent = "🗣 読み上げON";
 
   await unlockSound();
-  await new Promise(r => requestAnimationFrame(r)); // ★ここに移動（表示確定待ち）
   await speakCurrent({ withJingle:true, auto:false });
 };
 
@@ -1285,6 +1284,8 @@ function applyCurrentQid(){
     currentQid = qid; // ★追加：このcurrentQuestionはこのqidのもの
     currentQuestion = q;
     qEl.textContent = q.question || "";
+    cEl.innerHTML = ""; // ★重要：前問の選択肢DOMを必ず消す（文字入力での誤読防止）
+
 
     // ★追加：文字入力（mode=text）は「選択肢なし」を強制
     // ここでchoices表示を必ず消す（前問のDOMが残る事故を防ぐ）
@@ -1332,6 +1333,13 @@ function applyCurrentQid(){
       const a = snap.val() || {};
       currentStatus = a.status || "-";
       currentMode = a.mode || null;
+
+      // ★安全弁：cElが存在するときだけ消す（存在しないと全停止→QRが出ない）
+      if (currentMode === "text" && typeof cEl !== "undefined" && cEl) {
+        cEl.innerHTML = "";
+        choiceOrder = [];
+      }
+
       currentView = a.view || "quiz";
       timerState = a.timer || null;
       if (timerState && timerState.running && timerState.endsAt) ensureTimerTick();
