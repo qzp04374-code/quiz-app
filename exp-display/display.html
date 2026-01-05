@@ -1340,92 +1340,93 @@ function applyCurrentQid(){
     }
     return;
   }
+}
+    
+// activity
+onValue(activityRef, snap => {
+  const a = snap.val() || {};
+  currentStatus = a.status || "-";
+  currentMode = a.mode || null;
 
-    // activity
-    onValue(activityRef, snap => {
-      const a = snap.val() || {};
-      currentStatus = a.status || "-";
-      currentMode = a.mode || null;
+  // ★安全弁：cElが存在するときだけ消す（存在しないと全停止→QRが出ない）
+  if (currentMode === "text" && typeof cEl !== "undefined" && cEl) {
+    cEl.innerHTML = "";
+    choiceOrder = [];
+  }
 
-      // ★安全弁：cElが存在するときだけ消す（存在しないと全停止→QRが出ない）
-      if (currentMode === "text" && typeof cEl !== "undefined" && cEl) {
-        cEl.innerHTML = "";
-        choiceOrder = [];
-      }
+  currentView = a.view || "quiz";
+  timerState = a.timer || null;
+  if (timerState && timerState.running && timerState.endsAt) ensureTimerTick();
+  else stopTimerTick();
+  document.body.classList.toggle("timer-running", !!(timerState && timerState.running && timerState.endsAt));
 
-      currentView = a.view || "quiz";
-      timerState = a.timer || null;
-      if (timerState && timerState.running && timerState.endsAt) ensureTimerTick();
-      else stopTimerTick();
-      document.body.classList.toggle("timer-running", !!(timerState && timerState.running && timerState.endsAt));
+  statusLabel.textContent = `status: ${currentStatus}`;
+  document.body.classList.toggle("poll", currentView === "poll");
+  document.body.classList.toggle("closed", currentStatus === "closed");
+  document.body.classList.toggle("textmode", currentMode === "text");
+  // ★追加：textモードへ入った瞬間に左の選択肢表示を確実に消す
+  if (currentMode === "text"){
+    cEl.innerHTML = "";
+    choiceOrder = [];
+  }
 
-      statusLabel.textContent = `status: ${currentStatus}`;
-      document.body.classList.toggle("poll", currentView === "poll");
-      document.body.classList.toggle("closed", currentStatus === "closed");
-      document.body.classList.toggle("textmode", currentMode === "text");
-      // ★追加：textモードへ入った瞬間に左の選択肢表示を確実に消す
-      if (currentMode === "text"){
-        cEl.innerHTML = "";
-        choiceOrder = [];
-      }
+  rightTitle.textContent =
+   (currentMode === "text") ? "文字入力（件数＋一覧）" : "集計（縦棒）";
 
-      rightTitle.textContent =
-        (currentMode === "text") ? "文字入力（件数＋一覧）" : "集計（縦棒）";
+  if (a.qr === true) showQR();
+  else hideQRWithFade();
 
-      if (a.qr === true) showQR();
-      else hideQRWithFade();
+  const cfgChoices = (a.config && Array.isArray(a.config.choices)) ? a.config.choices : null;
+  if (cfgChoices && cfgChoices.length){
+    choiceOrder = cfgChoices.map(x => String(x).trim().toUpperCase());
+  } else if (currentMode){
+    choiceOrder = defaultChoicesFromMode(currentMode);
+  }
+  
+  // ★configがABのみでも display上はOXへ統一（A/B → O/X）
+  if (choiceOrder.length === 2 && choiceOrder.includes("A") && choiceOrder.includes("B")){
+    choiceOrder = ["O","X"];
+  }
 
-      const cfgChoices = (a.config && Array.isArray(a.config.choices)) ? a.config.choices : null;
-      if (cfgChoices && cfgChoices.length){
-        choiceOrder = cfgChoices.map(x => String(x).trim().toUpperCase());
-      } else if (currentMode){
-        choiceOrder = defaultChoicesFromMode(currentMode);
-      }
+  if (lastStatus !== "closed" && currentStatus === "closed") {
+    showToast();
+　　playGong();
+  }
+  lastStatus = currentStatus;
 
-      // ★configがABのみでも display上はOXへ統一（A/B → O/X）
-      if (choiceOrder.length === 2 && choiceOrder.includes("A") && choiceOrder.includes("B")){
-        choiceOrder = ["O","X"];
-      }
-
-      if (lastStatus !== "closed" && currentStatus === "closed") {
-        showToast();
-　　　　　playGong();
-      }
-      lastStatus = currentStatus;
-
-      if (currentView === "poll"){
-        if (unsubQ) { unsubQ(); unsubQ = null; }
-        currentQuestion = null;
-        qEl.textContent = "（口頭Q&A：集計のみ）";
-        cEl.innerHTML = "";
+  if (currentView === "poll"){
+    if (unsubQ) { unsubQ(); unsubQ = null; }
+    currentQuestion = null;
+    qEl.textContent = "（口頭Q&A：集計のみ）";
+    cEl.innerHTML = "";
         
-        // ★追加：pollへ入った瞬間に、現answersで即描画（TEXTも含む）
-        recomputeAndRenderFromAnswers(lastAnswers);
-        updateAnswerUI();
-        } else if (currentView === "standby"){
-          currentQuestion = null;
-          qEl.textContent = "（スタンバイ中… 先生の操作を待っています）";
-          cEl.innerHTML = "";
-          updateAnswerUI();
-        } else {
-          updateAnswerUI();
-        }
+    // ★追加：pollへ入った瞬間に、現answersで即描画（TEXTも含む）
+    recomputeAndRenderFromAnswers(lastAnswers);
+    updateAnswerUI();
+    } else if (currentView === "standby"){
+      currentQuestion = null;
+      qEl.textContent = "（スタンバイ中… 先生の操作を待っています）";
+      cEl.innerHTML = "";
+      updateAnswerUI();
+    } else {
+      updateAnswerUI();
+    }
 
-      // ★重要：poll→quizになった瞬間に、保持していたQIDを必ず反映（Q1欠落を防ぐ）
-      applyCurrentQid();
+  // ★重要：poll→quizになった瞬間に、保持していたQIDを必ず反映（Q1欠落を防ぐ）
+  applyCurrentQid();
 
-      // 即再描画
-      if (a.qr !== true){
-        // view/mode/statusが変わったタイミングで即描画（TEXTのclosed表示を確実に反映）
-        recomputeAndRenderFromAnswers(lastAnswers);
-      }
-    });
+  // 即再描画
+  if (a.qr !== true){
+    // view/mode/statusが変わったタイミングで即描画（TEXTのclosed表示を確実に反映）
+    recomputeAndRenderFromAnswers(lastAnswers);
+  }
+});
 
-    // qid：常に保持し、quiz状態なら即適用
-    onValue(qidRef, snap => {
-      latestQid = snap.val() || null;
-      applyCurrentQid();      
-    });
+ // qid：常に保持し、quiz状態なら即適用
+ onValue(qidRef, snap => {
+   latestQid = snap.val() || null;
+   applyCurrentQid();      
+ });
 
     // answers：保存＋音＋再描画
     onValue(answersRef, snap => {
