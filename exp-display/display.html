@@ -1427,11 +1427,6 @@ onValue(activityRef, snap => {
   document.body.classList.toggle("poll", currentView === "poll");
   document.body.classList.toggle("closed", currentStatus === "closed");
   document.body.classList.toggle("textmode", currentMode === "text");
-  // ★追加：textモードへ入った瞬間に左の選択肢表示を確実に消す
-  if (currentMode === "text"){
-    cEl.innerHTML = "";
-    choiceOrder = [];
-  }
 
   rightTitle.textContent =
    (currentMode === "text") ? "文字入力（件数＋一覧）" : "集計（縦棒）";
@@ -1466,14 +1461,14 @@ onValue(activityRef, snap => {
     // ★追加：pollへ入った瞬間に、現answersで即描画（TEXTも含む）
     recomputeAndRenderFromAnswers(lastAnswers);
     updateAnswerUI();
-    } else if (currentView === "standby"){
-      currentQuestion = null;
-      qEl.textContent = "（スタンバイ中… 先生の操作を待っています）";
-      cEl.innerHTML = "";
-      updateAnswerUI();
-    } else {
-      updateAnswerUI();
-    }
+  } else if (currentView === "standby"){
+    currentQuestion = null;
+    qEl.textContent = "（スタンバイ中… 先生の操作を待っています）";
+    cEl.innerHTML = "";
+    updateAnswerUI();
+  } else {
+    updateAnswerUI();
+  }
 
   // ★重要：poll→quizになった瞬間に、保持していたQIDを必ず反映（Q1欠落を防ぐ）
   applyCurrentQid();
