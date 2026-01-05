@@ -650,6 +650,196 @@
     }catch(_){}
   }
 
+    // ===== TTS（Web Speech API）======
+    const ttsBtn = document.getElementById("ttsBtn");
+    const ttsSpeakBtn = document.getElementById("ttsSpeakBtn");
+
+    let ttsEnabled = false;      // 読み上げ機能ON/OFF
+    let ttsUnlocked = false;     // ユーザー操作済み扱い（自動読み上げ許可）
+    let ttsSpeaking = false;     // 連打防止
+    let ttsAutoSpokenKey = null; // 同一出題で1回だけ
+
+    // 出題時の「無音時間」設定（ms）
+    // ※テキスト入力(mode=text)は選択肢がないので、ここは使われません
+    const TTS_GAP = {
+      qToChoicesMs: 800,  // 問題→選択肢の間
+      choiceGapMs: 450,   // 選択肢→選択肢の間
+      jingleDelayMs: 220, // ジングル後の間（短め）
+    };
+
+    // sleep
+    const waitMs = (ms) => new Promise(r => setTimeout(r, ms));
+
+    // 「読み上げ前ジングル」：既存の poyon.mp3 を流用（ファイル追加なし）
+    async function playTtsJingle(){
+      // ジングル自体は任意：音ON時だけ鳴る
+      if (!soundEnabled || !soundUnlocked) return;
+      try{
+        const j = new Audio("./poyon.mp3");
+        j.preload = "auto";
+        j.volume = 0.45;
+        j.currentTime = 0;
+        j.play().catch(()=>{});
+        await waitMs(TTS_GAP.jingleDelayMs);
+      }catch(_){}
+    }
+
+    function stopTTS(){
+      try{ window.speechSynthesis.cancel(); }catch(_){}
+      ttsSpeaking = false;
+    }
+
+    // Web Speech：1発話をPromise化
+    function speakOnce(text){
+      return new Promise((resolve) => {
+        if (!text) return resolve();
+        const u = new SpeechSynthesisUtterance(text);
+        u.lang = "ja-JP";
+        u.rate = 1.0;  // 早さ（0.1〜10）
+        u.pitch = 1.0; // 音程（0〜2）
+        u.onend = () => resolve();
+        u.onerror = () => resolve();
+        try{
+          window.speechSynthesis.speak(u);
+        }catch(_){
+          resolve();
+        }
+      });
+    }
+
+    // 今の問題から「読み上げ用セグメント」を作る
+    function buildTtsSegments(isOpen){
+      const q = currentQuestion;
+      if (!q) return [];
+
+      const qText = String(q.question || "").trim();
+      const segments = [];
+
+      if (qText) segments.push({ type:"say", text:`問題。${qText}` });
+
+      // text入力（選択肢なし） → 問題だけで終わり
+      if (currentMode === "text") return segments;
+
+      // choices正規化（ABのみ→OX）を display と同じルールで
+      const norm = normalizeChoicesObj(q.choices || {});
+      const choicesObj = norm.obj || {};
+      const keys = Object.keys(choicesObj).map(k => String(k).trim().toUpperCase());
+
+      if (!keys.length) return segments; // 選択肢なし → 問題だけ
+
+      // 出題時(open)のみ：問題→選択肢の無音
+      if (isOpen) segments.push({ type:"pause", ms:TTS_GAP.qToChoicesMs });
+
+      // 表示順は「現在の有効choice順」を優先（表示と一致させる）
+      // ※ display側の思想：UI構造はactivity/questionで決める（answersでは決めない）
+      const order = (typeof getEffectiveChoiceOrder === "function")
+        ? (getEffectiveChoiceOrder() || [])
+        : (choiceOrder || []);
+
+      const useOrder = Array.isArray(order) && order.length ? order : keys;
+
+      useOrder.forEach((k, idx) => {
+        const key = String(k).trim().toUpperCase();
+        if (!(key in choicesObj)) return;
+
+    const label = uiLabel(key); // ○/×/A/B…
+    const body = String(choicesObj[key] ?? "").trim();
+
+    // 「A、〇〇」「○、〇〇」形式（本文が空ならラベルだけ）
+    const text = body ? `${label}。${body}` : `${label}`;
+
+    segments.push({ type:"say", text });
+
+    // 出題時(open)のみ：選択肢間の無音（最後は不要）
+    if (isOpen && idx < useOrder.length - 1){
+      segments.push({ type:"pause", ms:TTS_GAP.choiceGapMs });
+    }
+  });
+
+  return segments;
+}
+
+// 実行：ジングル→読み上げ（無音挿入含む）
+async function speakCurrent({ withJingle=true, auto=false } = {}){
+  if (!ttsEnabled) return;
+  if (!ttsUnlocked) return;          // 自動読み上げは必ずユーザー操作後だけ
+  if (ttsSpeaking) return;
+
+  // quiz以外、QR中は読まない
+  if (currentView !== "quiz") return;
+  if (isQR === true) return;
+
+  const isOpen = (currentStatus === "open");
+  const segs = buildTtsSegments(isOpen);
+  if (!segs.length) return;
+
+  ttsSpeaking = true;
+  try{
+    stopTTS();
+    if (withJingle) await playTtsJingle();
+
+    for (const s of segs){
+      if (s.type === "pause"){
+        await waitMs(s.ms);
+      }else if (s.type === "say"){
+        await speakOnce(s.text);
+      }
+    }
+  }finally{
+    ttsSpeaking = false;
+  }
+}
+
+// 自動読み上げ（「openになった出題」を1回だけ）
+function maybeAutoSpeak(){
+  if (!ttsEnabled || !ttsUnlocked) return;
+  if (currentView !== "quiz") return;
+  if (isQR === true) return;
+  if (currentStatus !== "open") return;
+  if (!currentQuestion) return;
+
+  // 「同じ出題(open)」で二重に読まない（qidが分かればqid優先）
+  const qidKey = (latestQid || "") + ":open";
+  if (ttsAutoSpokenKey === qidKey) return;
+
+  ttsAutoSpokenKey = qidKey;
+  speakCurrent({ withJingle:true, auto:true });
+}
+
+// ボタン：読み上げON/OFF
+ttsBtn.onclick = async () => {
+  if (ttsEnabled){
+    ttsEnabled = false;
+    ttsBtn.classList.remove("on");
+    ttsBtn.textContent = "🗣 読み上げOFF";
+    stopTTS();
+    return;
+  }
+  // ON
+  ttsEnabled = true;
+  ttsUnlocked = true; // ユーザー操作済み扱い（自動読み上げ許可）
+  ttsBtn.classList.add("on");
+  ttsBtn.textContent = "🗣 読み上げON";
+
+  // ついでに音も解放（ジングルを鳴らしたい場合）
+  await unlockSound();
+
+  // 今open中なら、その問題を即読んでもOK（好み）
+  maybeAutoSpeak();
+};
+
+// ボタン：手動で読む（出題中じゃなくても読めるが、無音挿入はopen時だけ）
+ttsSpeakBtn.onclick = async () => {
+  // 手動操作なのでここで解放
+  ttsEnabled = true;
+  ttsUnlocked = true;
+  ttsBtn.classList.add("on");
+  ttsBtn.textContent = "🗣 読み上げON";
+
+  await unlockSound();
+  await speakCurrent({ withJingle:true, auto:false });
+};
+
     function uiLabel(key){
       const k = String(key).trim().toUpperCase();
       if (k === "O") return "○";
@@ -1120,6 +1310,7 @@ function applyCurrentQid(){
 
     renderChoices(choicesForUI || {}, ck, currentStatus === "closed");
     updateAnswerUI();
+    maybeAutoSpeak();
 
     // ★問題が切り替わったら、今ある回答で集計を即再描画
     recomputeAndRenderFromAnswers(lastAnswers);
@@ -1200,6 +1391,7 @@ function applyCurrentQid(){
     onValue(qidRef, snap => {
       latestQid = snap.val() || null;
       applyCurrentQid();
+      maybeAutoSpeak();
     });
 
     // answers：保存＋音＋再描画
