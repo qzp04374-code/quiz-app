@@ -1305,76 +1305,41 @@ function applyCurrentQid(){
   }
 
   const qid = latestQid;
-  // 同じqidなら購読を張り直さない（無駄なunsub/再sub防止）
-  if (qid && qid === subscribedQid && unsubQ) return;
+  // 同じqidで購読が生きている場合：張り直しはしないが、view/mode/status反映のため再描画はする
+  if (qid && qid === subscribedQid && unsubQ) {
+    if (currentQuestion) {
+      // textは強制で選択肢なし
+      const isTextMode = (currentMode === "text") || document.body.classList.contains("textmode");
+      if (isTextMode){
+        choiceOrder = [];
+        renderChoices({}, null, false);
+        updateAnswerUI();
+        maybeAutoSpeak();
+        recomputeAndRenderFromAnswers(lastAnswers);
+        requestFitQuestion();
+        return;
+      }
 
-  if (unsubQ) { unsubQ(); unsubQ = null; }
+      const norm = normalizeChoicesObj(currentQuestion.choices || {});
+      const choicesForUI = norm.obj;
 
-  if (!qid){
-    currentQid = null; // ★追加
-    currentQuestion = null;
-    subscribedQid = null;
-    qEl.textContent = "（問題を待っています…）";
-    cEl.innerHTML = "";
-    updateAnswerUI();
-    return;
-  }
-  
-  subscribedQid = qid;
-  unsubQ = onValue(qRef(qid), qsnap => {
-    const q = qsnap.val();
-    if (!q){
-      currentQid = null; // ★追加
-      currentQuestion = null;
-      qEl.textContent = "（問題データが見つかりません）";
-      cEl.innerHTML = "";
-      updateAnswerUI();
-      return;
-    }
+      // choiceOrder更新（表示と集計一致）
+      if (choicesForUI && typeof choicesForUI === "object"){
+        const ord = Object.keys(choicesForUI).map(k => String(k).trim().toUpperCase());
+        if (ord.length) choiceOrder = ord;
+      }
 
-    currentQid = qid; // ★追加：このcurrentQuestionはこのqidのもの
-    currentQuestion = q;
-    qEl.textContent = q.question || "";
-    cEl.innerHTML = ""; // ★重要：前問の選択肢DOMを必ず消す（文字入力での誤読防止）
+      let ck = currentQuestion.answer ? String(currentQuestion.answer).trim().toUpperCase() : null;
+      if (norm.mapAB && ck) ck = mapABtoOXKey(ck);
 
-
-    // ★追加：文字入力（mode=text）は「選択肢なし」を強制
-    // ここでchoices表示を必ず消す（前問のDOMが残る事故を防ぐ）
-    const isTextMode = (currentMode === "text") || document.body.classList.contains("textmode");
-    if (isTextMode){
-      choiceOrder = [];
-      renderChoices({}, null, false);   // cEl を必ず空にする
+      renderChoices(choicesForUI || {}, ck, currentStatus === "closed");
       updateAnswerUI();
       maybeAutoSpeak();
       recomputeAndRenderFromAnswers(lastAnswers);
       requestFitQuestion();
-      return; // ←ここ重要：以降の choices 正規化・描画をしない
     }
-
-    // choices正規化（ABのみ → OXへ）
-    const norm = normalizeChoicesObj(q.choices || {});
-    const choicesForUI = norm.obj;
-
-    // choiceOrder も正規化後のキーにする
-    if (choicesForUI && typeof choicesForUI === "object"){
-      const ord = Object.keys(choicesForUI).map(k => String(k).trim().toUpperCase());
-      if (ord.length) choiceOrder = ord;
-    }
-
-    // 正解キーも変換（ABのみなら A→O / B→X）
-    let ck = q.answer ? String(q.answer).trim().toUpperCase() : null;
-    if (norm.mapAB && ck) ck = mapABtoOXKey(ck);
-
-    renderChoices(choicesForUI || {}, ck, currentStatus === "closed");
-    updateAnswerUI();
-    maybeAutoSpeak();
-
-    // ★問題が切り替わったら、今ある回答で集計を即再描画
-    recomputeAndRenderFromAnswers(lastAnswers);
-    requestFitQuestion();
-  });
-}
-
+    return;
+  }
 
     // activity
     onValue(activityRef, snap => {
