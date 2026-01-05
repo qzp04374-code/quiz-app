@@ -660,6 +660,7 @@
     let ttsUnlocked = false;     // ユーザー操作済み扱い（自動読み上げ許可）
     let ttsSpeaking = false;     // 連打防止
     let ttsAutoSpokenKey = null; // 同一出題で1回だけ
+    let ttsRunId = 0; // ★追加：読み上げの世代ID（古い処理を殺す）
 
     // 出題時の「無音時間」設定（ms）
     // ※テキスト入力(mode=text)は選択肢がないので、ここは使われません
@@ -687,20 +688,28 @@
     }
 
     function stopTTS(){
+      ttsRunId++; // ★重要：進行中の読み上げをすべて無効化
       try{ window.speechSynthesis.cancel(); }catch(_){}
-      ttsSpeaking = false;
+      // ttsSpeaking はここでは触らない（speakCurrent側で管理）
     }
 
     // Web Speech：1発話をPromise化
-    function speakOnce(text){
+    function speakOnce(text, runId){
       return new Promise((resolve) => {
         if (!text) return resolve();
+        if (runId !== ttsRunId) return resolve(); // ★古い世代なら即終了
+
         const u = new SpeechSynthesisUtterance(text);
         u.lang = "ja-JP";
-        u.rate = 1.0;  // 早さ（0.1〜10）
-        u.pitch = 1.0; // 音程（0〜2）
+        u.rate = 1.0;
+        u.pitch = 1.0;
+
         u.onend = () => resolve();
         u.onerror = () => resolve();
+
+        // speak直前にも確認（混入防止）
+        if (runId !== ttsRunId) return resolve();
+
         try{
           window.speechSynthesis.speak(u);
         }catch(_){
@@ -748,10 +757,9 @@
 // 実行：ジングル→読み上げ（無音挿入含む）
 async function speakCurrent({ withJingle=true, auto=false } = {}){
   if (!ttsEnabled) return;
-  if (!ttsUnlocked) return;          // 自動読み上げは必ずユーザー操作後だけ
+  if (!ttsUnlocked) return;
   if (ttsSpeaking) return;
 
-  // quiz以外、QR中は読まない
   if (currentView !== "quiz") return;
   if (isQR === true) return;
 
@@ -759,20 +767,33 @@ async function speakCurrent({ withJingle=true, auto=false } = {}){
   const segs = buildTtsSegments(isOpen);
   if (!segs.length) return;
 
+  // ★開始時に前の読み上げを完全停止（世代も更新）
+  stopTTS();
+  const myRun = ttsRunId;
+
   ttsSpeaking = true;
   try{
-    stopTTS();
+    // cancel 直後に少し待つと混ざりが減る（ブラウザ差対策）
+    await waitMs(60);
+    if (myRun !== ttsRunId) return;
+
     if (withJingle) await playTtsJingle();
+    if (myRun !== ttsRunId) return;
 
     for (const s of segs){
+      if (myRun !== ttsRunId) return;
+
       if (s.type === "pause"){
         await waitMs(s.ms);
-      }else if (s.type === "say"){
-        await speakOnce(s.text);
+        continue;
       }
+
+      // say
+      await speakOnce(s.text, myRun);
     }
   }finally{
-    ttsSpeaking = false;
+    // 自分が最新世代のときだけ解除
+    if (myRun === ttsRunId) ttsSpeaking = false;
   }
 }
 
