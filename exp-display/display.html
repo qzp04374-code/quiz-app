@@ -1301,38 +1301,50 @@ function applyCurrentQid(){
   // quiz以外（poll/standby/qr）に入ったら、前の問題購読を必ず止める
   if (currentView !== "quiz"){
     if (unsubQ) { unsubQ(); unsubQ = null; }
+    subscribedQid = null;
+    currentQid = null;
     return;
   }
 
   const qid = latestQid;
-  // 同じqidで購読が生きている場合：張り直しはしないが、view/mode/status反映のため再描画はする
-  if (qid && qid === subscribedQid && unsubQ) {
+
+  // qidが無い
+  if (!qid){
+    subscribedQid = null;
+    currentQid = null;
+    currentQuestion = null;
+    qEl.textContent = "（問題を待っています…）";
+    cEl.innerHTML = "";
+    updateAnswerUI();
+    requestFitQuestion();
+    return;
+  }
+
+  // 同じqidで購読が生きている：購読は張り直さないが、再描画はする
+  if (qid === subscribedQid && unsubQ) {
     if (currentQuestion) {
-      // textは強制で選択肢なし
+      cEl.innerHTML = ""; // 前の選択肢DOM残り事故防止
+
       const isTextMode = (currentMode === "text") || document.body.classList.contains("textmode");
       if (isTextMode){
         choiceOrder = [];
         renderChoices({}, null, false);
-        updateAnswerUI();
-        maybeAutoSpeak();
-        recomputeAndRenderFromAnswers(lastAnswers);
-        requestFitQuestion();
-        return;
+      } else {
+        const norm = normalizeChoicesObj(currentQuestion.choices || {});
+        const choicesForUI = norm.obj;
+
+        // choiceOrder更新（表示と集計一致）
+        if (choicesForUI && typeof choicesForUI === "object"){
+          const ord = Object.keys(choicesForUI).map(k => String(k).trim().toUpperCase());
+          if (ord.length) choiceOrder = ord;
+        }
+
+        let ck = currentQuestion.answer ? String(currentQuestion.answer).trim().toUpperCase() : null;
+        if (norm.mapAB && ck) ck = mapABtoOXKey(ck);
+
+        renderChoices(choicesForUI || {}, ck, currentStatus === "closed");
       }
 
-      const norm = normalizeChoicesObj(currentQuestion.choices || {});
-      const choicesForUI = norm.obj;
-
-      // choiceOrder更新（表示と集計一致）
-      if (choicesForUI && typeof choicesForUI === "object"){
-        const ord = Object.keys(choicesForUI).map(k => String(k).trim().toUpperCase());
-        if (ord.length) choiceOrder = ord;
-      }
-
-      let ck = currentQuestion.answer ? String(currentQuestion.answer).trim().toUpperCase() : null;
-      if (norm.mapAB && ck) ck = mapABtoOXKey(ck);
-
-      renderChoices(choicesForUI || {}, ck, currentStatus === "closed");
       updateAnswerUI();
       maybeAutoSpeak();
       recomputeAndRenderFromAnswers(lastAnswers);
@@ -1340,6 +1352,57 @@ function applyCurrentQid(){
     }
     return;
   }
+
+  // ここから「新しいqid」：購読を張り直す
+  if (unsubQ) { unsubQ(); unsubQ = null; }
+  subscribedQid = qid;
+
+  unsubQ = onValue(qRef(qid), snap => {
+    const q = snap.val();
+    if (!q){
+      currentQid = null;
+      currentQuestion = null;
+      qEl.textContent = "（問題データが見つかりません）";
+      cEl.innerHTML = "";
+      updateAnswerUI();
+      requestFitQuestion();
+      return;
+    }
+
+    currentQid = qid;
+    currentQuestion = q;
+
+    qEl.textContent = q.question || "";
+    cEl.innerHTML = ""; // 前問DOMを必ず消す
+
+    const isTextMode = (currentMode === "text") || document.body.classList.contains("textmode");
+    if (isTextMode){
+      choiceOrder = [];
+      renderChoices({}, null, false);
+      updateAnswerUI();
+      maybeAutoSpeak();
+      recomputeAndRenderFromAnswers(lastAnswers);
+      requestFitQuestion();
+      return;
+    }
+
+    const norm = normalizeChoicesObj(q.choices || {});
+    const choicesForUI = norm.obj;
+
+    if (choicesForUI && typeof choicesForUI === "object"){
+      const ord = Object.keys(choicesForUI).map(k => String(k).trim().toUpperCase());
+      if (ord.length) choiceOrder = ord;
+    }
+
+    let ck = q.answer ? String(q.answer).trim().toUpperCase() : null;
+    if (norm.mapAB && ck) ck = mapABtoOXKey(ck);
+
+    renderChoices(choicesForUI || {}, ck, currentStatus === "closed");
+    updateAnswerUI();
+    maybeAutoSpeak();
+    recomputeAndRenderFromAnswers(lastAnswers);
+    requestFitQuestion();
+  });
 }
     
 // activity
