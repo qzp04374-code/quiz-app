@@ -711,55 +711,39 @@
 
     // 今の問題から「読み上げ用セグメント」を作る
     function buildTtsSegments(isOpen){
-      const q = currentQuestion;
-      if (!q) return [];
+      // 画面表示（DOM）から取る：表示＝読み上げを一致させる
+      const qText = (qEl?.textContent || "").trim();
+      if (!qText) return [];
 
-      const qText = String(q.question || "").trim();
       const segments = [];
+      segments.push({ type:"say", text: `問題。${qText}` });
 
-      if (qText) segments.push({ type:"say", text:`問題。${qText}` });
-
-      // text入力（選択肢なし） → 問題だけで終わり
+      // text入力（選択肢なし）ならここで終了
       if (currentMode === "text") return segments;
 
-      // choices正規化（ABのみ→OX）を display と同じルールで
-      const norm = normalizeChoicesObj(q.choices || {});
-      const choicesObj = norm.obj || {};
-      const keys = Object.keys(choicesObj).map(k => String(k).trim().toUpperCase());
-
-      if (!keys.length) return segments; // 選択肢なし → 問題だけ
+      // choices DOM（#choices）から拾う：前問の取りこぼし防止
+      const rows = Array.from(cEl?.querySelectorAll?.(".choice") || []);
+      if (!rows.length) return segments; // 選択肢が表示されてないなら読まない
 
       // 出題時(open)のみ：問題→選択肢の無音
       if (isOpen) segments.push({ type:"pause", ms:TTS_GAP.qToChoicesMs });
 
-      // 表示順は「現在の有効choice順」を優先（表示と一致させる）
-      // ※ display側の思想：UI構造はactivity/questionで決める（answersでは決めない）
-      const order = (typeof getEffectiveChoiceOrder === "function")
-        ? (getEffectiveChoiceOrder() || [])
-        : (choiceOrder || []);
+      rows.forEach((row, idx) => {
+        // .badge と本文を読む（renderChoicesが作る構造に合わせる）
+        const badge = (row.querySelector(".badge")?.textContent || "").trim();
+        const text  = (row.children?.[1]?.textContent || "").trim(); // 2つ目が本文
+        const line = text ? `${badge}。${text}` : `${badge}`;
+        if (line) segments.push({ type:"say", text: line });
 
-      const useOrder = Array.isArray(order) && order.length ? order : keys;
+        // 出題時(open)のみ：選択肢間の無音（最後は不要）
+        if (isOpen && idx < rows.length - 1){
+          segments.push({ type:"pause", ms:TTS_GAP.choiceGapMs });
+        }
+      });
 
-      useOrder.forEach((k, idx) => {
-        const key = String(k).trim().toUpperCase();
-        if (!(key in choicesObj)) return;
-
-    const label = uiLabel(key); // ○/×/A/B…
-    const body = String(choicesObj[key] ?? "").trim();
-
-    // 「A、〇〇」「○、〇〇」形式（本文が空ならラベルだけ）
-    const text = body ? `${label}。${body}` : `${label}`;
-
-    segments.push({ type:"say", text });
-
-    // 出題時(open)のみ：選択肢間の無音（最後は不要）
-    if (isOpen && idx < useOrder.length - 1){
-      segments.push({ type:"pause", ms:TTS_GAP.choiceGapMs });
+      return segments;
     }
-  });
 
-  return segments;
-}
 
 // 実行：ジングル→読み上げ（無音挿入含む）
 async function speakCurrent({ withJingle=true, auto=false } = {}){
@@ -799,6 +783,7 @@ function maybeAutoSpeak(){
   if (isQR === true) return;
   if (currentStatus !== "open") return;
   if (!currentQuestion) return;
+  if (currentQid !== latestQid) return;
 
   // 「同じ出題(open)」で二重に読まない（qidが分かればqid優先）
   const qidKey = (latestQid || "") + ":open";
@@ -831,6 +816,7 @@ ttsBtn.onclick = async () => {
 };
 
 // ボタン：手動で読む（出題中じゃなくても読めるが、無音挿入はopen時だけ）
+await new Promise(r => requestAnimationFrame(r));
 ttsSpeakBtn.onclick = async () => {
   // 手動操作なのでここで解放
   ttsEnabled = true;
@@ -1015,6 +1001,7 @@ ttsSpeakBtn.onclick = async () => {
      
     /* ★Q1欠落対策：最後のQIDを保持し、poll→quizで必ず表示処理を回す */
     let latestQid = null;
+    let currentQid = null; // ★追加：currentQuestionが対応しているQID
     let unsubQ = null;
 
     function defaultChoicesFromMode(mode){
@@ -1276,6 +1263,7 @@ function applyCurrentQid(){
   if (unsubQ) { unsubQ(); unsubQ = null; }
 
   if (!qid){
+    currentQid = null; // ★追加
     currentQuestion = null;
     qEl.textContent = "（問題を待っています…）";
     cEl.innerHTML = "";
@@ -1286,6 +1274,7 @@ function applyCurrentQid(){
   unsubQ = onValue(qRef(qid), qsnap => {
     const q = qsnap.val();
     if (!q){
+      currentQid = null; // ★追加
       currentQuestion = null;
       qEl.textContent = "（問題データが見つかりません）";
       cEl.innerHTML = "";
@@ -1293,6 +1282,7 @@ function applyCurrentQid(){
       return;
     }
 
+    currentQid = qid; // ★追加：このcurrentQuestionはこのqidのもの
     currentQuestion = q;
     qEl.textContent = q.question || "";
 
@@ -1392,8 +1382,7 @@ function applyCurrentQid(){
     // qid：常に保持し、quiz状態なら即適用
     onValue(qidRef, snap => {
       latestQid = snap.val() || null;
-      applyCurrentQid();
-      maybeAutoSpeak();
+      applyCurrentQid();      
     });
 
     // answers：保存＋音＋再描画
