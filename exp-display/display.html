@@ -816,7 +816,6 @@ ttsBtn.onclick = async () => {
 };
 
 // ボタン：手動で読む（出題中じゃなくても読めるが、無音挿入はopen時だけ）
-await new Promise(r => requestAnimationFrame(r));
 ttsSpeakBtn.onclick = async () => {
   // 手動操作なのでここで解放
   ttsEnabled = true;
@@ -825,6 +824,7 @@ ttsSpeakBtn.onclick = async () => {
   ttsBtn.textContent = "🗣 読み上げON";
 
   await unlockSound();
+  await new Promise(r => requestAnimationFrame(r)); // ★ここに移動（表示確定待ち）
   await speakCurrent({ withJingle:true, auto:false });
 };
 
