@@ -171,6 +171,38 @@
       border-radius:999px;
       backdrop-filter: blur(8px);
     }
+
+    /* ===== 操作ボタン：3グループ化 ===== */
+    .controlGroups{
+      display:grid;
+      gap:12px;
+      margin: 12px 0 16px;
+    }
+    .btnGroup{
+      padding: 12px 10px;
+      border-radius: 22px;
+      background: rgba(2,6,23,.55);
+      border:1px solid rgba(255,255,255,.08);
+    }
+    .btnGroupTitle{
+      color: var(--muted);
+      font-weight: 900;
+      letter-spacing: .10em;
+      font-size: 13px;
+      margin: 0 0 10px 2px;
+    }
+    .btnRow{
+      display:flex;
+      flex-wrap:wrap;
+      justify-content:center;
+      gap:10px;
+      margin-bottom:10px;
+    }
+    .btnRow:last-child{ margin-bottom:0; }
+
+    /* 新ボタン（辞書） */
+    #dictBtn { background: linear-gradient(135deg, var(--info), #22c55e); }
+
   </style>
 </head>
 
@@ -199,19 +231,44 @@
       </div>
     </div>
 
-    <!-- 授業操作 -->
-    <div class="button-row">
-      <button id="prevQuestionBtn">問題戻る ◀</button>
-      <button id="nextQuestionBtn">次の問題 ▶</button>
-      <button id="stopBtn">解答終了</button>
-      <button id="endClassBtn">授業終了</button>
-      <button id="qrBtn">QRコード</button>
-      <button id="projectionBtn">display表示</button>
-      <button id="importBtn">CSV投入</button>
-      <button id="t20Btn">⏱20</button>
-      <button id="t30Btn">⏱30</button>
-      <button id="t60Btn">⏱60</button>
-      <button id="tOffBtn">⏹Timer</button> 
+    <!-- 授業操作（3グループ） -->
+    <div class="controlGroups">
+
+      <!-- ① 出題・タイマー -->
+      <section class="btnGroup">
+        <div class="btnGroupTitle">出題・タイマー</div>
+        <div class="btnRow">
+          <button id="prevQuestionBtn">問題戻る ◀</button>
+          <button id="nextQuestionBtn">次の問題 ▶</button>
+          <button id="stopBtn">解答終了</button>
+        </div>
+        <div class="btnRow">
+          <button id="t20Btn">⏱20</button>
+          <button id="t30Btn">⏱30</button>
+          <button id="t60Btn">⏱60</button>
+          <button id="tOffBtn">⏹Timer</button>
+        </div>
+      </section>
+
+      <!-- ② 運用 -->
+      <section class="btnGroup">
+        <div class="btnGroupTitle">運用</div>
+        <div class="btnRow">
+          <button id="endClassBtn">授業終了</button>
+          <button id="qrBtn">QRコード</button>
+          <button id="projectionBtn">display表示</button>
+        </div>
+      </section>
+
+      <!-- ③ 管理 -->
+      <section class="btnGroup">
+        <div class="btnGroupTitle">管理</div>
+        <div class="btnRow">
+          <button id="importBtn">CSV投入</button>
+          <button id="dictBtn">読み方（辞書）</button>
+        </div>
+      </section>
+
     </div>
 
     <!-- プレビュー -->
@@ -623,6 +680,12 @@
     document.getElementById("importBtn").onclick = () => {
       window.open(
         `https://qzp04374-code.github.io/quiz-app/exp-display/import-csv.html?room=${encodeURIComponent(currentRoom)}`,
+        "_blank"
+      );
+    };
+    document.getElementById("dictBtn").onclick = () => {
+      window.open(
+        `https://qzp04374-code.github.io/quiz-app/exp-display/dict-editor.html?room=${encodeURIComponent(currentRoom)}`,
         "_blank"
       );
     };
