@@ -220,6 +220,112 @@
       border-radius:999px;
       backdrop-filter: blur(8px);
     }
+    /* =========================
+       iOS Control Center-ish (compact tiles)
+       追記用：既存CSSを上書きする
+       ========================= */
+    
+    /* グループ：詰める（余白を削る） */
+    .btnGroup{
+      padding: 10px 10px 10px !important;
+      border-radius: 18px !important;
+      background: rgba(255,255,255,.06) !important;
+      border: 1px solid rgba(255,255,255,.10) !important;
+      backdrop-filter: blur(12px);
+    }
+    
+    .btnGroupTitle{
+      font-size: 11px !important;
+      letter-spacing: .08em !important;
+      margin: 0 0 8px 2px !important;
+      opacity: .85;
+    }
+    
+    /* 2×2のまま、グループ間も詰める */
+    .controlGroups{
+      gap: 10px !important;
+      margin: 10px 0 12px !important;
+    }
+    
+    /* 行：固定2列だと横長化しやすいので “自動タイル列” にする
+       画面が広いときは 3〜4個並ぶ、狭いときは 2個並ぶ */
+    .btnRow, .pollGrid{
+      display: grid !important;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)) !important;
+      gap: 8px !important;
+      margin-bottom: 8px !important;
+    }
+    
+    /* タイル：サイズ統一（横長を防ぐ） */
+    .controlGroups button{
+      width: 100% !important;
+      max-width: 180px;              /* 横長すぎ防止：ここが効く */
+      justify-self: center;          /* 行の中で中央寄せ */
+      min-height: 52px !important;   /* iOSの押しやすさ下限 */
+      padding: 10px 10px !important;
+    
+      border-radius: 18px !important;
+      border: 1px solid rgba(255,255,255,.12) !important;
+      background: rgba(255,255,255,.08) !important;
+    
+      font-size: 14px !important;
+      font-weight: 900 !important;
+      letter-spacing: .02em !important;
+    
+      box-shadow:
+        0 12px 26px rgba(0,0,0,.28),
+        inset 0 1px 0 rgba(255,255,255,.10);
+      transition: transform .08s ease, filter .12s ease;
+    }
+    
+    .controlGroups button:hover{ filter: brightness(1.06); }
+    .controlGroups button:active{ transform: scale(.985); filter: brightness(.98); }
+    .controlGroups button:disabled{ opacity:.45; box-shadow:none; transform:none; }
+    
+    /* “横いっぱい強調”はやめてサイズ統一したいので無効化（※必要なら戻せる） */
+    .dangerWide{
+      grid-column: auto !important;
+    }
+    
+    /* ---- 色＝意味（Control Center風） ---- */
+    #nextQuestionBtn{
+      background: rgba(10,132,255,.92) !important;            /* iOS Blue */
+      border-color: rgba(10,132,255,.55) !important;
+    }
+    #prevQuestionBtn{
+      background: rgba(142,142,147,.28) !important;           /* iOS Gray */
+      border-color: rgba(142,142,147,.35) !important;
+    }
+    #stopBtn{
+      background: rgba(255,159,10,.92) !important;            /* iOS Orange */
+      border-color: rgba(255,159,10,.55) !important;
+    }
+    #endClassBtn{
+      background: rgba(255,69,58,.92) !important;             /* iOS Red */
+      border-color: rgba(255,69,58,.55) !important;
+    }
+    #qrBtn, #projectionBtn{
+      background: rgba(191,90,242,.90) !important;            /* iOS Purple */
+      border-color: rgba(191,90,242,.55) !important;
+    }
+    #t20Btn,#t30Btn,#t60Btn,#tOffBtn{
+      background: rgba(48,209,88,.72) !important;             /* iOS Green-ish */
+      border-color: rgba(48,209,88,.45) !important;
+    }
+    #importBtn{
+      background: rgba(99,102,241,.35) !important;            /* Indigo */
+      border-color: rgba(99,102,241,.40) !important;
+    }
+    #dictBtn{
+      background: rgba(50,215,75,.80) !important;             /* iOS Green */
+      border-color: rgba(50,215,75,.55) !important;
+    }
+    
+    /* 投票3つは“タイル感”が出るよう少し高さを上げてもOK（任意） */
+    #quick2Btn,#quick5Btn,#quickTextBtn{
+      min-height: 56px !important;
+    }
+
   </style>
 </head>
 
