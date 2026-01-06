@@ -773,7 +773,7 @@
       // 混ざり防止：必ず停止→runIdで守る
       stopTTS();
       const myRun = ttsRunId;
-      await waitMs(1000);
+      await waitMs(2000);
       if (myRun !== ttsRunId) return;
 
       await speakOnce(`正解は、${speakLabelJa(ck)}。`, myRun);
