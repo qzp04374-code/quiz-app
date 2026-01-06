@@ -244,172 +244,6 @@
     /* 新ボタン（辞書） */
     #dictBtn { background: linear-gradient(135deg, var(--info), #22c55e); }
 
-    <!-- 操作パネル（2×2） -->
-    <div class="controlGroups">
-
-      <!-- ① 出題・回収 -->
-      <section class="btnGroup">
-        <div class="btnGroupTitle">① 出題・回収</div>
-        <div class="btnRow">
-          <button id="prevQuestionBtn">問題戻る ◀</button>
-          <button id="nextQuestionBtn">次の問題 ▶</button>
-        </div>
-        <div class="btnRow">
-          <button id="stopBtn" class="dangerWide">解答終了</button>
-        </div>
-      </section>
-
-      <!-- ② タイマー -->
-      <section class="btnGroup">
-        <div class="btnGroupTitle">② タイマー</div>
-        <div class="btnRow">
-          <button id="t20Btn">⏱20</button>
-          <button id="t30Btn">⏱30</button>
-        </div>
-        <div class="btnRow">
-          <button id="t60Btn">⏱60</button>
-          <button id="tOffBtn">⏹停止</button>
-        </div>
-      </section>
-
-      <!-- ③ 表示・参加 -->
-      <section class="btnGroup">
-        <div class="btnGroupTitle">③ 表示・参加</div>
-        <div class="btnRow">
-          <button id="qrBtn">QRコード</button>
-          <button id="projectionBtn">display表示</button>
-        </div>
-        <div class="btnRow">
-          <button id="endClassBtn" class="dangerWide">授業終了</button>
-        </div>
-      </section>
-
-      <!-- ④ 投票・管理 -->
-      <section class="btnGroup">
-        <div class="btnGroupTitle">
-          ④ 投票・管理 <span id="quickState" class="miniState">—</span>
-        </div>
-
-        <div class="pollGrid">
-          <button id="quick2Btn" class="tile tile-ox">投票 ○✕</button>
-          <button id="quick5Btn" class="tile tile-five">投票 5択</button>
-          <button id="quickTextBtn" class="tile tile-text">投票 TEXT</button>
-
-          <button id="importBtn" class="tile tile-admin">CSV投入</button>
-
-          <!-- すでに dictBtn を作ってるなら “そのまま置く” -->
-          <!-- なければ、後で追加OK -->
-          <button id="dictBtn" class="tile tile-admin2">読み方（辞書）</button>
-        </div>
-      </section>
-
-    </div>
-
-  </style>
-</head>
-
-<body>
-  <div id="buildTag">build: 2026-01-06 / teacher-standby-v2</div>
-
-  <div class="card">
-    <h2>教員画面</h2>
-
-    <div class="topRow">
-      ルーム：
-      <!-- ★ optionはJSで生成（削除事故防止） -->
-      <select id="roomSelect"></select>
-    </div>
-
-    <!-- クイック投票 -->
-    <div class="quickWrap">
-      <div class="quickTitle">
-        <span>クイック投票（集計のみ）</span>
-        <span id="quickState">—</span>
-      </div>
-      <div class="quickRow">
-        <button id="quick2Btn" class="qbtn q2">○✕</button>
-        <button id="quick5Btn" class="qbtn q5">ABCDE</button>
-        <button id="quickTextBtn" class="qbtn qt">TEXT</button>
-      </div>
-    </div>
-
-    <!-- 授業操作（3グループ） -->
-    <div class="controlGroups">
-
-      <!-- ① 出題・タイマー -->
-      <section class="btnGroup">
-        <div class="btnGroupTitle">出題・タイマー</div>
-        <div class="btnRow">
-          <button id="prevQuestionBtn">問題戻る ◀</button>
-          <button id="nextQuestionBtn">次の問題 ▶</button>
-          <button id="stopBtn">解答終了</button>
-        </div>
-        <div class="btnRow">
-          <button id="t20Btn">⏱20</button>
-          <button id="t30Btn">⏱30</button>
-          <button id="t60Btn">⏱60</button>
-          <button id="tOffBtn">⏹Timer</button>
-        </div>
-      </section>
-
-      <!-- ② 運用 -->
-      <section class="btnGroup">
-        <div class="btnGroupTitle">運用</div>
-        <div class="btnRow">
-          <button id="endClassBtn">授業終了</button>
-          <button id="qrBtn">QRコード</button>
-          <button id="projectionBtn">display表示</button>
-        </div>
-      </section>
-
-      <!-- ③ 管理 -->
-      <section class="btnGroup">
-        <div class="btnGroupTitle">管理</div>
-        <div class="btnRow">
-          <button id="importBtn">CSV投入</button>
-          <button id="dictBtn">読み方（辞書）</button>
-        </div>
-      </section>
-
-    </div>
-
-    <!-- プレビュー -->
-    <div id="preview">
-      <h3>出題プレビュー（現在＋次の1問）</h3>
-
-      <div class="pvGrid">
-        <!-- 現在 -->
-        <section class="pvCard">
-          <div class="pvHead">
-            <div class="pvBadge">現在</div>
-            <div class="pvMeta" id="pvQid">ID: —</div>
-          </div>
-
-          <div id="pvQuestion">問題を待っています…</div>
-          <div id="pvChoices"></div>
-
-          <div id="pvAnswer" class="pv-answer"></div>
-          <div id="pvExplanation" class="pv-explanation"></div>
-        </section>
-
-        <!-- 次の1問 -->
-        <section class="pvCard">
-          <div class="pvHead">
-            <div class="pvBadge next">次</div>
-            <div class="pvMeta" id="pvQidNext">ID: —</div>
-          </div>
-
-          <div id="pvQuestionNext">（次の問題）</div>
-          <div id="pvChoicesNext"></div>
-
-          <div id="pvAnswerNext" class="pv-answer"></div>
-          <div id="pvExplanationNext" class="pv-explanation"></div>
-        </section>
-      </div>
-    </div>
-  </div>
-
-  <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getDatabase, ref, set, update, remove, onValue, get } from
       "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
@@ -700,58 +534,55 @@
 
       pvQuestion.textContent = q.question || "";
 
-      pvChoices.innerHTML = "";
-      if (q.choices && typeof q.choices === "object"){
-        Object.entries(q.choices).forEach(([k, v]) => {
-          const div = document.createElement("div");
-          div.className = "pv-choice";
-          div.textContent = `${uiLabel(k)}：${v}`;
-          pvChoices.appendChild(div);
-        });
-        
-      // ===== 次の1問 =====
-      const q2id = state.nextQid;
-      const q2 = state.nextQuestion;
+pvChoices.innerHTML = "";
+if (q.choices && typeof q.choices === "object"){
+  Object.entries(q.choices).forEach(([k, v]) => {
+    const div = document.createElement("div");
+    div.className = "pv-choice";
+    div.textContent = `${uiLabel(k)}：${v}`;
+    pvChoices.appendChild(div);
+  });
+} // ★ここで q.choices の if を閉じる（超重要）
 
-      pvQidNext.textContent = `ID: ${q2id || "—"}`;
+// ===== 次の1問 =====
+const q2id = state.nextQid;
+const q2 = state.nextQuestion;
 
-      if (!q2id){
-        pvQuestionNext.textContent = "（次の問題なし）";
-        pvChoicesNext.innerHTML = "";
-        pvAnswerNext.textContent = "";
-        pvExplanationNext.textContent = "";
-      } else if (!q2){
-        pvQuestionNext.textContent = `（${q2id}：問題データ待ち）`;
-        pvChoicesNext.innerHTML = "";
-        pvAnswerNext.textContent = "";
-        pvExplanationNext.textContent = "";
-      } else {
-        pvQuestionNext.textContent = q2.question || "";
+pvQidNext.textContent = `ID: ${q2id || "—"}`;
 
-        pvChoicesNext.innerHTML = "";
-    if (q2.choices && typeof q2.choices === "object"){
-        Object.entries(q2.choices).forEach(([k, v]) => {
-            const div = document.createElement("div");
-            div.className = "pv-choice";
-            div.textContent = `${uiLabel(k)}：${v}`;
-            pvChoicesNext.appendChild(div);
-          });
-        }
+if (!q2id){
+  pvQuestionNext.textContent = "（次の問題なし）";
+  pvChoicesNext.innerHTML = "";
+  pvAnswerNext.textContent = "";
+  pvExplanationNext.textContent = "";
+} else if (!q2){
+  pvQuestionNext.textContent = `（${q2id}：問題データ待ち）`;
+  pvChoicesNext.innerHTML = "";
+  pvAnswerNext.textContent = "";
+  pvExplanationNext.textContent = "";
+} else {
+  pvQuestionNext.textContent = q2.question || "";
 
-        const ans2 = (q2.answer || "").toString().trim().toUpperCase();
-        pvAnswerNext.textContent = ans2 ? `正解：${uiLabel(ans2)}` : "正解：—";
-        pvExplanationNext.textContent = q2.explanation ? `解説：${q2.explanation}` : "";
-      }
+  pvChoicesNext.innerHTML = "";
+  if (q2.choices && typeof q2.choices === "object"){
+    Object.entries(q2.choices).forEach(([k, v]) => {
+      const div = document.createElement("div");
+      div.className = "pv-choice";
+      div.textContent = `${uiLabel(k)}：${v}`;
+      pvChoicesNext.appendChild(div);
+    });
+  }
 
-      }
+  const ans2 = (q2.answer || "").toString().trim().toUpperCase();
+  pvAnswerNext.textContent = ans2 ? `正解：${uiLabel(ans2)}` : "正解：—";
+  pvExplanationNext.textContent = q2.explanation ? `解説：${q2.explanation}` : "";
+}
 
-      // ★常に表示（教員プレビューなので最初から出す）
-      const ans = (q.answer || "").toString().trim().toUpperCase();
-      pvAnswer.textContent = ans ? `正解：${uiLabel(ans)}` : "正解：—";
-      pvExplanation.textContent = q.explanation ? `解説：${q.explanation}` : "";
-      pvQid.textContent = `ID: ${state.latestQid || "—"}`;
-    }
-
+// ★常に表示（教員プレビューなので最初から出す）
+const ans = (q.answer || "").toString().trim().toUpperCase();
+pvAnswer.textContent = ans ? `正解：${uiLabel(ans)}` : "正解：—";
+pvExplanation.textContent = q.explanation ? `解説：${q.explanation}` : "";
+pvQid.textContent = `ID: ${state.latestQid || "—"}`;
     function subscribeQuestion(qid){
       if (state.unsubQuestion){ state.unsubQuestion(); state.unsubQuestion = null; }
       state.question = null;
