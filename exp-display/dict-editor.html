@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>TTS Dict Editor</title>
+  <style>
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial; margin:16px; background:#0b1020; color:#e5e7eb;}
+    h1{font-size:18px; margin:0 0 12px;}
+    .row{display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin:8px 0;}
+    button{background:#111827; color:#e5e7eb; border:1px solid #374151; padding:8px 10px; border-radius:10px; cursor:pointer;}
+    button:hover{border-color:#6b7280;}
+    input,select,textarea{background:#0f172a; color:#e5e7eb; border:1px solid #374151; border-radius:10px; padding:8px; }
+    table{width:100%; border-collapse:collapse; margin-top:12px;}
+    th,td{border-bottom:1px solid #243048; padding:8px; vertical-align:top;}
+    th{font-size:12px; color:#9ca3af; text-align:left;}
+    .mini{font-size:12px; color:#9ca3af;}
+    .danger{border-color:#ef4444;}
+    .ok{color:#34d399;}
+    .warn{color:#fbbf24;}
+    .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;}
+  </style>
+</head>
+<body>
+  <h1>🗣 TTS 辞書エディタ（tts-dict.json）</h1>
+
+  <div class="row">
+    <button id="loadBtn">📥 dict/tts-dict.json を読み込む</button>
+    <button id="addBtn">➕ 行を追加</button>
+    <button id="validateBtn">✅ 検証</button>
+    <button id="downloadBtn">⬇️ tts-dict.json をダウンロード</button>
+    <button id="copyBtn">📋 JSONをコピー</button>
+  </div>
+  <div class="row mini">
+    形式：text / word / regex（regex は from を正規表現、flags 例: g, gi）
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width:90px;">type</th>
+        <th>from</th>
+        <th style="width:90px;">flags</th>
+        <th>to</th>
+        <th style="width:120px;">操作</th>
+      </tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+
+  <div class="row">
+    <div id="msg" class="mini"></div>
+  </div>
+
+  <h2 style="font-size:14px;margin-top:18px;">プレビューJSON</h2>
+  <textarea id="jsonOut" class="mono" rows="10" style="width:100%;"></textarea>
+
+<script>
+  const tbody = document.getElementById("tbody");
+  const jsonOut = document.getElementById("jsonOut");
+  const msg = document.getElementById("msg");
+
+  let rows = [];
+
+  function defaultRow(){
+    return { type:"text", from:"", flags:"g", to:"" };
+  }
+
+  function render(){
+    tbody.innerHTML = "";
+    rows.forEach((r, i) => {
+      const tr = document.createElement("tr");
+
+      const tdType = document.createElement("td");
+      const sel = document.createElement("select");
+      ["text","word","regex"].forEach(t=>{
+        const o=document.createElement("option"); o.value=t; o.textContent=t;
+        if (r.type===t) o.selected=true;
+        sel.appendChild(o);
+      });
+      sel.onchange = ()=>{ r.type = sel.value; syncJSON(); };
+      tdType.appendChild(sel);
+
+      const tdFrom = document.createElement("td");
+      const inpFrom = document.createElement("input");
+      inpFrom.style.width="100%";
+      inpFrom.value = r.from || "";
+      inpFrom.oninput = ()=>{ r.from = inpFrom.value; syncJSON(); };
+      tdFrom.appendChild(inpFrom);
+
+      const tdFlags = document.createElement("td");
+      const inpFlags = document.createElement("input");
+      inpFlags.style.width="70px";
+      inpFlags.value = r.flags || "";
+      inpFlags.placeholder = "g/gi";
+      inpFlags.oninput = ()=>{ r.flags = inpFlags.value; syncJSON(); };
+      tdFlags.appendChild(inpFlags);
+
+      const tdTo = document.createElement("td");
+      const inpTo = document.createElement("input");
+      inpTo.style.width="100%";
+      inpTo.value = r.to || "";
+      inpTo.oninput = ()=>{ r.to = inpTo.value; syncJSON(); };
+      tdTo.appendChild(inpTo);
+
+      const tdOps = document.createElement("td");
+      const up = document.createElement("button");
+      up.textContent="↑";
+      up.onclick=()=>{ if(i>0){ [rows[i-1],rows[i]]=[rows[i],rows[i-1]]; render(); syncJSON(); } };
+      const down = document.createElement("button");
+      down.textContent="↓";
+      down.onclick=()=>{ if(i<rows.length-1){ [rows[i+1],rows[i]]=[rows[i],rows[i+1]]; render(); syncJSON(); } };
+      const del = document.createElement("button");
+      del.textContent="🗑";
+      del.onclick=()=>{ rows.splice(i,1); render(); syncJSON(); };
+      tdOps.append(up, down, del);
+
+      tr.append(tdType, tdFrom, tdFlags, tdTo, tdOps);
+      tbody.appendChild(tr);
+    });
+
+    syncJSON();
+  }
+
+  function compileCheck(entry){
+    const t = entry.type;
+    const from = entry.from ?? "";
+    if (!from) return { ok:false, reason:"from が空です" };
+    if (t === "text") return { ok:true };
+    if (t === "word") {
+      // word は内部で \bfrom\b にする想定（英数字向け）
+      try { new RegExp("\\b" + escapeReg(from) + "\\b", "g"); return { ok:true }; } catch(e){ return { ok:false, reason:e.message }; }
+    }
+    if (t === "regex") {
+      try { new RegExp(from, entry.flags || "g"); return { ok:true }; } catch(e){ return { ok:false, reason:e.message }; }
+    }
+    return { ok:false, reason:"type不正" };
+  }
+
+  function escapeReg(s){
+    return String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  }
+
+  function syncJSON(){
+    // 不要なflagsを整理
+    const out = rows.map(r => {
+      const e = { type:r.type, from:r.from||"", to:r.to||"" };
+      if (r.type === "regex") e.flags = (r.flags || "g");
+      if (r.type === "text") { /* flags不要 */ }
+      if (r.type === "word") { /* flags不要（内部でg固定） */ }
+      return e;
+    });
+    jsonOut.value = JSON.stringify(out, null, 2);
+  }
+
+  function validate(){
+    const list = JSON.parse(jsonOut.value || "[]");
+    let ok = true;
+    let bad = 0;
+    for (const e of list){
+      const r = compileCheck(e);
+      if (!r.ok){ ok=false; bad++; }
+    }
+    msg.textContent = ok ? `OK ✅（${list.length}件）` : `NG ⚠️（${bad}件エラー）`;
+    msg.className = ok ? "mini ok" : "mini warn";
+  }
+
+  async function load(){
+    msg.textContent = "読み込み中…";
+    msg.className = "mini";
+    try{
+      const res = await fetch("./dict/tts-dict.json?v=" + Date.now());
+      if (!res.ok) throw new Error("fetch failed: " + res.status);
+      const data = await res.json();
+      rows = (Array.isArray(data) ? data : []).map(e => ({
+        type: e.type || "text",
+        from: e.from || "",
+        flags: e.flags || "g",
+        to: e.to || ""
+      }));
+      render();
+      msg.textContent = `読み込み成功 ✅（${rows.length}件）`;
+      msg.className = "mini ok";
+    }catch(e){
+      console.warn(e);
+      msg.textContent = "読み込み失敗（dict/tts-dict.json が無い or JSON壊れ）";
+      msg.className = "mini warn";
+    }
+  }
+
+  function download(){
+    const blob = new Blob([jsonOut.value], {type:"application/json"});
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "tts-dict.json";
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
+  async function copy(){
+    try{
+      await navigator.clipboard.writeText(jsonOut.value);
+      msg.textContent = "コピーしました ✅";
+      msg.className = "mini ok";
+    }catch(e){
+      msg.textContent = "コピー失敗（ブラウザ制限）";
+      msg.className = "mini warn";
+    }
+  }
+
+  document.getElementById("loadBtn").onclick = load;
+  document.getElementById("addBtn").onclick = ()=>{ rows.push(defaultRow()); render(); };
+  document.getElementById("validateBtn").onclick = validate;
+  document.getElementById("downloadBtn").onclick = download;
+  document.getElementById("copyBtn").onclick = copy;
+
+  // 初期1行
+  rows = [defaultRow()];
+  render();
+</script>
+</body>
+</html>
