@@ -661,6 +661,8 @@
     let ttsSpeaking = false;     // 連打防止
     let ttsAutoSpokenKey = null; // 同一出題で1回だけ
     let ttsRunId = 0; // ★追加：読み上げの世代ID（古い処理を殺す）
+    let ttsClosedKey = "";      // closed読み上げの多重防止（qidごと）
+    let ttsReadClosed = true;   // 必要ならON/OFF
 
     // 出題時の「無音時間」設定（ms）
     // ※テキスト入力(mode=text)は選択肢がないので、ここは使われません
@@ -717,6 +719,70 @@
         }
       });
     }
+    
+    function speakLabelJa(key){
+      const k = String(key || "").trim().toUpperCase();
+      if (k === "O" || k === "〇") return "まる";
+      if (k === "X" || k === "×") return "ばつ";
+      if (k === "A") return "エー";
+      if (k === "B") return "ビー";
+      if (k === "C") return "シー";
+      if (k === "D") return "ディー";
+      if (k === "E") return "イー";
+      return k;
+    }
+
+    function getCorrectKeyForSpeak(){
+      if (!currentQuestion) return null;
+
+      let ck = currentQuestion.answer ? String(currentQuestion.answer).trim().toUpperCase() : null;
+
+      // AB→OX 変換（あなたの表示ロジックと合わせる）
+      try{
+        const norm = normalizeChoicesObj(currentQuestion.choices || {});
+        if (norm && norm.mapAB && ck) ck = mapABtoOXKey(ck);
+      }catch(_){}
+
+      if (ck === "〇") ck = "O";
+      if (ck === "×") ck = "X";
+      return ck;
+    }
+
+    async function speakClosedAnswerOnly(){
+      if (!ttsReadClosed) return;
+      if (!ttsEnabled || !ttsUnlocked) return;
+      if (isQR) return;
+      if (currentView !== "quiz") return;
+      if (!(currentMode === "ox" || currentMode === "five")) return;
+
+      if (!latestQid) return;
+      const key = `${latestQid}::closed`;
+      if (ttsClosedKey === key) return;
+      ttsClosedKey = key;
+
+      const ck = getCorrectKeyForSpeak();
+      if (!ck) return;
+
+      // 解説テキスト（あなたの表示行を読む：無ければ空でOK）
+      let ex = "";
+      try{
+        ex = (explanationLine?.textContent || "").trim();
+        ex = ex.replace(/^解説[:：]\s*/, "");
+      }catch(_){}
+
+      // 混ざり防止：必ず停止→runIdで守る
+      stopTTS();
+      const myRun = ttsRunId;
+      await waitMs(60);
+      if (myRun !== ttsRunId) return;
+
+      await speakOnce(`正解は、${speakLabelJa(ck)}。`, myRun);
+      if (myRun !== ttsRunId) return;
+
+      if (ex){
+        await speakOnce(`解説。${ex}`, myRun);
+      }
+    }    
 
     // 今の問題から「読み上げ用セグメント」を作る
     function buildTtsSegments(isOpen){
@@ -1449,6 +1515,7 @@ onValue(activityRef, snap => {
   if (lastStatus !== "closed" && currentStatus === "closed") {
     showToast();
 　　playGong();
+    speakClosedAnswerOnly(); // ★ここ
   }
   lastStatus = currentStatus;
 
