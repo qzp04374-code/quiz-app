@@ -1,6 +1,38 @@
 [
-  {"type":"text","from":"〇","to":"まる"},
-  {"type":"text","from":"×","to":"ばつ"},
-  {"type":"word","from":"AI","to":"エーアイ"},
-  {"type":"regex","from":"\\bmmHg\\b","flags":"gi","to":"ミリメートル水銀"}
+  {
+    "type": "text",
+    "from": "〇",
+    "to": "まる"
+  },
+  {
+    "type": "text",
+    "from": "×",
+    "to": "ばつ"
+  },
+  {
+    "type": "word",
+    "from": "ADL",
+    "to": "エーディーエル"
+  },
+  {
+    "type": "regex",
+    "from": "\\bmmHg\\b",
+    "to": "ミリメートル水銀",
+    "flags": "gi"
+  },
+  {
+    "type": "word",
+    "from": "血流",
+    "to": "けつりゅう"
+  },
+  {
+    "type": "word",
+    "from": "圧痛",
+    "to": "あっつう"
+  },
+  {
+    "type": "word",
+    "from": "筋肥大",
+    "to": "きんひだい"
+  }
 ]
