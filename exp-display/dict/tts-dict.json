@@ -1,37 +1,16 @@
 [
   {
     "type": "text",
-    "from": "〇",
-    "to": "まる"
-  },
-  {
-    "type": "text",
-    "from": "×",
-    "to": "ばつ"
-  },
-  {
-    "type": "word",
-    "from": "ADL",
-    "to": "エーディーエル"
-  },
-  {
-    "type": "regex",
-    "from": "\\bmmHg\\b",
-    "to": "ミリメートル水銀",
-    "flags": "gi"
-  },
-  {
-    "type": "word",
     "from": "血流",
     "to": "けつりゅう"
   },
   {
-    "type": "word",
+    "type": "text",
     "from": "圧痛",
     "to": "あっつう"
   },
   {
-    "type": "word",
+    "type": "text",
     "from": "筋肥大",
     "to": "きんひだい"
   }
