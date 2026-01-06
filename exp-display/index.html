@@ -482,7 +482,6 @@
         const keys = q.choices ? Object.keys(q.choices).map(k => k.toUpperCase()) : [];
         if (keys.length === 2 && keys.includes("O") && keys.includes("X")) mode = "ox";
         else if (["A","B","C","D","E"].every(k => keys.includes(k))) mode = "five";
-        note: {}
         else mode = "text";
       }
 
