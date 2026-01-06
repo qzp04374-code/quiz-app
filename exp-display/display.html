@@ -769,6 +769,8 @@
 
     // Web Speech：1発話をPromise化
     function speakOnce(text, runId){
+      console.log("[TTS raw]", text);
+      console.log("[TTS norm]", ttsNormalize(text));
       text = ttsNormalize(text); // ★追加：読み上げ辞書を必ず通す
       
       return new Promise((resolve) => {
