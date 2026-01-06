@@ -692,21 +692,22 @@
       for (const e of (list || [])){
         if (!e || !e.from) continue;
         const to = (e.to ?? "");
+        const type = e.type || "text"; // ★追加：type省略はtext扱い
 
-        if (e.type === "text"){
+        if (type === "text"){
           const from = String(e.from);
           out.push((s) => s.split(from).join(to));
           continue;
         }
 
-        if (e.type === "word"){
+        if (type === "word"){
           const from = esc(e.from);
           const re = new RegExp("\\b" + from + "\\b", "g");
           out.push((s) => s.replace(re, to));
           continue;
         }
 
-        if (e.type === "regex"){
+        if (type === "regex"){
         try{
             const re = new RegExp(String(e.from), e.flags || "g");
             out.push((s) => s.replace(re, to));
