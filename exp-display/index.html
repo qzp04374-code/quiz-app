@@ -158,6 +158,47 @@
       background: var(--panel2);
       border:1px solid rgba(255,255,255,.08);
     }
+
+    .pvGrid{
+      display:grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap:12px;
+      margin-top:10px;
+    }
+    @media (max-width: 980px){
+      .pvGrid{ grid-template-columns: 1fr; } /* 画面が狭い時は縦 */
+    }
+    .pvCard{
+      background: rgba(255,255,255,.03);
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 18px;
+      padding: 14px;
+    }
+    .pvHead{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      margin-bottom:8px;
+    }
+    .pvBadge{
+      font-weight:1000;
+      font-size:12px;
+      letter-spacing:.12em;
+      padding:6px 10px;
+      border-radius:999px;
+      background: rgba(6,182,212,.22);
+      border: 1px solid rgba(6,182,212,.35);
+    }
+    .pvBadge.next{
+      background: rgba(168,85,247,.22);
+      border: 1px solid rgba(168,85,247,.35);
+    }
+    .pvMeta{
+      font-size:12px;
+      opacity:.75;
+      font-weight:900;
+    }
+
     .pv-choice{ margin-left:12px; margin-bottom:4px; }
     .pv-answer{ margin-top:12px; font-weight:900; color:var(--color-o); }
     .pv-explanation{ margin-top:6px; font-size:14px; white-space:pre-wrap; }
@@ -334,11 +375,37 @@
 
     <!-- プレビュー -->
     <div id="preview">
-      <h3>出題プレビュー（教員のみ）</h3>
-      <div id="pvQuestion">問題を待っています…</div>
-      <div id="pvChoices"></div>
-      <div id="pvAnswer" class="pv-answer"></div>
-      <div id="pvExplanation" class="pv-explanation"></div>
+      <h3>出題プレビュー（現在＋次の1問）</h3>
+
+      <div class="pvGrid">
+        <!-- 現在 -->
+        <section class="pvCard">
+          <div class="pvHead">
+            <div class="pvBadge">現在</div>
+            <div class="pvMeta" id="pvQid">ID: —</div>
+          </div>
+
+          <div id="pvQuestion">問題を待っています…</div>
+          <div id="pvChoices"></div>
+
+          <div id="pvAnswer" class="pv-answer"></div>
+          <div id="pvExplanation" class="pv-explanation"></div>
+        </section>
+
+        <!-- 次の1問 -->
+        <section class="pvCard">
+          <div class="pvHead">
+            <div class="pvBadge next">次</div>
+            <div class="pvMeta" id="pvQidNext">ID: —</div>
+          </div>
+
+          <div id="pvQuestionNext">（次の問題）</div>
+          <div id="pvChoicesNext"></div>
+
+          <div id="pvAnswerNext" class="pv-answer"></div>
+          <div id="pvExplanationNext" class="pv-explanation"></div>
+        </section>
+      </div>
     </div>
   </div>
 
@@ -403,6 +470,12 @@
     const pvChoices  = document.getElementById("pvChoices");
     const pvAnswer   = document.getElementById("pvAnswer");
     const pvExplanation = document.getElementById("pvExplanation");
+    const pvQid = document.getElementById("pvQid");
+    const pvQuestionNext = document.getElementById("pvQuestionNext");
+    const pvChoicesNext  = document.getElementById("pvChoicesNext");
+    const pvAnswerNext   = document.getElementById("pvAnswerNext");
+    const pvExplanationNext = document.getElementById("pvExplanationNext");
+    const pvQidNext = document.getElementById("pvQidNext");
 
     const btnPrev = document.getElementById("prevQuestionBtn");
     const btnNext = document.getElementById("nextQuestionBtn");
@@ -434,6 +507,23 @@
     async function refreshOrder(){
       const snap = await get(questionsRef());
       return Object.keys(snap.val() || {}).sort();
+    }
+
+    async function updateNextSubscription(){
+      const base = state.latestQid;
+      if (!base){
+        subscribeNextQuestion(null);
+        return;
+      }
+
+      const order = await refreshOrder();
+      const i = order.indexOf(base);
+      const next = (i >= 0) ? (order[i+1] || null) : (order[0] || null);
+
+      // 取得中にQIDが変わったら捨てる（race対策）
+      if (state.latestQid !== base) return;
+
+      subscribeNextQuestion(next);
     }
 
     function uiLabel(key){
@@ -618,16 +708,48 @@
           div.textContent = `${uiLabel(k)}：${v}`;
           pvChoices.appendChild(div);
         });
+        
+      // ===== 次の1問 =====
+      const q2id = state.nextQid;
+      const q2 = state.nextQuestion;
+
+      pvQidNext.textContent = `ID: ${q2id || "—"}`;
+
+      if (!q2id){
+        pvQuestionNext.textContent = "（次の問題なし）";
+        pvChoicesNext.innerHTML = "";
+        pvAnswerNext.textContent = "";
+        pvExplanationNext.textContent = "";
+      } else if (!q2){
+        pvQuestionNext.textContent = `（${q2id}：問題データ待ち）`;
+        pvChoicesNext.innerHTML = "";
+        pvAnswerNext.textContent = "";
+        pvExplanationNext.textContent = "";
+      } else {
+        pvQuestionNext.textContent = q2.question || "";
+
+        pvChoicesNext.innerHTML = "";
+    if (q2.choices && typeof q2.choices === "object"){
+        Object.entries(q2.choices).forEach(([k, v]) => {
+            const div = document.createElement("div");
+            div.className = "pv-choice";
+            div.textContent = `${uiLabel(k)}：${v}`;
+            pvChoicesNext.appendChild(div);
+          });
+        }
+
+        const ans2 = (q2.answer || "").toString().trim().toUpperCase();
+        pvAnswerNext.textContent = ans2 ? `正解：${uiLabel(ans2)}` : "正解：—";
+        pvExplanationNext.textContent = q2.explanation ? `解説：${q2.explanation}` : "";
       }
 
-      if ((a.status || "") === "closed"){
-        const ans = (q.answer || "").toString().trim().toUpperCase();
-        pvAnswer.textContent = ans ? `正解：${uiLabel(ans)}` : "正解：—";
-        pvExplanation.textContent = q.explanation ? `解説：${q.explanation}` : "";
-      }else{
-        pvAnswer.textContent = "（正解・解説は「解答終了」後に表示）";
-        pvExplanation.textContent = "";
       }
+
+      // ★常に表示（教員プレビューなので最初から出す）
+      const ans = (q.answer || "").toString().trim().toUpperCase();
+      pvAnswer.textContent = ans ? `正解：${uiLabel(ans)}` : "正解：—";
+      pvExplanation.textContent = q.explanation ? `解説：${q.explanation}` : "";
+      pvQid.textContent = `ID: ${state.latestQid || "—"}`;
     }
 
     function subscribeQuestion(qid){
@@ -644,6 +766,22 @@
         renderPreview();
       });
     }
+
+    function subscribeNextQuestion(qid){
+      if (state.unsubNextQuestion){ state.unsubNextQuestion(); state.unsubNextQuestion = null; }
+      state.nextQuestion = null;
+      state.nextQid = qid || null;
+
+      if (!qid){
+        renderPreview();
+        return;
+      }
+
+      state.unsubNextQuestion = onValue(questionRef(qid), snap => {
+        state.nextQuestion = snap.val() || null;
+        renderPreview();
+      });
+    }    
 
     function attachRoom(room){
       currentRoom = room;
@@ -670,6 +808,8 @@
 
       state.unsubQid = onValue(qidRef(room), snap => {
         state.latestQid = snap.val() || null;
+        if (state.unsubNextQuestion){ state.unsubNextQuestion(); state.unsubNextQuestion = null; }
+        updateNextSubscription();
 
         // ★quiz のときだけ問題を購読（poll/standby/qrは無視）
         if ((state.activity.view || "quiz") === "quiz"){
