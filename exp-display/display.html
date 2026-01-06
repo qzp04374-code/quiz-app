@@ -895,7 +895,6 @@
       return segments;
     }
 
-
 // 実行：ジングル→読み上げ（無音挿入含む）
 async function speakCurrent({ withJingle=true, auto=false } = {}){
   if (!ttsEnabled) return;
@@ -906,6 +905,11 @@ async function speakCurrent({ withJingle=true, auto=false } = {}){
   if (isQR === true) return;
 
   const isOpen = (currentStatus === "open");
+
+  // ★追加：選択肢が描画される前に読んでしまう事故を防ぐ
+  if (isOpen && (currentMode === "ox" || currentMode === "five")){
+    await waitForChoicesRendered(700);
+  }
   const segs = buildTtsSegments(isOpen);
   if (!segs.length) return;
 
@@ -1025,6 +1029,24 @@ ttsBtn.onclick = async () => {
       };
     }
 
+    async function waitForChoicesRendered(timeoutMs = 700){
+      // textは選択肢なし
+      if (currentMode === "text" || document.body.classList.contains("textmode")) return;
+
+      // 期待数：choiceOrder があるならそれを優先、無ければ mode で推定
+      const expected =
+        (Array.isArray(choiceOrder) && choiceOrder.length) ? choiceOrder.length :
+        (currentMode === "ox" ? 2 : currentMode === "five" ? 5 : 0);
+
+      if (!expected) return;
+
+      const start = performance.now();
+      while (performance.now() - start < timeoutMs){
+        const rows = cEl?.querySelectorAll?.(".choice") || [];
+        if (rows.length >= expected) return;   // 揃った
+        await waitMs(40);
+      }
+    }
 
     roomLabel.textContent = `ROOM: ${room}`;
 
