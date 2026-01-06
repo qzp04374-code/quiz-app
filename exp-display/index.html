@@ -47,12 +47,7 @@
       box-sizing:border-box;
     }
 
-    h2{
-      margin:0 0 14px 0;
-      text-align:center;
-      letter-spacing:.10em;
-      font-weight:900;
-    }
+    h2{ margin:0 0 14px 0; text-align:center; letter-spacing:.10em; font-weight:900; }
 
     .topRow{
       display:flex;
@@ -85,6 +80,8 @@
       background:#374151;
       box-shadow:0 10px 30px rgba(0,0,0,.35);
       transition:transform .12s ease, filter .12s ease, box-shadow .12s ease, opacity .12s ease;
+      font-weight:900;
+      letter-spacing:.04em;
     }
     button:active{ transform:scale(.97); filter:brightness(.98); }
     button:disabled{
@@ -94,63 +91,78 @@
       transform:none;
     }
 
-    /* クイック投票 */
-    .quickWrap{
-      margin: 10px auto 18px;
+    /* ===== 操作パネル（2×2） ===== */
+    .controlGroups{
+      display:grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap:12px;
+      margin: 12px 0 16px;
+    }
+    @media (max-width: 980px){
+      .controlGroups{ grid-template-columns: 1fr; }
+    }
+
+    .btnGroup{
       padding: 14px 12px 12px;
       border-radius: 22px;
       background: rgba(2,6,23,.55);
       border:1px solid rgba(255,255,255,.08);
     }
-    .quickTitle{
+    .btnGroupTitle{
       display:flex;
       justify-content:space-between;
       align-items:center;
-      padding-bottom:10px;
       color: var(--muted);
-      font-weight:900;
-      letter-spacing:.10em;
-      font-size:13px;
+      font-weight: 900;
+      letter-spacing: .10em;
+      font-size: 13px;
+      margin: 0 0 10px 2px;
     }
-    .quickRow{
-      display:flex;
-      justify-content:center;
-      gap:14px;
-      flex-wrap:wrap;
-    }
-    .qbtn{
-      width:100px;
-      height:100px;
-      border-radius:9999px;
-      display:flex;
-      flex-direction:column;
-      justify-content:center;
-      align-items:center;
-      gap:6px;
-      border:1px solid rgba(255,255,255,.10);
-      font-weight:900;
-      letter-spacing:.06em;
-    }
-    .q2{ background: linear-gradient(135deg, var(--color-o), #06b6d4); }
-    .q5{ background: linear-gradient(135deg, var(--color-d), #a855f7); }
-    .qt{ background: linear-gradient(135deg, var(--color-c), #f59e0b); color:#111827; }
+    .miniState{ opacity:.85; font-weight:900; font-size:12px; }
 
-    .button-row{
-      display:flex;
-      flex-wrap:wrap;
-      justify-content:center;
+    .btnRow{
+      display:grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap:10px;
-      margin: 12px 0 16px;
+      margin-bottom:10px;
     }
+    .btnRow:last-child{ margin-bottom:0; }
 
+    .dangerWide{ grid-column: 1 / -1; }
+
+    /* 投票・管理タイル */
+    .pollGrid{
+      display:grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap:10px;
+    }
+    @media (min-width: 980px){
+      .pollGrid{ grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    }
+    .tile{
+      min-height:56px;
+      border-radius:18px;
+      border:1px solid rgba(255,255,255,.12);
+    }
+    .tile-ox{ background: linear-gradient(135deg, var(--color-o), #06b6d4); }
+    .tile-five{ background: linear-gradient(135deg, var(--color-d), #a855f7); }
+    .tile-text{ background: linear-gradient(135deg, var(--color-c), #f59e0b); color:#111827; }
+    .tile-admin{ background: rgba(100,116,139,.18); }
+    .tile-admin2{ background: linear-gradient(135deg, #22c55e, #16a34a); }
+
+    /* 主要ボタン色 */
     #prevQuestionBtn { background: var(--gray); }
     #nextQuestionBtn { background: linear-gradient(135deg, var(--color-o), #06b6d4); }
-    #stopBtn { background: var(--danger); }
+    #stopBtn { background: linear-gradient(135deg, #f59e0b, #fb7185); }
     #endClassBtn { background: linear-gradient(135deg,var(--danger),var(--danger2)); }
     #qrBtn { background: var(--info); }
     #projectionBtn { background: linear-gradient(135deg,var(--indigo),#a855f7); }
-    #importBtn { background: linear-gradient(135deg,var(--color-c),#f97316); }
 
+    #t20Btn,#t30Btn,#t60Btn,#tOffBtn{
+      background: linear-gradient(135deg, rgba(6,182,212,.95), rgba(14,116,144,.95));
+    }
+
+    /* ===== プレビュー（2枚カード） ===== */
     #preview{
       margin-top:18px;
       padding:18px;
@@ -166,7 +178,7 @@
       margin-top:10px;
     }
     @media (max-width: 980px){
-      .pvGrid{ grid-template-columns: 1fr; } /* 画面が狭い時は縦 */
+      .pvGrid{ grid-template-columns: 1fr; }
     }
     .pvCard{
       background: rgba(255,255,255,.03);
@@ -193,11 +205,7 @@
       background: rgba(168,85,247,.22);
       border: 1px solid rgba(168,85,247,.35);
     }
-    .pvMeta{
-      font-size:12px;
-      opacity:.75;
-      font-weight:900;
-    }
+    .pvMeta{ font-size:12px; opacity:.75; font-weight:900; }
 
     .pv-choice{ margin-left:12px; margin-bottom:4px; }
     .pv-answer{ margin-top:12px; font-weight:900; color:var(--color-o); }
@@ -212,522 +220,22 @@
       border-radius:999px;
       backdrop-filter: blur(8px);
     }
+  </style>
+</head>
 
-    /* ===== 操作ボタン：3グループ化 ===== */
-    .controlGroups{
-      display:grid;
-      gap:12px;
-      margin: 12px 0 16px;
-    }
-    .btnGroup{
-      padding: 12px 10px;
-      border-radius: 22px;
-      background: rgba(2,6,23,.55);
-      border:1px solid rgba(255,255,255,.08);
-    }
-    .btnGroupTitle{
-      color: var(--muted);
-      font-weight: 900;
-      letter-spacing: .10em;
-      font-size: 13px;
-      margin: 0 0 10px 2px;
-    }
-    .btnRow{
-      display:flex;
-      flex-wrap:wrap;
-      justify-content:center;
-      gap:10px;
-      margin-bottom:10px;
-    }
-    .btnRow:last-child{ margin-bottom:0; }
+<body>
+  <div id="buildTag">build: 2026-01-06 / teacher-standby-v2-preview2</div>
 
-    /* 新ボタン（辞書） */
-    #dictBtn { background: linear-gradient(135deg, var(--info), #22c55e); }
+  <div class="card">
+    <h2>教員画面</h2>
 
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getDatabase, ref, set, update, remove, onValue, get } from
-      "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+    <div class="topRow">
+      ルーム：
+      <select id="roomSelect"></select>
+    </div>
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyBke-wTU16skpbK8z80ddK04tE154dHERQ",
-      databaseURL: "https://satosan-41eac-default-rtdb.asia-southeast1.firebasedatabase.app",
-      projectId: "satosan-41eac"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const db  = getDatabase(app);
-
-    // =========================================================
-    // ルーム定義（★ここだけ触ればOK）
-    // =========================================================
-    const roomSelect = document.getElementById("roomSelect");
-
-    const ROOMS = [
-      { id: "kyoto-01",  label: "Kyoto-01"  },
-      { id: "kyoto-02",  label: "Kyoto-02"  },
-      { id: "sendai-01", label: "Sendai-01" },
-      { id: "sendai-02", label: "Sendai-02" },
-      { id: "nagoya-01", label: "Nagoya-01" },
-      { id: "nagoya-02", label: "Nagoya-02" },
-    ];
-
-    function buildRoomOptions(){
-      roomSelect.innerHTML = "";
-      for (const r of ROOMS){
-        const opt = document.createElement("option");
-        opt.value = r.id;
-        opt.textContent = r.label;
-        roomSelect.appendChild(opt);
-      }
-    }
-
-    // 初期ルーム：URL ?room → localStorage → 先頭
-    const url = new URL(location.href);
-    const urlRoom = url.searchParams.get("room");
-    const savedRoom = localStorage.getItem("cs_teacher_room");
-
-    buildRoomOptions();
-
-    let currentRoom =
-      (urlRoom && ROOMS.some(r => r.id === urlRoom)) ? urlRoom :
-      (savedRoom && ROOMS.some(r => r.id === savedRoom)) ? savedRoom :
-      ROOMS[0].id;
-
-    roomSelect.value = currentRoom;
-
-    // =========================================================
-    // DOM
-    // =========================================================
-    const quickState = document.getElementById("quickState");
-
-    const pvQuestion = document.getElementById("pvQuestion");
-    const pvChoices  = document.getElementById("pvChoices");
-    const pvAnswer   = document.getElementById("pvAnswer");
-    const pvExplanation = document.getElementById("pvExplanation");
-    const pvQid = document.getElementById("pvQid");
-    const pvQuestionNext = document.getElementById("pvQuestionNext");
-    const pvChoicesNext  = document.getElementById("pvChoicesNext");
-    const pvAnswerNext   = document.getElementById("pvAnswerNext");
-    const pvExplanationNext = document.getElementById("pvExplanationNext");
-    const pvQidNext = document.getElementById("pvQidNext");
-
-    const btnPrev = document.getElementById("prevQuestionBtn");
-    const btnNext = document.getElementById("nextQuestionBtn");
-    const btnStop = document.getElementById("stopBtn");
-    const btnQR   = document.getElementById("qrBtn");
-
-    const btnT20  = document.getElementById("t20Btn");
-    const btnT30  = document.getElementById("t30Btn");
-    const btnT60  = document.getElementById("t60Btn");
-    const btnTOff = document.getElementById("tOffBtn");
-
-    const btnQ2   = document.getElementById("quick2Btn");
-    const btnQ5   = document.getElementById("quick5Btn");
-    const btnQT   = document.getElementById("quickTextBtn");
-
-    // =========================================================
-    // Firebase refs helper
-    // =========================================================
-    function activityRef(room=currentRoom){ return ref(db, `rooms/${room}/activity`); }
-    function answersRef(room=currentRoom){ return ref(db, `rooms/${room}/answers`); }
-    function qidRef(room=currentRoom){ return ref(db, `rooms/${room}/quiz/current_question_id`); }
-    function questionsRef(room=currentRoom){ return ref(db, `rooms/${room}/questions`); }
-    function questionRef(qid, room=currentRoom){ return ref(db, `rooms/${room}/questions/${qid}`); }
-
-    async function clearAnswers(){
-      await set(answersRef(), {});
-    }
-
-    async function refreshOrder(){
-      const snap = await get(questionsRef());
-      return Object.keys(snap.val() || {}).sort();
-    }
-
-    async function updateNextSubscription(){
-      const base = state.latestQid;
-      if (!base){
-        subscribeNextQuestion(null);
-        return;
-      }
-
-      const order = await refreshOrder();
-      const i = order.indexOf(base);
-      const next = (i >= 0) ? (order[i+1] || null) : (order[0] || null);
-
-      // 取得中にQIDが変わったら捨てる（race対策）
-      if (state.latestQid !== base) return;
-
-      subscribeNextQuestion(next);
-    }
-
-    function uiLabel(key){
-      const k = String(key).trim().toUpperCase();
-      if (k === "O") return "○";
-      if (k === "X") return "✕";
-      return k;
-    }
-
-    // =========================================================
-    // 出題（quiz）
-    // =========================================================
-    async function startQuizQuestion(qid){
-      if (!qid) return;
-
-      await set(qidRef(), qid);
-      await clearAnswers();
-
-      const qs = await get(questionRef(qid));
-      const q = qs.val() || {};
-
-      let mode = (q.mode || "").toLowerCase().trim();
-      if (!mode){
-        const keys = q.choices ? Object.keys(q.choices).map(k => k.toUpperCase()) : [];
-        if (keys.length === 2 && keys.includes("O") && keys.includes("X")) mode = "ox";
-        else if (["A","B","C","D","E"].every(k => keys.includes(k))) mode = "five";
-        else mode = "text";
-      }
-
-      let config = null;
-      if (mode === "text") config = { type:"text" };
-      else if (mode === "ox") config = { choices:["O","X"] };
-      else if (mode === "five") config = { choices:["A","B","C","D","E"] };
-
-      await update(activityRef(), {
-        status:"open",
-        qr:false,
-        view:"quiz",
-        mode,
-        config,
-        timer:{ running:false }
-      });
-    }
-
-    // =========================================================
-    // クイック投票（poll）
-    // =========================================================
-    async function startQuickPoll(mode){
-      await clearAnswers();
-      let config = null;
-      if (mode === "text") config = { type:"text" };
-      else if (mode === "ox") config = { choices:["O","X"] };
-      else if (mode === "five") config = { choices:["A","B","C","D","E"] };
-
-      await update(activityRef(), {
-        status:"open",
-        qr:false,
-        view:"poll",
-        mode,
-        config,
-        timer:{ running:false }
-      });
-    }
-
-    // =========================================================
-    // タイマー（解答終了カウントダウン）
-    // =========================================================
-    async function startTimer(sec){
-       await update(activityRef(), {
-        timer: {
-          running: true,
-          endsAt: Date.now() + sec * 1000,
-          durationSec: sec,
-          autoClose: true
-        }
-      });
-    }
-
-    async function stopTimer(){
-      await update(activityRef(), { timer: { running: false } });
-    }
-
-    // =========================================================
-    // QRトグル（★QR解除→standbyへ）
-    // =========================================================
-    const state = {
-      activity: {},
-      latestQid: null,
-      question: null,
-      unsubActivity: null,
-      unsubQid: null,
-      unsubQuestion: null
-    };
-
-    async function toggleQR(){
-      const isQR = (state.activity?.qr === true);
-
-      // QRを表示
-      if (!isQR){
-        await update(activityRef(), { qr:true, view:"qr" });
-        return;
-      }
-
-      // QRを消す → スタンバイ（問題は出さない／学生も待機）
-      await update(activityRef(), {
-        qr:false,
-        view:"standby",
-        status:"ready",
-        mode:null,
-        config:null
-      });
-    }
-
-    // =========================================================
-    // 教員プレビュー
-    // =========================================================
-    function renderPreview(){
-      const a = state.activity || {};
-      const view = a.view || "quiz";
-      const status = a.status || "-";
-      const mode = a.mode || "-";
-      const qr = (a.qr === true);
-
-      quickState.textContent =
-        `room:${currentRoom} / view:${view} / status:${status} / mode:${mode}${qr ? " / QR" : ""}`;
-
-      // QR中は操作抑止（事故軽減）
-      const lock = (a.qr === true);
-      btnPrev.disabled = lock;
-      btnNext.disabled = lock;
-      btnStop.disabled = lock;
-      btnQ2.disabled = lock;
-      btnQ5.disabled = lock;
-      btnQT.disabled = lock;
-      btnT20.disabled  = lock;
-      btnT30.disabled  = lock;
-      btnT60.disabled  = lock;
-      btnTOff.disabled = lock;
-
-      // ★standby
-      if (view === "standby"){
-        pvQuestion.textContent = "（スタンバイ中… 次の問題を待っています）";
-        pvChoices.innerHTML = "";
-        pvAnswer.textContent = "";
-        pvExplanation.textContent = "";
-        return;
-      }
-
-      // poll
-      if (view === "poll"){
-        pvQuestion.textContent = "（クイック投票：問題表示なし / 集計のみ）";
-        pvChoices.innerHTML = "";
-        pvAnswer.textContent = "";
-        pvExplanation.textContent = "";
-        return;
-      }
-
-      const q = state.question;
-      if (!state.latestQid){
-        pvQuestion.textContent = "問題を待っています…";
-        pvChoices.innerHTML = "";
-        pvAnswer.textContent = "";
-        pvExplanation.textContent = "";
-        return;
-      }
-
-      if (!q){
-        pvQuestion.textContent = `（${state.latestQid}：問題データ待ち）`;
-        pvChoices.innerHTML = "";
-        pvAnswer.textContent = "";
-        pvExplanation.textContent = "";
-        return;
-      }
-
-      pvQuestion.textContent = q.question || "";
-
-    pvChoices.innerHTML = "";
-    if (q.choices && typeof q.choices === "object"){
-      Object.entries(q.choices).forEach(([k, v]) => {
-        const div = document.createElement("div");
-        div.className = "pv-choice";
-        div.textContent = `${uiLabel(k)}：${v}`;
-        pvChoices.appendChild(div);
-      });
-    } // ★ここで q.choices の if を閉じる（超重要）
-
-    // ===== 次の1問 =====
-    const q2id = state.nextQid;
-    const q2 = state.nextQuestion;
-
-    pvQidNext.textContent = `ID: ${q2id || "—"}`;
-
-    if (!q2id){
-      pvQuestionNext.textContent = "（次の問題なし）";
-      pvChoicesNext.innerHTML = "";
-      pvAnswerNext.textContent = "";
-      pvExplanationNext.textContent = "";
-    } else if (!q2){
-      pvQuestionNext.textContent = `（${q2id}：問題データ待ち）`;
-      pvChoicesNext.innerHTML = "";
-      pvAnswerNext.textContent = "";
-      pvExplanationNext.textContent = "";
-    } else {
-      pvQuestionNext.textContent = q2.question || "";
-    
-      pvChoicesNext.innerHTML = "";
-      if (q2.choices && typeof q2.choices === "object"){
-        Object.entries(q2.choices).forEach(([k, v]) => {
-          const div = document.createElement("div");
-          div.className = "pv-choice";
-          div.textContent = `${uiLabel(k)}：${v}`;
-          pvChoicesNext.appendChild(div);
-        });
-      }
-    
-      const ans2 = (q2.answer || "").toString().trim().toUpperCase();
-      pvAnswerNext.textContent = ans2 ? `正解：${uiLabel(ans2)}` : "正解：—";
-      pvExplanationNext.textContent = q2.explanation ? `解説：${q2.explanation}` : "";
-    }
-    
-    // ★常に表示（教員プレビューなので最初から出す）
-    const ans = (q.answer || "").toString().trim().toUpperCase();
-    pvAnswer.textContent = ans ? `正解：${uiLabel(ans)}` : "正解：—";
-    pvExplanation.textContent = q.explanation ? `解説：${q.explanation}` : "";
-    pvQid.textContent = `ID: ${state.latestQid || "—"}`;
-    function subscribeQuestion(qid){
-      if (state.unsubQuestion){ state.unsubQuestion(); state.unsubQuestion = null; }
-      state.question = null;
-
-      if (!qid){
-        renderPreview();
-        return;
-      }
-
-      state.unsubQuestion = onValue(questionRef(qid), snap => {
-        state.question = snap.val() || null;
-        renderPreview();
-      });
-    }
-
-    function subscribeNextQuestion(qid){
-      if (state.unsubNextQuestion){ state.unsubNextQuestion(); state.unsubNextQuestion = null; }
-      state.nextQuestion = null;
-      state.nextQid = qid || null;
-
-      if (!qid){
-        renderPreview();
-        return;
-      }
-
-      state.unsubNextQuestion = onValue(questionRef(qid), snap => {
-        state.nextQuestion = snap.val() || null;
-        renderPreview();
-      });
-    }    
-
-    function attachRoom(room){
-      currentRoom = room;
-      roomSelect.value = room;
-
-      // detach
-      if (state.unsubActivity){ state.unsubActivity(); state.unsubActivity = null; }
-      if (state.unsubQid){ state.unsubQid(); state.unsubQid = null; }
-      if (state.unsubQuestion){ state.unsubQuestion(); state.unsubQuestion = null; }
-
-      state.activity = {};
-      state.latestQid = null;
-      state.question = null;
-
-      state.unsubActivity = onValue(activityRef(room), snap => {
-        state.activity = snap.val() || {};
-        renderPreview();
-
-        // ★quiz のときだけ問題を購読（poll/standby/qrは無視）
-        if ((state.activity.view || "quiz") === "quiz"){
-          subscribeQuestion(state.latestQid);
-        }
-      });
-
-      state.unsubQid = onValue(qidRef(room), snap => {
-        state.latestQid = snap.val() || null;
-        if (state.unsubNextQuestion){ state.unsubNextQuestion(); state.unsubNextQuestion = null; }
-        updateNextSubscription();
-
-        // ★quiz のときだけ問題を購読（poll/standby/qrは無視）
-        if ((state.activity.view || "quiz") === "quiz"){
-          subscribeQuestion(state.latestQid);
-        }else{
-          renderPreview();
-        }
-      });
-
-      renderPreview();
-    }
-
-    // =========================================================
-    // イベント配線
-    // =========================================================
-    roomSelect.onchange = () => {
-      currentRoom = roomSelect.value;
-      localStorage.setItem("cs_teacher_room", currentRoom);
-      attachRoom(currentRoom);
-    };
-
-    btnNext.onclick = async () => {
-      const order = await refreshOrder();
-      const cur = (await get(qidRef())).val();
-      const i = order.indexOf(cur);
-      const next = i < 0 ? order[0] : order[i + 1];
-      if (next) startQuizQuestion(next);
-    };
-
-    btnPrev.onclick = async () => {
-      const order = await refreshOrder();
-      const cur = (await get(qidRef())).val();
-      const i = order.indexOf(cur);
-      const prev = i > 0 ? order[i - 1] : order[0];
-      if (prev) startQuizQuestion(prev);
-    };
-
-    btnStop.onclick = async () => {
-      await update(activityRef(), { status:"closed" });
-    };
-
-    document.getElementById("endClassBtn").onclick = async () => {
-      const ok1 = confirm("授業終了します。データを削除しますか？（1/2）");
-      if (!ok1) return;
-      const ok2 = confirm("本当に削除しますか？（2/2）");
-      if (!ok2) return;
-      await remove(ref(db, `rooms/${currentRoom}`));
-      alert("授業データを削除しました。");
-    };
-
-    btnQR.onclick = async () => { await toggleQR(); };
-
-    btnQ2.onclick = async () => { await startQuickPoll("ox"); };
-    btnQ5.onclick = async () => { await startQuickPoll("five"); };
-    btnQT.onclick = async () => { await startQuickPoll("text"); };
-
-    btnT20.onclick  = () => startTimer(20);
-    btnT30.onclick  = () => startTimer(30);
-    btnT60.onclick  = () => startTimer(60);
-    btnTOff.onclick = () => stopTimer();
-
-    document.getElementById("projectionBtn").onclick = () => {
-      window.open(
-        `https://qzp04374-code.github.io/quiz-app/exp-display/display.html?room=${encodeURIComponent(currentRoom)}`,
-        "_blank"
-      );
-    };
-
-    document.getElementById("importBtn").onclick = () => {
-      window.open(
-        `https://qzp04374-code.github.io/quiz-app/exp-display/import-csv.html?room=${encodeURIComponent(currentRoom)}`,
-        "_blank"
-      );
-    };
-    document.getElementById("dictBtn").onclick = () => {
-      window.open(
-        `https://qzp04374-code.github.io/quiz-app/exp-display/dict-editor.html?room=${encodeURIComponent(currentRoom)}`,
-        "_blank"
-      );
-    };
-
-    // 起動時
-    attachRoom(currentRoom);
-  </script>
-<!-- 操作パネル（2×2） -->
+    <!-- 操作パネル（2×2） -->
     <div class="controlGroups">
-
       <!-- ① 出題・回収 -->
       <section class="btnGroup">
         <div class="btnGroupTitle">① 出題・回収</div>
@@ -770,91 +278,17 @@
         <div class="btnGroupTitle">
           ④ 投票・管理 <span id="quickState" class="miniState">—</span>
         </div>
-
         <div class="pollGrid">
           <button id="quick2Btn" class="tile tile-ox">投票 ○✕</button>
           <button id="quick5Btn" class="tile tile-five">投票 5択</button>
           <button id="quickTextBtn" class="tile tile-text">投票 TEXT</button>
-
           <button id="importBtn" class="tile tile-admin">CSV投入</button>
-
-          <!-- すでに dictBtn を作ってるなら “そのまま置く” -->
-          <!-- なければ、後で追加OK -->
           <button id="dictBtn" class="tile tile-admin2">読み方（辞書）</button>
         </div>
       </section>
-
     </div>
 
-  </style>
-</head>
-
-<body>
-  <div id="buildTag">build: 2026-01-06 / teacher-standby-v2</div>
-
-  <div class="card">
-    <h2>教員画面</h2>
-
-    <div class="topRow">
-      ルーム：
-      <!-- ★ optionはJSで生成（削除事故防止） -->
-      <select id="roomSelect"></select>
-    </div>
-
-    <!-- クイック投票 -->
-    <div class="quickWrap">
-      <div class="quickTitle">
-        <span>クイック投票（集計のみ）</span>
-        <span id="quickState">—</span>
-      </div>
-      <div class="quickRow">
-        <button id="quick2Btn" class="qbtn q2">○✕</button>
-        <button id="quick5Btn" class="qbtn q5">ABCDE</button>
-        <button id="quickTextBtn" class="qbtn qt">TEXT</button>
-      </div>
-    </div>
-
-    <!-- 授業操作（3グループ） -->
-    <div class="controlGroups">
-
-      <!-- ① 出題・タイマー -->
-      <section class="btnGroup">
-        <div class="btnGroupTitle">出題・タイマー</div>
-        <div class="btnRow">
-          <button id="prevQuestionBtn">問題戻る ◀</button>
-          <button id="nextQuestionBtn">次の問題 ▶</button>
-          <button id="stopBtn">解答終了</button>
-        </div>
-        <div class="btnRow">
-          <button id="t20Btn">⏱20</button>
-          <button id="t30Btn">⏱30</button>
-          <button id="t60Btn">⏱60</button>
-          <button id="tOffBtn">⏹Timer</button>
-        </div>
-      </section>
-
-      <!-- ② 運用 -->
-      <section class="btnGroup">
-        <div class="btnGroupTitle">運用</div>
-        <div class="btnRow">
-          <button id="endClassBtn">授業終了</button>
-          <button id="qrBtn">QRコード</button>
-          <button id="projectionBtn">display表示</button>
-        </div>
-      </section>
-
-      <!-- ③ 管理 -->
-      <section class="btnGroup">
-        <div class="btnGroupTitle">管理</div>
-        <div class="btnRow">
-          <button id="importBtn">CSV投入</button>
-          <button id="dictBtn">読み方（辞書）</button>
-        </div>
-      </section>
-
-    </div>
-
-    <!-- プレビュー -->
+    <!-- プレビュー（2枚） -->
     <div id="preview">
       <h3>出題プレビュー（現在＋次の1問）</h3>
 
@@ -865,24 +299,20 @@
             <div class="pvBadge">現在</div>
             <div class="pvMeta" id="pvQid">ID: —</div>
           </div>
-
           <div id="pvQuestion">問題を待っています…</div>
           <div id="pvChoices"></div>
-
           <div id="pvAnswer" class="pv-answer"></div>
           <div id="pvExplanation" class="pv-explanation"></div>
         </section>
 
-        <!-- 次の1問 -->
+        <!-- 次 -->
         <section class="pvCard">
           <div class="pvHead">
             <div class="pvBadge next">次</div>
             <div class="pvMeta" id="pvQidNext">ID: —</div>
           </div>
-
           <div id="pvQuestionNext">（次の問題）</div>
           <div id="pvChoicesNext"></div>
-
           <div id="pvAnswerNext" class="pv-answer"></div>
           <div id="pvExplanationNext" class="pv-explanation"></div>
         </section>
@@ -890,6 +320,457 @@
     </div>
   </div>
 
-  <script type="module">                                                                                      
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getDatabase, ref, set, update, remove, onValue, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBke-wTU16skpbK8z80ddK04tE154dHERQ",
+      databaseURL: "https://satosan-41eac-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "satosan-41eac"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db  = getDatabase(app);
+
+    // ルーム
+    const roomSelect = document.getElementById("roomSelect");
+    const ROOMS = [
+      { id: "kyoto-01",  label: "Kyoto-01"  },
+      { id: "kyoto-02",  label: "Kyoto-02"  },
+      { id: "sendai-01", label: "Sendai-01" },
+      { id: "sendai-02", label: "Sendai-02" },
+      { id: "nagoya-01", label: "Nagoya-01" },
+      { id: "nagoya-02", label: "Nagoya-02" },
+    ];
+
+    function buildRoomOptions(){
+      roomSelect.innerHTML = "";
+      for (const r of ROOMS){
+        const opt = document.createElement("option");
+        opt.value = r.id;
+        opt.textContent = r.label;
+        roomSelect.appendChild(opt);
+      }
+    }
+
+    const url = new URL(location.href);
+    const urlRoom = url.searchParams.get("room");
+    const savedRoom = localStorage.getItem("cs_teacher_room");
+
+    buildRoomOptions();
+
+    let currentRoom =
+      (urlRoom && ROOMS.some(r => r.id === urlRoom)) ? urlRoom :
+      (savedRoom && ROOMS.some(r => r.id === savedRoom)) ? savedRoom :
+      ROOMS[0].id;
+
+    roomSelect.value = currentRoom;
+
+    // refs
+    function activityRef(room=currentRoom){ return ref(db, `rooms/${room}/activity`); }
+    function answersRef(room=currentRoom){ return ref(db, `rooms/${room}/answers`); }
+    function qidRef(room=currentRoom){ return ref(db, `rooms/${room}/quiz/current_question_id`); }
+    function questionsRef(room=currentRoom){ return ref(db, `rooms/${room}/questions`); }
+    function questionRef(qid, room=currentRoom){ return ref(db, `rooms/${room}/questions/${qid}`); }
+
+    // DOM
+    const quickState = document.getElementById("quickState");
+
+    const pvQuestion = document.getElementById("pvQuestion");
+    const pvChoices  = document.getElementById("pvChoices");
+    const pvAnswer   = document.getElementById("pvAnswer");
+    const pvExplanation = document.getElementById("pvExplanation");
+    const pvQid = document.getElementById("pvQid");
+
+    const pvQuestionNext = document.getElementById("pvQuestionNext");
+    const pvChoicesNext  = document.getElementById("pvChoicesNext");
+    const pvAnswerNext   = document.getElementById("pvAnswerNext");
+    const pvExplanationNext = document.getElementById("pvExplanationNext");
+    const pvQidNext = document.getElementById("pvQidNext");
+
+    const btnPrev = document.getElementById("prevQuestionBtn");
+    const btnNext = document.getElementById("nextQuestionBtn");
+    const btnStop = document.getElementById("stopBtn");
+    const btnQR   = document.getElementById("qrBtn");
+    const btnT20  = document.getElementById("t20Btn");
+    const btnT30  = document.getElementById("t30Btn");
+    const btnT60  = document.getElementById("t60Btn");
+    const btnTOff = document.getElementById("tOffBtn");
+    const btnQ2   = document.getElementById("quick2Btn");
+    const btnQ5   = document.getElementById("quick5Btn");
+    const btnQT   = document.getElementById("quickTextBtn");
+
+    async function clearAnswers(){ await set(answersRef(), {}); }
+
+    async function refreshOrder(){
+      const snap = await get(questionsRef());
+      return Object.keys(snap.val() || {}).sort();
+    }
+
+    function uiLabel(key){
+      const k = String(key).trim().toUpperCase();
+      if (k === "O") return "○";
+      if (k === "X") return "✕";
+      return k;
+    }
+
+    // state
+    const state = {
+      activity: {},
+      latestQid: null,
+      question: null,
+
+      nextQid: null,
+      nextQuestion: null,
+
+      unsubActivity: null,
+      unsubQid: null,
+      unsubQuestion: null,
+      unsubNextQuestion: null
+    };
+
+    function subscribeQuestion(qid){
+      if (state.unsubQuestion){ state.unsubQuestion(); state.unsubQuestion = null; }
+      state.question = null;
+
+      if (!qid){ renderPreview(); return; }
+
+      state.unsubQuestion = onValue(questionRef(qid), snap => {
+        state.question = snap.val() || null;
+        renderPreview();
+      });
+    }
+
+    function subscribeNextQuestion(qid){
+      if (state.unsubNextQuestion){ state.unsubNextQuestion(); state.unsubNextQuestion = null; }
+      state.nextQuestion = null;
+      state.nextQid = qid || null;
+
+      if (!qid){ renderPreview(); return; }
+
+      state.unsubNextQuestion = onValue(questionRef(qid), snap => {
+        state.nextQuestion = snap.val() || null;
+        renderPreview();
+      });
+    }
+
+    async function updateNextSubscription(){
+      const base = state.latestQid;
+      if (!base){ subscribeNextQuestion(null); return; }
+
+      const order = await refreshOrder();
+      const i = order.indexOf(base);
+      const next = (i >= 0) ? (order[i+1] || null) : (order[0] || null);
+
+      if (state.latestQid !== base) return; // race対策
+      subscribeNextQuestion(next);
+    }
+
+    // 出題（quiz）
+    async function startQuizQuestion(qid){
+      if (!qid) return;
+
+      await set(qidRef(), qid);
+      await clearAnswers();
+
+      const qs = await get(questionRef(qid));
+      const q = qs.val() || {};
+
+      let mode = (q.mode || "").toLowerCase().trim();
+      if (!mode){
+        const keys = q.choices ? Object.keys(q.choices).map(k => k.toUpperCase()) : [];
+        if (keys.length === 2 && keys.includes("O") && keys.includes("X")) mode = "ox";
+        else if (["A","B","C","D","E"].every(k => keys.includes(k))) mode = "five";
+        note: {}
+        else mode = "text";
+      }
+
+      let config = null;
+      if (mode === "text") config = { type:"text" };
+      else if (mode === "ox") config = { choices:["O","X"] };
+      else if (mode === "five") config = { choices:["A","B","C","D","E"] };
+
+      await update(activityRef(), {
+        status:"open",
+        qr:false,
+        view:"quiz",
+        mode,
+        config,
+        timer:{ running:false }
+      });
+    }
+
+    // クイック投票（poll）
+    async function startQuickPoll(mode){
+      await clearAnswers();
+      let config = null;
+      if (mode === "text") config = { type:"text" };
+      else if (mode === "ox") config = { choices:["O","X"] };
+      else if (mode === "five") config = { choices:["A","B","C","D","E"] };
+
+      await update(activityRef(), {
+        status:"open",
+        qr:false,
+        view:"poll",
+        mode,
+        config,
+        timer:{ running:false }
+      });
+    }
+
+    // タイマー
+    async function startTimer(sec){
+      await update(activityRef(), {
+        timer: {
+          running: true,
+          endsAt: Date.now() + sec * 1000,
+          durationSec: sec,
+          autoClose: true
+        }
+      });
+    }
+
+    async function stopTimer(){
+      await update(activityRef(), { timer: { running: false } });
+    }
+
+    // QRトグル（解除→standby）
+    async function toggleQR(){
+      const isQR = (state.activity?.qr === true);
+
+      if (!isQR){
+        await update(activityRef(), { qr:true, view:"qr" });
+        return;
+      }
+
+      await update(activityRef(), {
+        qr:false,
+        view:"standby",
+        status:"ready",
+        mode:null,
+        config:null
+      });
+    }
+
+    // プレビュー描画（正解・解説は常時表示）
+    function renderPreview(){
+      const a = state.activity || {};
+      const view = a.view || "quiz";
+      const status = a.status || "-";
+      const mode = a.mode || "-";
+      const qr = (a.qr === true);
+
+      quickState.textContent =
+        `room:${currentRoom} / view:${view} / status:${status} / mode:${mode}${qr ? " / QR" : ""}`;
+
+      const lock = (a.qr === true);
+      btnPrev.disabled = lock;
+      btnNext.disabled = lock;
+      btnStop.disabled = lock;
+      btnQ2.disabled = lock;
+      btnQ5.disabled = lock;
+      btnQT.disabled = lock;
+      btnT20.disabled  = lock;
+      btnT30.disabled  = lock;
+      btnT60.disabled  = lock;
+      btnTOff.disabled = lock;
+
+      // standby/poll の時も次カードをクリア
+      if (view === "standby"){
+        pvQid.textContent = `ID: ${state.latestQid || "—"}`;
+        pvQuestion.textContent = "（スタンバイ中… 次の問題を待っています）";
+        pvChoices.innerHTML = "";
+        pvAnswer.textContent = "";
+        pvExplanation.textContent = "";
+
+        pvQidNext.textContent = "ID: —";
+        pvQuestionNext.textContent = "—";
+        pvChoicesNext.innerHTML = "";
+        pvAnswerNext.textContent = "";
+        pvExplanationNext.textContent = "";
+        return;
+      }
+
+      if (view === "poll"){
+        pvQid.textContent = `ID: ${state.latestQid || "—"}`;
+        pvQuestion.textContent = "（クイック投票：問題表示なし / 集計のみ）";
+        pvChoices.innerHTML = "";
+        pvAnswer.textContent = "";
+        pvExplanation.textContent = "";
+
+        pvQidNext.textContent = "ID: —";
+        pvQuestionNext.textContent = "—";
+        pvChoicesNext.innerHTML = "";
+        pvAnswerNext.textContent = "";
+        pvExplanationNext.textContent = "";
+        return;
+      }
+
+      // 現在
+      const q = state.question;
+      if (!state.latestQid){
+        pvQid.textContent = "ID: —";
+        pvQuestion.textContent = "問題を待っています…";
+        pvChoices.innerHTML = "";
+        pvAnswer.textContent = "";
+        pvExplanation.textContent = "";
+      } else if (!q){
+        pvQid.textContent = `ID: ${state.latestQid}`;
+        pvQuestion.textContent = `（${state.latestQid}：問題データ待ち）`;
+        pvChoices.innerHTML = "";
+        pvAnswer.textContent = "";
+        pvExplanation.textContent = "";
+      } else {
+        pvQid.textContent = `ID: ${state.latestQid}`;
+        pvQuestion.textContent = q.question || "";
+
+        pvChoices.innerHTML = "";
+        if (q.choices && typeof q.choices === "object"){
+          Object.entries(q.choices).forEach(([k, v]) => {
+            const div = document.createElement("div");
+            div.className = "pv-choice";
+            div.textContent = `${uiLabel(k)}：${v}`;
+            pvChoices.appendChild(div);
+          });
+        }
+
+        const ans = (q.answer || "").toString().trim().toUpperCase();
+        pvAnswer.textContent = ans ? `正解：${uiLabel(ans)}` : "正解：—";
+        pvExplanation.textContent = q.explanation ? `解説：${q.explanation}` : "";
+      }
+
+      // 次
+      const q2id = state.nextQid;
+      const q2 = state.nextQuestion;
+
+      pvQidNext.textContent = `ID: ${q2id || "—"}`;
+
+      if (!q2id){
+        pvQuestionNext.textContent = "（次の問題なし）";
+        pvChoicesNext.innerHTML = "";
+        pvAnswerNext.textContent = "";
+        pvExplanationNext.textContent = "";
+        return;
+      }
+      if (!q2){
+        pvQuestionNext.textContent = `（${q2id}：問題データ待ち）`;
+        pvChoicesNext.innerHTML = "";
+        pvAnswerNext.textContent = "";
+        pvExplanationNext.textContent = "";
+        return;
+      }
+
+      pvQuestionNext.textContent = q2.question || "";
+      pvChoicesNext.innerHTML = "";
+      if (q2.choices && typeof q2.choices === "object"){
+        Object.entries(q2.choices).forEach(([k, v]) => {
+          const div = document.createElement("div");
+          div.className = "pv-choice";
+          div.textContent = `${uiLabel(k)}：${v}`;
+          pvChoicesNext.appendChild(div);
+        });
+      }
+
+      const ans2 = (q2.answer || "").toString().trim().toUpperCase();
+      pvAnswerNext.textContent = ans2 ? `正解：${uiLabel(ans2)}` : "正解：—";
+      pvExplanationNext.textContent = q2.explanation ? `解説：${q2.explanation}` : "";
+    }
+
+    function attachRoom(room){
+      currentRoom = room;
+      roomSelect.value = room;
+
+      if (state.unsubActivity){ state.unsubActivity(); state.unsubActivity = null; }
+      if (state.unsubQid){ state.unsubQid(); state.unsubQid = null; }
+      if (state.unsubQuestion){ state.unsubQuestion(); state.unsubQuestion = null; }
+      if (state.unsubNextQuestion){ state.unsubNextQuestion(); state.unsubNextQuestion = null; }
+
+      state.activity = {};
+      state.latestQid = null;
+      state.question = null;
+      state.nextQid = null;
+      state.nextQuestion = null;
+
+      state.unsubActivity = onValue(activityRef(room), snap => {
+        state.activity = snap.val() || {};
+        renderPreview();
+
+        if ((state.activity.view || "quiz") === "quiz"){
+          subscribeQuestion(state.latestQid);
+        }
+      });
+
+      state.unsubQid = onValue(qidRef(room), snap => {
+        state.latestQid = snap.val() || null;
+        updateNextSubscription();
+
+        if ((state.activity.view || "quiz") === "quiz"){
+          subscribeQuestion(state.latestQid);
+        } else {
+          renderPreview();
+        }
+      });
+
+      renderPreview();
+    }
+
+    // イベント
+    roomSelect.onchange = () => {
+      currentRoom = roomSelect.value;
+      localStorage.setItem("cs_teacher_room", currentRoom);
+      attachRoom(currentRoom);
+    };
+
+    btnNext.onclick = async () => {
+      const order = await refreshOrder();
+      const cur = (await get(qidRef())).val();
+      const i = order.indexOf(cur);
+      const next = i < 0 ? order[0] : order[i + 1];
+      if (next) startQuizQuestion(next);
+    };
+
+    btnPrev.onclick = async () => {
+      const order = await refreshOrder();
+      const cur = (await get(qidRef())).val();
+      const i = order.indexOf(cur);
+      const prev = i > 0 ? order[i - 1] : order[0];
+      if (prev) startQuizQuestion(prev);
+    };
+
+    btnStop.onclick = async () => { await update(activityRef(), { status:"closed" }); };
+    btnQR.onclick = async () => { await toggleQR(); };
+
+    btnQ2.onclick = async () => { await startQuickPoll("ox"); };
+    btnQ5.onclick = async () => { await startQuickPoll("five"); };
+    btnQT.onclick = async () => { await startQuickPoll("text"); };
+
+    btnT20.onclick  = () => startTimer(20);
+    btnT30.onclick  = () => startTimer(30);
+    btnT60.onclick  = () => startTimer(60);
+    btnTOff.onclick = () => stopTimer();
+
+    document.getElementById("projectionBtn").onclick = () => {
+      window.open(`https://qzp04374-code.github.io/quiz-app/exp-display/display.html?room=${encodeURIComponent(currentRoom)}`, "_blank");
+    };
+    document.getElementById("importBtn").onclick = () => {
+      window.open(`https://qzp04374-code.github.io/quiz-app/exp-display/import-csv.html?room=${encodeURIComponent(currentRoom)}`, "_blank");
+    };
+    document.getElementById("dictBtn").onclick = () => {
+      window.open(`https://qzp04374-code.github.io/quiz-app/exp-display/dict-editor.html?room=${encodeURIComponent(currentRoom)}`, "_blank");
+    };
+
+    document.getElementById("endClassBtn").onclick = async () => {
+      const ok1 = confirm("授業終了します。データを削除しますか？（1/2）");
+      if (!ok1) return;
+      const ok2 = confirm("本当に削除しますか？（2/2）");
+      if (!ok2) return;
+      await remove(ref(db, `rooms/${currentRoom}`));
+      alert("授業データを削除しました。");
+    };
+
+    // 起動
+    attachRoom(currentRoom);
+  </script>
 </body>
 </html>
