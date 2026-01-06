@@ -203,6 +203,67 @@
     /* 新ボタン（辞書） */
     #dictBtn { background: linear-gradient(135deg, var(--info), #22c55e); }
 
+    <!-- 操作パネル（2×2） -->
+    <div class="controlGroups">
+
+      <!-- ① 出題・回収 -->
+      <section class="btnGroup">
+        <div class="btnGroupTitle">① 出題・回収</div>
+        <div class="btnRow">
+          <button id="prevQuestionBtn">問題戻る ◀</button>
+          <button id="nextQuestionBtn">次の問題 ▶</button>
+        </div>
+        <div class="btnRow">
+          <button id="stopBtn" class="dangerWide">解答終了</button>
+        </div>
+      </section>
+
+      <!-- ② タイマー -->
+      <section class="btnGroup">
+        <div class="btnGroupTitle">② タイマー</div>
+        <div class="btnRow">
+          <button id="t20Btn">⏱20</button>
+          <button id="t30Btn">⏱30</button>
+        </div>
+        <div class="btnRow">
+          <button id="t60Btn">⏱60</button>
+          <button id="tOffBtn">⏹停止</button>
+        </div>
+      </section>
+
+      <!-- ③ 表示・参加 -->
+      <section class="btnGroup">
+        <div class="btnGroupTitle">③ 表示・参加</div>
+        <div class="btnRow">
+          <button id="qrBtn">QRコード</button>
+          <button id="projectionBtn">display表示</button>
+        </div>
+        <div class="btnRow">
+          <button id="endClassBtn" class="dangerWide">授業終了</button>
+        </div>
+      </section>
+
+      <!-- ④ 投票・管理 -->
+      <section class="btnGroup">
+        <div class="btnGroupTitle">
+          ④ 投票・管理 <span id="quickState" class="miniState">—</span>
+        </div>
+
+        <div class="pollGrid">
+          <button id="quick2Btn" class="tile tile-ox">投票 ○✕</button>
+          <button id="quick5Btn" class="tile tile-five">投票 5択</button>
+          <button id="quickTextBtn" class="tile tile-text">投票 TEXT</button>
+
+          <button id="importBtn" class="tile tile-admin">CSV投入</button>
+
+          <!-- すでに dictBtn を作ってるなら “そのまま置く” -->
+          <!-- なければ、後で追加OK -->
+          <button id="dictBtn" class="tile tile-admin2">読み方（辞書）</button>
+        </div>
+      </section>
+
+    </div>
+
   </style>
 </head>
 
