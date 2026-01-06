@@ -534,55 +534,55 @@
 
       pvQuestion.textContent = q.question || "";
 
-pvChoices.innerHTML = "";
-if (q.choices && typeof q.choices === "object"){
-  Object.entries(q.choices).forEach(([k, v]) => {
-    const div = document.createElement("div");
-    div.className = "pv-choice";
-    div.textContent = `${uiLabel(k)}：${v}`;
-    pvChoices.appendChild(div);
-  });
-} // ★ここで q.choices の if を閉じる（超重要）
+    pvChoices.innerHTML = "";
+    if (q.choices && typeof q.choices === "object"){
+      Object.entries(q.choices).forEach(([k, v]) => {
+        const div = document.createElement("div");
+        div.className = "pv-choice";
+        div.textContent = `${uiLabel(k)}：${v}`;
+        pvChoices.appendChild(div);
+      });
+    } // ★ここで q.choices の if を閉じる（超重要）
 
-// ===== 次の1問 =====
-const q2id = state.nextQid;
-const q2 = state.nextQuestion;
+    // ===== 次の1問 =====
+    const q2id = state.nextQid;
+    const q2 = state.nextQuestion;
 
-pvQidNext.textContent = `ID: ${q2id || "—"}`;
+    pvQidNext.textContent = `ID: ${q2id || "—"}`;
 
-if (!q2id){
-  pvQuestionNext.textContent = "（次の問題なし）";
-  pvChoicesNext.innerHTML = "";
-  pvAnswerNext.textContent = "";
-  pvExplanationNext.textContent = "";
-} else if (!q2){
-  pvQuestionNext.textContent = `（${q2id}：問題データ待ち）`;
-  pvChoicesNext.innerHTML = "";
-  pvAnswerNext.textContent = "";
-  pvExplanationNext.textContent = "";
-} else {
-  pvQuestionNext.textContent = q2.question || "";
-
-  pvChoicesNext.innerHTML = "";
-  if (q2.choices && typeof q2.choices === "object"){
-    Object.entries(q2.choices).forEach(([k, v]) => {
-      const div = document.createElement("div");
-      div.className = "pv-choice";
-      div.textContent = `${uiLabel(k)}：${v}`;
-      pvChoicesNext.appendChild(div);
-    });
-  }
-
-  const ans2 = (q2.answer || "").toString().trim().toUpperCase();
-  pvAnswerNext.textContent = ans2 ? `正解：${uiLabel(ans2)}` : "正解：—";
-  pvExplanationNext.textContent = q2.explanation ? `解説：${q2.explanation}` : "";
-}
-
-// ★常に表示（教員プレビューなので最初から出す）
-const ans = (q.answer || "").toString().trim().toUpperCase();
-pvAnswer.textContent = ans ? `正解：${uiLabel(ans)}` : "正解：—";
-pvExplanation.textContent = q.explanation ? `解説：${q.explanation}` : "";
-pvQid.textContent = `ID: ${state.latestQid || "—"}`;
+    if (!q2id){
+      pvQuestionNext.textContent = "（次の問題なし）";
+      pvChoicesNext.innerHTML = "";
+      pvAnswerNext.textContent = "";
+      pvExplanationNext.textContent = "";
+    } else if (!q2){
+      pvQuestionNext.textContent = `（${q2id}：問題データ待ち）`;
+      pvChoicesNext.innerHTML = "";
+      pvAnswerNext.textContent = "";
+      pvExplanationNext.textContent = "";
+    } else {
+      pvQuestionNext.textContent = q2.question || "";
+    
+      pvChoicesNext.innerHTML = "";
+      if (q2.choices && typeof q2.choices === "object"){
+        Object.entries(q2.choices).forEach(([k, v]) => {
+          const div = document.createElement("div");
+          div.className = "pv-choice";
+          div.textContent = `${uiLabel(k)}：${v}`;
+          pvChoicesNext.appendChild(div);
+        });
+      }
+    
+      const ans2 = (q2.answer || "").toString().trim().toUpperCase();
+      pvAnswerNext.textContent = ans2 ? `正解：${uiLabel(ans2)}` : "正解：—";
+      pvExplanationNext.textContent = q2.explanation ? `解説：${q2.explanation}` : "";
+    }
+    
+    // ★常に表示（教員プレビューなので最初から出す）
+    const ans = (q.answer || "").toString().trim().toUpperCase();
+    pvAnswer.textContent = ans ? `正解：${uiLabel(ans)}` : "正解：—";
+    pvExplanation.textContent = q.explanation ? `解説：${q.explanation}` : "";
+    pvQid.textContent = `ID: ${state.latestQid || "—"}`;
     function subscribeQuestion(qid){
       if (state.unsubQuestion){ state.unsubQuestion(); state.unsubQuestion = null; }
       state.question = null;
