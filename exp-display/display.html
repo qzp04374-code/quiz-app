@@ -664,6 +664,77 @@
     let ttsClosedKey = "";      // closed読み上げの多重防止（qidごと）
     let ttsReadClosed = true;   // 必要ならON/OFF
 
+    // ===== TTS DICT (dict/tts-dict.json) =====
+    let TTS_DICT = [];        // 生データ（JSON）
+    let TTS_REPLACERS = [];   // コンパイル済み（関数配列）
+
+    async function loadTtsDict(){
+      try{
+        // キャッシュ事故回避：毎回ユニークに（運用に合わせて固定vでもOK）
+        const res = await fetch("./dict/tts-dict.json?v=" + Date.now());
+        if (!res.ok) throw new Error("dict fetch failed: " + res.status);
+        const data = await res.json();
+        TTS_DICT = Array.isArray(data) ? data : [];
+        TTS_REPLACERS = compileTtsDict(TTS_DICT);
+        console.log("[TTS] dict loaded:", TTS_REPLACERS.length);
+      }catch(e){
+        console.warn("[TTS] dict load failed:", e);
+        TTS_DICT = [];
+        TTS_REPLACERS = [];
+      }
+    }
+
+    function compileTtsDict(list){
+      const out = [];
+
+      const esc = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+      for (const e of (list || [])){
+        if (!e || !e.from) continue;
+        const to = (e.to ?? "");
+
+        if (e.type === "text"){
+          const from = String(e.from);
+          out.push((s) => s.split(from).join(to));
+          continue;
+        }
+
+        if (e.type === "word"){
+          const from = esc(e.from);
+          const re = new RegExp("\\b" + from + "\\b", "g");
+          out.push((s) => s.replace(re, to));
+          continue;
+        }
+
+        if (e.type === "regex"){
+        try{
+            const re = new RegExp(String(e.from), e.flags || "g");
+            out.push((s) => s.replace(re, to));
+          }catch(err){
+            console.warn("[TTS] bad regex entry:", e, err);
+          }
+          continue;
+        }
+      }
+      return out;
+    }
+
+    function ttsNormalize(text){
+      let s = String(text || "");
+
+      // ここで最低限の読み上げ整形（必要なら増やす）
+      s = s.replace(/\s+/g, " ").trim();
+
+      // 辞書適用
+      for (const fn of (TTS_REPLACERS || [])){
+        try{ s = fn(s); }catch(_){}
+      }
+      return s;
+    }
+
+    // 起動時に1回ロード（awaitしない＝displayが止まらない）
+    loadTtsDict();
+
     // 出題時の「無音時間」設定（ms）
     // ※テキスト入力(mode=text)は選択肢がないので、ここは使われません
     const TTS_GAP = {
@@ -697,6 +768,8 @@
 
     // Web Speech：1発話をPromise化
     function speakOnce(text, runId){
+      text = ttsNormalize(text); // ★追加：読み上げ辞書を必ず通す
+      
       return new Promise((resolve) => {
         if (!text) return resolve();
         if (runId !== ttsRunId) return resolve(); // ★古い世代なら即終了
