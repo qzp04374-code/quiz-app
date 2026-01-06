@@ -1,0 +1,6 @@
+[
+  {"type":"text","from":"〇","to":"まる"},
+  {"type":"text","from":"×","to":"ばつ"},
+  {"type":"word","from":"AI","to":"エーアイ"},
+  {"type":"regex","from":"\\bmmHg\\b","flags":"gi","to":"ミリメートル水銀"}
+]
