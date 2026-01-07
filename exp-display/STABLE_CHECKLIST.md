@@ -84,12 +84,16 @@ room ルート：
 - [ ] display を開く → 強制QR ON（参加人数表示）
 - [ ] QR中：次の問題 disabled / 問題非表示
 - [ ] QR解除：学生が回答できる（open/mode/choices が保証される）
+- [ ] タイマー：20/30/60開始で表示が動き、0秒で（QRでない時）statusがclosedになる
+- [ ] TTS辞書：dict/tts-dict.json が無くても display が止まらない（Console warnで継続）
+- [ ] poll→quiz 復帰：poll中にQIDが更新されても、quizに戻った瞬間に問題が欠落しない
 
 ### B. 教員側（index）
 - [ ] ルーム切替が効く（別roomを操作しても混線しない）
 - [ ] 次の問題 → quiz に戻る（問題文＋選択肢が出る）
 - [ ] クイック投票（○✕ / ABCDE / TEXT）→ poll で集計が縦棒で動く
 - [ ] 解答終了 → closed で正解・解説が表示される
+- [ ] QR解除後は standby になる（view=standby, status=ready）→ そこから次の問題で quiz/open になる
 
 ### C. 学生側（student）
 - [ ] QR解除後：ボタンが出る（modeに応じて）
