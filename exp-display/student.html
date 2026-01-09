@@ -731,6 +731,49 @@
       }, (currentMode === "ox" || currentMode === "five") ? 560 : 220);
     };
 
+       submitBtn.onclick = async () => {
+      if (!isOpen || sending) return;
+
+      let payload = null;
+
+      if (currentMode === "ox" || currentMode === "five"){
+        if (!selected) return;
+        payload = { value: selected, timestamp: Date.now() };
+        sending = true;
+        submitBtn.disabled = true;
+        container.style.pointerEvents = "none";
+        playSubmitFX();
+      } else if (currentMode === "text"){
+        const text = (textValue || "").trim();
+        if (!text) return;
+        payload = { value: text, timestamp: Date.now() };
+        sending = true;
+        submitBtn.disabled = true;
+        container.style.pointerEvents = "none";
+      } else {
+        return;
+      }
+
+      try{
+        await set(ref(db, `rooms/${room}/answers/${userId}`), payload);
+      }catch(e){
+        sending = false;
+        container.style.pointerEvents = "";
+        showToast("送信失敗…もう一度");
+        // 再描画（従来どおり）
+        if (currentMode === "text") renderText();
+        if (currentMode === "ox") renderOX(["O","X"]);
+        if (currentMode === "five") renderFive(["A","B","C","D","E"]);
+        return;
+      }
+
+      setTimeout(() => {
+        container.style.pointerEvents = "";
+        showToast("送信しました ✓");
+        lockUI();
+      }, (currentMode === "ox" || currentMode === "five") ? 560 : 220);
+    };
+
     // ===== 追加：タイマー更新では再描画しない（status/mode/configだけ見る）=====
     let lastStatus = null;
     let lastMode = null;
@@ -751,7 +794,7 @@
       const mode = data.mode || null;
       const config = data.config || {};
 
-      // 1) 毎回やる：open/closed 追随（タイマー更新でもここは走る）
+      // 1) 毎回やる：状態（open/closed）だけは追随
       isOpen = (status === "open");
       currentMode = mode;
 
@@ -759,12 +802,13 @@
       dot.classList.toggle("open", isOpen);
       dot.classList.toggle("closed", !isOpen);
 
+      // overlay（closedは文言を分ける）
       if (!isOpen){
         const msg = (status === "closed")
           ? "解答は締切です。先生の次の操作を待ってください。"
           : "先生が出題を開始すると、解答ボタンが使えるようになります。";
         setOverlay(true, msg);
-      } else {
+      }else{
         setOverlay(false);
       }
 
@@ -776,7 +820,7 @@
         (cfgKey !== lastConfigKey);
 
       if (!shouldRerender){
-        // 既存UIを維持したまま、入力可否だけ更新
+        // 既存UIを維持しつつ、入力可否だけ更新
         const ta = container.querySelector("textarea");
         if (ta){
           ta.disabled = (!isOpen) || container.classList.contains("locked");
@@ -807,6 +851,7 @@
       submitBtn.disabled = true;
       setOverlay(true, "先生が出題を開始すると、解答ボタンが使えるようになります。");
     });
+
   </script>
 </body>
 </html>
