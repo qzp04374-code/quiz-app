@@ -688,7 +688,7 @@
       setTimeout(() => padShell.classList.remove("fx"), 650);
     }
 
-    submitBtn.onclick = async () => {
+        submitBtn.onclick = async () => {
       if (!isOpen || sending) return;
 
       let payload = null;
@@ -729,88 +729,83 @@
         showToast("送信しました ✓");
         lockUI();
       }, (currentMode === "ox" || currentMode === "five") ? 560 : 220);
-      // ===== 追加：タイマー更新では再描画しない（status/mode/configだけ見る）=====
-      let lastStatus = null;
-      let lastMode = null;
-      let lastConfigKey = "";
-
-      function makeConfigKey(mode, config){
-        const c = config || {};
-        if (mode === "text") return "text";
-        const arr = Array.isArray(c.choices) ? c.choices : [];
-        return arr.map(x => String(x).trim().toUpperCase()).join(",");
-      }
     };
 
-    // activity監視（mode + open/closed）
-    const activityRef = ref(db, `rooms/${room}/activity`);
-    // activity監視（mode + open/closed）
-const activityRef = ref(db, `rooms/${room}/activity`);
-onValue(activityRef, snap => {
-  const data = snap.val() || {};
-  const status = data.status || "-";
-  const mode = data.mode || null;
-  const config = data.config || {};
+    // ===== 追加：タイマー更新では再描画しない（status/mode/configだけ見る）=====
+    let lastStatus = null;
+    let lastMode = null;
+    let lastConfigKey = "";
 
-  // 1) 毎回やる：状態（open/closed）だけは追随
-  isOpen = (status === "open");
-  currentMode = mode;
-
-  statusText.textContent = `status: ${status}`;
-  dot.classList.toggle("open", isOpen);
-  dot.classList.toggle("closed", !isOpen);
-
-  // overlay（closedは文言を分ける）
-  if (!isOpen){
-    const msg = (status === "closed")
-      ? "解答は締切です。先生の次の操作を待ってください。"
-      : "先生が出題を開始すると、解答ボタンが使えるようになります。";
-    setOverlay(true, msg);
-  }else{
-    setOverlay(false);
-  }
-
-  // 2) ★ここが本題：タイマー更新などで再描画しない
-  const cfgKey = makeConfigKey(mode, config);
-  const shouldRerender =
-    (status !== lastStatus) ||
-    (mode !== lastMode) ||
-    (cfgKey !== lastConfigKey);
-
-  if (!shouldRerender){
-    // 既に表示中のUIを維持しつつ、入力可否だけ更新
-    const ta = container.querySelector("textarea");
-    if (ta){
-      // textモード：入力欄があるなら、それを生かす
-      ta.disabled = (!isOpen) || container.classList.contains("locked");
-      submitBtn.disabled =
-        (!isOpen) ||
-        sending ||
-        container.classList.contains("locked") ||
-        ((textValue || "").trim().length === 0);
-    } else {
-      // OX/5択：openじゃなければ送信不可
-      if (!isOpen) submitBtn.disabled = true;
+    function makeConfigKey(mode, config){
+      const c = config || {};
+      if (mode === "text") return "text";
+      const arr = Array.isArray(c.choices) ? c.choices : [];
+      return arr.map(x => String(x).trim().toUpperCase()).join(",");
     }
-    return;
-  }
 
-  // 3) ここから “本質的に変わった” ので再描画
-  lastStatus = status;
-  lastMode = mode;
-  lastConfigKey = cfgKey;
+    // ===== activity監視（mode + open/closed）=====
+    const activityRef = ref(db, `rooms/${room}/activity`);
+    onValue(activityRef, snap => {
+      const data = snap.val() || {};
+      const status = data.status || "-";
+      const mode = data.mode || null;
+      const config = data.config || {};
 
-  if (currentMode === "ox")   return renderOX(config.choices || ["O","X"]);
-  if (currentMode === "five") return renderFive(config.choices || ["A","B","C","D","E"]);
-  if (currentMode === "text") return renderText();
+      // 1) 毎回やる：open/closed 追随（タイマー更新でもここは走る）
+      isOpen = (status === "open");
+      currentMode = mode;
 
-  // modeが無い（初期/待機）
-  hudMode.textContent = "待機";
-  modeText.textContent = `mode: ${currentMode || "-"}`;
-  container.innerHTML = "";
-  submitBtn.disabled = true;
-  setOverlay(true, "先生が出題を開始すると、解答ボタンが使えるようになります。");
-});
+      statusText.textContent = `status: ${status}`;
+      dot.classList.toggle("open", isOpen);
+      dot.classList.toggle("closed", !isOpen);
+
+      if (!isOpen){
+        const msg = (status === "closed")
+          ? "解答は締切です。先生の次の操作を待ってください。"
+          : "先生が出題を開始すると、解答ボタンが使えるようになります。";
+        setOverlay(true, msg);
+      } else {
+        setOverlay(false);
+      }
+
+      // 2) ★本題：タイマー更新などで再描画しない
+      const cfgKey = makeConfigKey(mode, config);
+      const shouldRerender =
+        (status !== lastStatus) ||
+        (mode !== lastMode) ||
+        (cfgKey !== lastConfigKey);
+
+      if (!shouldRerender){
+        // 既存UIを維持したまま、入力可否だけ更新
+        const ta = container.querySelector("textarea");
+        if (ta){
+          ta.disabled = (!isOpen) || container.classList.contains("locked");
+          submitBtn.disabled =
+            (!isOpen) ||
+            sending ||
+            container.classList.contains("locked") ||
+            ((textValue || "").trim().length === 0);
+        } else {
+          if (!isOpen) submitBtn.disabled = true;
+        }
+        return;
+      }
+
+      // 3) 本質的に変化したので再描画
+      lastStatus = status;
+      lastMode = mode;
+      lastConfigKey = cfgKey;
+
+      if (currentMode === "ox")   return renderOX(config.choices || ["O","X"]);
+      if (currentMode === "five") return renderFive(config.choices || ["A","B","C","D","E"]);
+      if (currentMode === "text") return renderText();
+
+      // modeが無い（初期/待機）
+      hudMode.textContent = "待機";
+      modeText.textContent = `mode: ${currentMode || "-"}`;
+      container.innerHTML = "";
+      submitBtn.disabled = true;
+      setOverlay(true, "先生が出題を開始すると、解答ボタンが使えるようになります。");
     });
   </script>
 </body>
