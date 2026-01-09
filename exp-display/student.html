@@ -688,49 +688,6 @@
       setTimeout(() => padShell.classList.remove("fx"), 650);
     }
 
-        submitBtn.onclick = async () => {
-      if (!isOpen || sending) return;
-
-      let payload = null;
-
-      if (currentMode === "ox" || currentMode === "five"){
-        if (!selected) return;
-        payload = { value: selected, timestamp: Date.now() };
-        sending = true;
-        submitBtn.disabled = true;
-        container.style.pointerEvents = "none";
-        playSubmitFX();
-      } else if (currentMode === "text"){
-        const text = (textValue || "").trim();
-        if (!text) return;
-        payload = { value: text, timestamp: Date.now() };
-        sending = true;
-        submitBtn.disabled = true;
-        container.style.pointerEvents = "none";
-      } else {
-        return;
-      }
-
-      try{
-        await set(ref(db, `rooms/${room}/answers/${userId}`), payload);
-      }catch(e){
-        sending = false;
-        container.style.pointerEvents = "";
-        showToast("送信失敗…もう一度");
-        // 再描画
-        if (currentMode === "text") renderText();
-        if (currentMode === "ox") renderOX(["O","X"]);
-        if (currentMode === "five") renderFive(["A","B","C","D","E"]);
-        return;
-      }
-
-      setTimeout(() => {
-        container.style.pointerEvents = "";
-        showToast("送信しました ✓");
-        lockUI();
-      }, (currentMode === "ox" || currentMode === "five") ? 560 : 220);
-    };
-
        submitBtn.onclick = async () => {
       if (!isOpen || sending) return;
 
