@@ -1023,10 +1023,35 @@
     }
 
     function stopTTS(){
-      ttsRunId++; // ★重要：進行中の読み上げをすべて無効化
-      try{ window.speechSynthesis.cancel(); }catch(_){}
-      // ttsSpeaking はここでは触らない（speakCurrent側で管理）
-    }
+  // ★重要：進行中の読み上げをすべて無効化
+  ttsRunId++;
+
+  // ★遅延読み上げ予約が残っていたら止める
+  try{
+    if (ttsOpenDelayTimer){ clearTimeout(ttsOpenDelayTimer); ttsOpenDelayTimer = null; }
+    ttsOpenReadyAt = 0;
+  }catch(_){}
+
+  try{ window.speechSynthesis.cancel(); }catch(_){}
+
+  // ★ここが核心：OFFやキャンセル後にロック状態が残らないよう解除
+  ttsSpeaking = false;
+}
+function stopTTS(){
+  // ★重要：進行中の読み上げをすべて無効化
+  ttsRunId++;
+
+  // ★遅延読み上げ予約が残っていたら止める
+  try{
+    if (ttsOpenDelayTimer){ clearTimeout(ttsOpenDelayTimer); ttsOpenDelayTimer = null; }
+    ttsOpenReadyAt = 0;
+  }catch(_){}
+
+  try{ window.speechSynthesis.cancel(); }catch(_){}
+
+  // ★ここが核心：OFFやキャンセル後にロック状態が残らないよう解除
+  ttsSpeaking = false;
+}
 
     // Web Speech：1発話をPromise化
     function speakOnce(text, runId){
