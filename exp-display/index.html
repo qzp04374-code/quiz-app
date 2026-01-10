@@ -157,6 +157,15 @@
     #endClassBtn { background: linear-gradient(135deg,var(--danger),var(--danger2)); }
     #qrBtn { background: var(--info); }
     #projectionBtn { background: linear-gradient(135deg,var(--indigo),#a855f7); }
+    /* ★追加：結果公開方式トグル */
+    #revealBtn{
+      background: rgba(142,142,147,28) !important;  /* iOS Gray */
+      border-color: rgba(142,142,147,35) !important;
+    }
+    #revealBtn.on{
+      background: rgba(255,159,10,92) !important;  /* iOS Orange */
+      border-color: rgba(255,159,10,55) !important;
+    }
 
     #t20Btn,#t30Btn,#t60Btn,#tOffBtn{
       background: linear-gradient(135deg, rgba(6,182,212,.95), rgba(14,116,144,.95));
@@ -375,6 +384,9 @@
           <button id="projectionBtn">display表示</button>
         </div>
         <div class="btnRow">
+          <button id="revealBtn">結果：即時公開</button>
+        </div>
+        <div class="btnRow">
           <button id="endClassBtn" class="dangerWide">授業終了</button>
         </div>
       </section>
@@ -506,6 +518,7 @@
     const btnQ2   = document.getElementById("quick2Btn");
     const btnQ5   = document.getElementById("quick5Btn");
     const btnQT   = document.getElementById("quickTextBtn");
+    const btnReveal = document.getElementById("revealBtn"); 
 
     async function clearAnswers(){ await set(answersRef(), {}); }
 
@@ -648,6 +661,12 @@
         await update(activityRef(), { qr:true, view:"qr" });
         return;
       }
+      // ★追加：結果公開方式トグル（live <-> closed）
+      async function toggleRevealMode(){
+        const cur = (state.activity?.revealMode === "closed") ? "closed" : "live";
+        const next = (cur === "live") ? "closed" : "live";
+        await update(activityRef(), { revealMode: next });
+      }
 
       await update(activityRef(), {
         qr:false,
@@ -665,9 +684,10 @@
       const status = a.status || "-";
       const mode = a.mode || "-";
       const qr = (a.qr === true);
+      const reveal = (a.revealMode === "closed") ? "closed" : "live";
 
       quickState.textContent =
-        `room:${currentRoom} / view:${view} / status:${status} / mode:${mode}${qr ? " / QR" : ""}`;
+        `room:${currentRoom} / view:${view} / status:${status} / mode:${mode} / reveal:${reveal}${qr ? " / QR" : ""}`;
 
       const lock = (a.qr === true);
       btnPrev.disabled = lock;
@@ -680,7 +700,16 @@
       btnT30.disabled  = lock;
       btnT60.disabled  = lock;
       btnTOff.disabled = lock;
-
+      /* ★ここから追加：revealボタンもQR中は操作不可＋表示反映 */
+      const reveal = (a.revealMode === "closed") ? "closed" : "live";
+      
+      btnReveal.disabled = lock; // ← QR中は操作不可にする（他のボタンと同じ）
+      
+      btnReveal.classList.toggle("on", reveal === "closed");
+      btnReveal.textContent = (reveal === "closed")
+        ? "結果：解答終了で公開"
+        : "結果：即時公開";
+      /* ★ここまで追加 */
       // standby/poll の時も次カードをクリア
       if (view === "standby"){
         pvQid.textContent = `ID: ${state.latestQid || "—"}`;
@@ -845,6 +874,7 @@
 
     btnStop.onclick = async () => { await update(activityRef(), { status:"closed" }); };
     btnQR.onclick = async () => { await toggleQR(); };
+    btnReveal.onclick = async () => { await toggleRevealMode(); };
 
     btnQ2.onclick = async () => { await startQuickPoll("ox"); };
     btnQ5.onclick = async () => { await startQuickPoll("five"); };
