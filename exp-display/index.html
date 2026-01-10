@@ -435,7 +435,7 @@
 </head>
 
 <body>
-  <div id="buildTag">build: 2026-01-10 / teacher-standby-v2-preview2</div>
+  <div id="buildTag">build: 2026-01-11 / teacher-standby-v2-preview2</div>
 
   <div class="card">
     <h2>教員画面</h2>
@@ -667,7 +667,7 @@
       unsubActivity: null,
       unsubQid: null,
       unsubQuestion: null,
-      unsubNextQuestion: null
+      unsubNextQuestion: null,
       unsubAnswers: null
     };
 
@@ -688,8 +688,6 @@
       state.nextQuestion = null;
       state.nextQid = qid || null;
       
-      if (state.unsubAnswers){ state.unsubAnswers(); state.unsubAnswers = null; } // ★追加
-
       if (!qid){ renderPreview(); return; }
 
       state.unsubNextQuestion = onValue(questionRef(qid), snap => {
@@ -1037,6 +1035,7 @@
       if (state.unsubQid){ state.unsubQid(); state.unsubQid = null; }
       if (state.unsubQuestion){ state.unsubQuestion(); state.unsubQuestion = null; }
       if (state.unsubNextQuestion){ state.unsubNextQuestion(); state.unsubNextQuestion = null; }
+      if (state.unsubAnswers){ state.unsubAnswers(); state.unsubAnswers = null; } 
 
       state.activity = {};
       state.latestQid = null;
