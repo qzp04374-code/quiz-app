@@ -868,10 +868,7 @@
       const roomMeta = document.getElementById("roomMeta");
       if (roomMeta) roomMeta.textContent = meta;
       
-      const roomMeta = document.getElementById("roomMeta");
-      if (roomMeta) roomMeta.textContent = meta;
-
-      // standby/poll の時も次カードをクリア
+       // standby/poll の時も次カードをクリア
       if (view === "standby"){
         pvQid.textContent = `ID: ${state.latestQid || "—"}`;
         pvQuestion.textContent = "（スタンバイ中… 次の問題を待っています）";
