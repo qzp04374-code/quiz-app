@@ -1347,7 +1347,8 @@ ttsBtn.onclick = async () => {
     let choiceOrder = ["A","B","C","D","E"];
     let currentQuestion = null;
     let currentRevealMode = "live"; // ★追加：live / closed
-
+    
+    let expectedN = 0;              // ★追加：100%人数（母数）。0なら従来どおり「投票数=母数」
     let lastAnswers = {};
 
     // ===== Auto-fit question text (ONLY question) =====
@@ -1561,15 +1562,13 @@ ttsBtn.onclick = async () => {
 
       const entries = ord.map(k => [String(k).toUpperCase(), Number((counts||{})[k]||0)]);
       const max = Math.max(...entries.map(([,v])=>v), 1);
-      const total = entries.reduce((s,[,v]) => s + (Number(v)||0), 0) || 1;
-
+      
+      const actualTotal = entries.reduce((s,[,v]) => s + (Number(v)||0), 0);
+      const denom = (expectedN > 0 ? Math.max(expectedN, actualTotal) : actualTotal) || 1;
+      
       entries.forEach(([lab, val]) => {
-        const col = document.createElement("div");
-        col.className = "col";
-
-        const cnt = document.createElement("div");
-        cnt.className = "count";
-        const pct = Math.round((val / total) * 100);
+        ...
+        const pct = Math.round((val / denom) * 100);
         cnt.textContent = `${val}（${pct}%）`;
 
         const bar = document.createElement("div");
@@ -1667,8 +1666,9 @@ ttsBtn.onclick = async () => {
       const keys = Object.keys(ans || {});
       const n = keys.length;
 
-      countLabel.textContent = `参加中 ${n}人`;
-      qrCount.textContent = `参加中 ${n}人`;
+      const denomN = (expectedN > 0 ? Math.max(expectedN, n) : 0);
+      countLabel.textContent = (expectedN > 0) ? `参加中 ${n} / ${denomN}人` : `参加中 ${n}人`;
+      qrCount.textContent    = countLabel.textContent;
 
       const isText = (currentMode === "text");
       if (isText){
@@ -1841,6 +1841,8 @@ onValue(activityRef, snap => {
   currentStatus = a.status || "-";
   currentMode = a.mode || null;
   currentRevealMode = (a.revealMode === "closed") ? "closed" : "live";
+  // ★ここに追加
+  expectedN = Math.max(0, Math.floor(Number(a.expectedN || 0)));
 
   // ★安全弁：cElが存在するときだけ消す（存在しないと全停止→QRが出ない）
   if (currentMode === "text" && typeof cEl !== "undefined" && cEl) {
