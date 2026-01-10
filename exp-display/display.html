@@ -831,6 +831,20 @@
         return false;
       }
     }
+    
+    // ★追加：出題開始SE（start.mp3）
+    const startSe = new Audio("./start.mp3");
+    startSe.preload = "auto";
+    startSe.volume = 0.85;
+    
+    function playStart(){
+      if (!soundEnabled || !soundUnlocked) return;
+      try{
+        startSe.currentTime = 0;
+        startSe.play().catch(()=>{});
+      }catch(_){}
+    }
+
     soundBtn.onclick = async () => { await unlockSound(); };
     (function addOneShotUnlock(){
       const handler = async () => {
@@ -875,6 +889,11 @@
     let ttsSpeaking = false;     // 連打防止
     let ttsAutoSpokenKey = null; // 同一出題で1回だけ
     let ttsRunId = 0; // ★追加：読み上げの世代ID（古い処理を殺す）
+    // ★追加：open後に読み上げ開始するまでの待ち時間
+    const OPEN_READ_DELAY_MS = 3000;
+    let ttsOpenReadyAt = 0;          // Date.now()で比較
+    let ttsOpenDelayTimer = null;    // setTimeout保持
+
     let ttsClosedKey = "";      // closed読み上げの多重防止（qidごと）
     let ttsReadClosed = true;   // 必要ならON/OFF
 
@@ -1157,6 +1176,8 @@ async function speakCurrent({ withJingle=true, auto=false } = {}){
 }
 
 // 自動読み上げ（「openになった出題」を1回だけ）
+// 自動読み上げ（「openになった出題」を1回だけ）
+// ★変更：open直後は3秒待ってから読む
 function maybeAutoSpeak(){
   if (!ttsEnabled || !ttsUnlocked) return;
   if (currentView !== "quiz") return;
@@ -1169,8 +1190,23 @@ function maybeAutoSpeak(){
   const qidKey = (latestQid || "") + ":open";
   if (ttsAutoSpokenKey === qidKey) return;
 
+  // ★open後3秒待ち（まだ時間なら予約して終わり）
+  const now = Date.now();
+  if (ttsOpenReadyAt && now < ttsOpenReadyAt){
+    const wait = ttsOpenReadyAt - now;
+    if (ttsOpenDelayTimer) clearTimeout(ttsOpenDelayTimer);
+    ttsOpenDelayTimer = setTimeout(() => {
+      ttsOpenDelayTimer = null;
+      maybeAutoSpeak();
+    }, Math.max(0, wait));
+    return;
+  }
+
+  // ★ここまで来たら読み上げOK
   ttsAutoSpokenKey = qidKey;
-  speakCurrent({ withJingle:true, auto:true });
+
+  // start.mp3 を鳴らすので、TTS側のジングルは無しが自然（好みでtrueでもOK）
+  speakCurrent({ withJingle:false, auto:true });
 }
 
 // ボタン：読み上げON/OFF
@@ -1840,6 +1876,19 @@ onValue(activityRef, snap => {
   if (choiceOrder.length === 2 && choiceOrder.includes("A") && choiceOrder.includes("B")){
     choiceOrder = ["O","X"];
   }
+  // ★追加：openに切り替わった瞬間（出題開始）
+  if (lastStatus !== "open" && currentStatus === "open") {
+    // 出題開始SE
+    playStart();
+  
+    // 読み上げは3秒後から
+    ttsOpenReadyAt = Date.now() + OPEN_READ_DELAY_MS;
+    if (ttsOpenDelayTimer) clearTimeout(ttsOpenDelayTimer);
+    ttsOpenDelayTimer = setTimeout(() => {
+      ttsOpenDelayTimer = null;
+      maybeAutoSpeak();
+    }, OPEN_READ_DELAY_MS);
+  }
 
   if (lastStatus !== "closed" && currentStatus === "closed") {
     showToast();
@@ -1847,6 +1896,11 @@ onValue(activityRef, snap => {
     speakClosedAnswerOnly(); // ★ここ
   }
   lastStatus = currentStatus;
+  // ★追加：openでなくなったら予約を解除
+  if (currentStatus !== "open") {
+    ttsOpenReadyAt = 0;
+    if (ttsOpenDelayTimer) { clearTimeout(ttsOpenDelayTimer); ttsOpenDelayTimer = null; }
+  }
 
   if (currentView === "poll"){
     if (unsubQ) { unsubQ(); unsubQ = null; }
