@@ -631,9 +631,6 @@
     function questionsRef(room=currentRoom){ return ref(db, `rooms/${room}/questions`); }
     function questionRef(qid, room=currentRoom){ return ref(db, `rooms/${room}/questions/${qid}`); }
 
-    // DOM
-    const quickState = document.getElementById("quickState");
-
     const pvQuestion = document.getElementById("pvQuestion");
     const pvChoices  = document.getElementById("pvChoices");
     const pvAnswer   = document.getElementById("pvAnswer");
@@ -868,7 +865,8 @@
       const meta =
         `room:${currentRoom} / view:${view} / status:${status} / mode:${mode} / reveal:${reveal}${qr ? " / QR" : ""}`;
       
-      quickState.textContent = meta;
+      const roomMeta = document.getElementById("roomMeta");
+      if (roomMeta) roomMeta.textContent = meta;
       
       const roomMeta = document.getElementById("roomMeta");
       if (roomMeta) roomMeta.textContent = meta;
