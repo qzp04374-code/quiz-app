@@ -653,6 +653,13 @@
       await update(activityRef(), { timer: { running: false } });
     }
 
+    // ★追加：結果公開方式トグル（live <-> closed）
+    async function toggleRevealMode(){
+      const cur = (state.activity?.revealMode === "closed") ? "closed" : "live";
+      const next = (cur === "live") ? "closed" : "live";
+      await update(activityRef(), { revealMode: next });
+    }
+    
     // QRトグル（解除→standby）
     async function toggleQR(){
       const isQR = (state.activity?.qr === true);
@@ -660,12 +667,6 @@
       if (!isQR){
         await update(activityRef(), { qr:true, view:"qr" });
         return;
-      }
-      // ★追加：結果公開方式トグル（live <-> closed）
-      async function toggleRevealMode(){
-        const cur = (state.activity?.revealMode === "closed") ? "closed" : "live";
-        const next = (cur === "live") ? "closed" : "live";
-        await update(activityRef(), { revealMode: next });
       }
 
       await update(activityRef(), {
@@ -700,9 +701,7 @@
       btnT30.disabled  = lock;
       btnT60.disabled  = lock;
       btnTOff.disabled = lock;
-      /* ★ここから追加：revealボタンもQR中は操作不可＋表示反映 */
-      const reveal = (a.revealMode === "closed") ? "closed" : "live";
-      
+      /* ★ここから追加：revealボタンもQR中は操作不可＋表示反映 */     
       btnReveal.disabled = lock; // ← QR中は操作不可にする（他のボタンと同じ）
       
       btnReveal.classList.toggle("on", reveal === "closed");
