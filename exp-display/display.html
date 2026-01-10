@@ -467,8 +467,8 @@
   border-radius:18px;
   overflow:hidden;
 
-  background: rgba(2,6,23,.54);
-  backdrop-filter: blur(12px) saturate(1.18);
+  background: rgba(2,6,23,.92);
+  backdrop-filter: blur(18px) brightness(.65) saturate(1.00);
 
   opacity:0;
   pointer-events:none;
@@ -481,8 +481,8 @@
   position:absolute; inset:-20%;
   z-index:0;
   pointer-events:none;
-  opacity:.92;
-  filter: blur(18px);
+  opacity:.42;
+  filter: blur(16px);
   animation: hueShift 10s linear infinite;
 }
 @keyframes hueShift{
@@ -495,7 +495,7 @@
   width: 44vmax; height: 44vmax;
   border-radius: 999px;
   mix-blend-mode: screen;
-  opacity:.58;
+  opacity:.22;
   will-change: transform;
 }
 .maskFx .b1{
@@ -542,7 +542,7 @@
     rgba(255,255,255,.22),
     rgba(255,255,255,0)
   );
-  opacity:.35;
+  opacity:.10;
   animation: sheenMove 2.4s ease-in-out infinite;
 }
 @keyframes sheenMove{
