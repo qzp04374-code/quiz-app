@@ -431,6 +431,24 @@
     }
     .textMeta{ font-size:12px; opacity:.75; margin-top:6px; font-weight:900; }
 
+    /* ルーム右の状態表示（roomMeta） */
+    .roomMeta{
+      padding:8px 12px;
+      border-radius:999px;
+      background: rgba(255,255,255,0.10);
+      border: 1px solid rgba(255,255,255,0.10);
+      font-size:12px;
+      white-space: nowrap;
+    }
+    
+    /* タイマーを横一列（4つ）に */
+    .timerRow{
+      display:flex !important;
+      justify-content:center;
+      align-items:center;
+      gap:10px;
+    }
+
   </style>
 </head>
 
@@ -443,7 +461,9 @@
     <div class="topRow">
       ルーム：
       <select id="roomSelect"></select>
+      <span id="roomMeta" class="miniState roomMeta">—</span>
     </div>
+
 
     <!-- 操作パネル（2×2） -->
     <div class="controlGroups">
@@ -462,11 +482,10 @@
       <!-- ② タイマー -->
       <section class="btnGroup">
         <div class="btnGroupTitle">② タイマー</div>
-        <div class="btnRow">
+      
+        <div class="btnRow timerRow">
           <button id="t20Btn">⏱20</button>
           <button id="t30Btn">⏱30</button>
-        </div>
-        <div class="btnRow">
           <button id="t60Btn">⏱60</button>
           <button id="tOffBtn">⏹停止</button>
         </div>
@@ -848,6 +867,15 @@
         ? "結果：解答終了で公開"
         : "結果：即時公開";
       /* ★ここまで追加 */
+
+      const meta =
+        `room:${currentRoom} / view:${view} / status:${status} / mode:${mode} / reveal:${reveal}${qr ? " / QR" : ""}`;
+      
+      quickState.textContent = meta;
+      
+      const roomMeta = document.getElementById("roomMeta");
+      if (roomMeta) roomMeta.textContent = meta;
+
       // standby/poll の時も次カードをクリア
       if (view === "standby"){
         pvQid.textContent = `ID: ${state.latestQid || "—"}`;
