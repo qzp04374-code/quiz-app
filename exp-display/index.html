@@ -402,6 +402,8 @@
           <button id="quickTextBtn" class="tile tile-text">投票 TEXT</button>
           <button id="importBtn" class="tile tile-admin">CSV投入</button>
           <button id="dictBtn" class="tile tile-admin2">読み方（辞書）</button>
+          <!-- ★追加：母数を今回の投票人数で固定 -->
+          <button id="setExpectedFromVotesBtn" class="tile tile-admin">母数=投票人数</button>
         </div>
       </section>
     </div>
@@ -519,6 +521,7 @@
     const btnQ5   = document.getElementById("quick5Btn");
     const btnQT   = document.getElementById("quickTextBtn");
     const btnReveal = document.getElementById("revealBtn"); 
+    const btnSetExpectedFromVotes = document.getElementById("setExpectedFromVotesBtn");
 
     async function clearAnswers(){ await set(answersRef(), {}); }
 
@@ -635,6 +638,23 @@
         config,
         timer:{ running:false }
       });
+    }
+    async function setExpectedFromVotes(){
+      // いまのanswers数を母数にする（出席確認用）
+      const snap = await get(answersRef());
+      const ans = snap.val() || {};
+      const n = Object.keys(ans).length;
+    
+      if (n <= 0){
+        alert("まだ投票がありません（answers=0）");
+        return;
+      }
+    
+      const ok = confirm(`今回の投票人数 ${n} 人を、100%人数（母数）に設定しますか？`);
+      if (!ok) return;
+    
+      await update(activityRef(), { expectedN: n });
+      alert(`100%人数（母数）を ${n} 人に設定しました。`);
     }
 
     // タイマー
@@ -874,7 +894,8 @@
     btnStop.onclick = async () => { await update(activityRef(), { status:"closed" }); };
     btnQR.onclick = async () => { await toggleQR(); };
     btnReveal.onclick = async () => { await toggleRevealMode(); };
-
+    btnSetExpectedFromVotes.onclick = async () => { await setExpectedFromVotes(); };
+    
     btnQ2.onclick = async () => { await startQuickPoll("ox"); };
     btnQ5.onclick = async () => { await startQuickPoll("five"); };
     btnQT.onclick = async () => { await startQuickPoll("text"); };
