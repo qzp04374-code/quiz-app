@@ -1907,19 +1907,14 @@ onValue(activityRef, snap => {
   rightTitle.textContent =
    (currentMode === "text") ? "文字入力（件数＋一覧）" : "集計（縦棒）";
 
-  // QR判定：qr:true だけでなく view:"qr" でも表示する（型ブレも吸収）
+  // ✅QR判定：ONなら表示、ONでなければ必ず非表示（固まり防止）
   const qrOn =
     (a.qr === true) ||
     (a.qr === "true") ||
     (a.view === "qr");
   
-  if (qrOn) {
-    showQR();
-  } else {
-    // qr が明示的に false のときだけ閉じる（未設定undefinedなら現状維持＝起動時に消えない）
-    const qrOff = (a.qr === false) || (a.qr === "false");
-    if (qrOff) hideQRWithFade();
-  }
+  if (qrOn) showQR();
+  else hideQRWithFade();
 
   const cfgChoices = (a.config && Array.isArray(a.config.choices)) ? a.config.choices : null;
   if (cfgChoices && cfgChoices.length){
