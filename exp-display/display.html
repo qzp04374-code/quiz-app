@@ -890,7 +890,7 @@
     let ttsAutoSpokenKey = null; // 同一出題で1回だけ
     let ttsRunId = 0; // ★追加：読み上げの世代ID（古い処理を殺す）
     // ★追加：open後に読み上げ開始するまでの待ち時間
-    const OPEN_READ_DELAY_MS = 3000;
+    const OPEN_READ_DELAY_MS = 1000;
     let ttsOpenReadyAt = 0;          // Date.now()で比較
     let ttsOpenDelayTimer = null;    // setTimeout保持
 
