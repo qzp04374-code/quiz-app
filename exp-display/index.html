@@ -845,9 +845,6 @@
       const qr = (a.qr === true);
       const reveal = (a.revealMode === "closed") ? "closed" : "live";
 
-      quickState.textContent =
-        `room:${currentRoom} / view:${view} / status:${status} / mode:${mode} / reveal:${reveal}${qr ? " / QR" : ""}`;
-
       const lock = (a.qr === true);
       btnPrev.disabled = lock;
       btnNext.disabled = lock;
