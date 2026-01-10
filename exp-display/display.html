@@ -1550,45 +1550,50 @@ ttsBtn.onclick = async () => {
         cEl.appendChild(row);
       });
     }
-
+    
     function renderVChart(counts, order){
       vchart.innerHTML = "";
-
+    
       const ord = Array.isArray(order) && order.length ? order : Object.keys(counts || {});
       if (!ord.length){
         vchart.innerHTML = `<div style="color:rgba(203,213,225,.9);">（集計待ち）</div>`;
         return;
       }
-
+    
       const entries = ord.map(k => [String(k).toUpperCase(), Number((counts||{})[k]||0)]);
       const max = Math.max(...entries.map(([,v])=>v), 1);
-      
+    
+      // ★母数：expectedN が入っていればそれを優先（ただし投票数より小さいと100%超えるので max を取る）
       const actualTotal = entries.reduce((s,[,v]) => s + (Number(v)||0), 0);
       const denom = (expectedN > 0 ? Math.max(expectedN, actualTotal) : actualTotal) || 1;
-      
+    
       entries.forEach(([lab, val]) => {
-        ...
+        const col = document.createElement("div");
+        col.className = "col";
+    
+        const cnt = document.createElement("div");
+        cnt.className = "count";
         const pct = Math.round((val / denom) * 100);
         cnt.textContent = `${val}（${pct}%）`;
-
+    
         const bar = document.createElement("div");
         bar.className = "bar";
         const h = Math.max(12, Math.round((val / max) * 280));
         bar.style.height = `${h}px`;
-
+    
         const fill = document.createElement("div");
         fill.className = "barFill";
         fill.style.background = colorOf(lab);
         bar.appendChild(fill);
-
+    
         const label = document.createElement("div");
         label.className = "lab";
         label.textContent = uiLabel(lab);
-
+    
         col.appendChild(cnt);
         col.appendChild(bar);
         col.appendChild(label);
-
+    
         vchart.appendChild(col);
       });
     }
