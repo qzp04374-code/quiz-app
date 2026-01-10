@@ -456,6 +456,199 @@
       100% { filter: brightness(1.0); }
     }
 
+  /* =========================
+   非公開マスク：MEDIUM演出
+   ========================= */
+#vchartWrap{ position:relative; }
+
+.resultsMask{
+  position:absolute; inset:0;
+  display:flex; align-items:center; justify-content:center;
+  border-radius:18px;
+  overflow:hidden;
+
+  background: rgba(2,6,23,.54);
+  backdrop-filter: blur(12px) saturate(1.18);
+
+  opacity:0;
+  pointer-events:none;
+  transition: opacity .18s ease;
+}
+.resultsMask.show{ opacity:1; pointer-events:auto; }
+
+/* 背景演出（オーロラ） */
+.maskFx{
+  position:absolute; inset:-20%;
+  z-index:0;
+  pointer-events:none;
+  opacity:.92;
+  filter: blur(18px);
+  animation: hueShift 10s linear infinite;
+}
+@keyframes hueShift{
+  0%   { filter: blur(18px) hue-rotate(0deg); }
+  100% { filter: blur(18px) hue-rotate(18deg); }
+}
+
+.maskFx .blob{
+  position:absolute;
+  width: 44vmax; height: 44vmax;
+  border-radius: 999px;
+  mix-blend-mode: screen;
+  opacity:.58;
+  will-change: transform;
+}
+.maskFx .b1{
+  left: -12%; top: 10%;
+  background: radial-gradient(circle at 30% 30%,
+    rgba(10,132,255,.85), rgba(10,132,255,0) 60%);
+  animation: blobFloat1 7.2s ease-in-out infinite;
+}
+.maskFx .b2{
+  right: -14%; top: 18%;
+  background: radial-gradient(circle at 30% 30%,
+    rgba(48,209,88,.82), rgba(48,209,88,0) 60%);
+  animation: blobFloat2 8.2s ease-in-out infinite;
+}
+.maskFx .b3{
+  left: 10%; bottom: -18%;
+  background: radial-gradient(circle at 30% 30%,
+    rgba(191,90,242,.78), rgba(191,90,242,0) 62%);
+  animation: blobFloat3 9.0s ease-in-out infinite;
+}
+@keyframes blobFloat1{
+  0%,100%{ transform: translate(-2%, 0%) scale(1.00); }
+  50%    { transform: translate(8%, 6%)  scale(1.08); }
+}
+@keyframes blobFloat2{
+  0%,100%{ transform: translate(0%, 0%)  scale(1.00); }
+  50%    { transform: translate(-10%, 8%) scale(1.07); }
+}
+@keyframes blobFloat3{
+  0%,100%{ transform: translate(0%, 0%)  scale(1.00); }
+  50%    { transform: translate(6%, -10%) scale(1.10); }
+}
+
+/* 斜めに走るシマー（光の筋） */
+.maskFx .sheen{
+  position:absolute;
+  left:-60%;
+  top:-20%;
+  width:50%;
+  height:160%;
+  transform: rotate(20deg);
+  background: linear-gradient(90deg,
+    rgba(255,255,255,0),
+    rgba(255,255,255,.22),
+    rgba(255,255,255,0)
+  );
+  opacity:.35;
+  animation: sheenMove 2.4s ease-in-out infinite;
+}
+@keyframes sheenMove{
+  0%   { transform: translateX(0) rotate(20deg); }
+  100% { transform: translateX(260%) rotate(20deg); }
+}
+
+/* スキャンライン（少しだけ強め） */
+.resultsMask::before{
+  content:"";
+  position:absolute; inset:-35% 0;
+  background: linear-gradient(180deg,
+    rgba(255,255,255,0) 0%,
+    rgba(255,255,255,.10) 45%,
+    rgba(255,255,255,0) 75%);
+  animation: scan 2.4s linear infinite;
+  opacity:.34;
+  z-index:1;
+}
+@keyframes scan{
+  0%   { transform: translateY(-30%); }
+  100% { transform: translateY(35%); }
+}
+
+/* 微ノイズ（ほんのり動く） */
+.resultsMask::after{
+  content:"";
+  position:absolute; inset:0;
+  background-image:
+    repeating-linear-gradient(
+      0deg,
+      rgba(255,255,255,.04) 0px,
+      rgba(255,255,255,.04) 1px,
+      rgba(255,255,255,0) 2px,
+      rgba(255,255,255,0) 5px
+    );
+  opacity:.12;
+  mix-blend-mode: overlay;
+  animation: noiseDrift .9s steps(2) infinite;
+  z-index:2;
+}
+@keyframes noiseDrift{
+  0%   { transform: translate(0,0); }
+  100% { transform: translate(-10px, 8px); }
+}
+
+/* 前面カード */
+.maskInner{
+  position:relative;
+  z-index:3;
+  text-align:center;
+  padding:18px 16px;
+  border-radius:18px;
+  border:1px solid rgba(255,255,255,.14);
+  background: rgba(17,24,39,.56);
+  box-shadow:
+    0 26px 86px rgba(0,0,0,.58),
+    0 0 0 1px rgba(10,132,255,.10),
+    0 0 44px rgba(10,132,255,.14);
+  animation: innerPulse 2.6s ease-in-out infinite;
+}
+@keyframes innerPulse{
+  0%,100%{ transform: translateY(0); filter: brightness(1.00); }
+  50%    { transform: translateY(-2px); filter: brightness(1.06); }
+}
+
+.maskTitle{
+  font-weight:1100;
+  letter-spacing:.12em;
+  font-size:22px;
+  color:#fff;
+  text-shadow: 0 0 18px rgba(255,255,255,.14);
+}
+.maskSub{
+  margin-top:8px;
+  font-weight:900;
+  letter-spacing:.08em;
+  color:rgba(203,213,225,.88);
+  font-size:14px;
+}
+
+/* “ウニ…” */
+.uni{ display:flex; gap:8px; justify-content:center; margin-top:14px; }
+.uni span{
+  width:11px; height:11px; border-radius:999px;
+  background:rgba(255,255,255,.75);
+  box-shadow: 0 0 20px rgba(255,255,255,.22);
+  animation: uni 0.85s infinite ease-in-out;
+}
+.uni span:nth-child(2){ animation-delay:.10s; opacity:.88; }
+.uni span:nth-child(3){ animation-delay:.20s; opacity:.78; }
+.uni span:nth-child(4){ animation-delay:.30s; opacity:.68; }
+.uni span:nth-child(5){ animation-delay:.40s; opacity:.58; }
+@keyframes uni{
+  0%,100%{ transform: translateY(0) scale(.98); }
+  50%    { transform: translateY(-7px) scale(1.12); }
+}
+
+/* 動きを止めたい環境配慮 */
+@media (prefers-reduced-motion: reduce){
+  .maskFx, .maskFx .blob, .maskFx .sheen,
+  .resultsMask::before, .resultsMask::after,
+  .maskInner, .uni span{
+    animation: none !important;
+  }
+}
     
   </style>
 </head>
@@ -511,6 +704,25 @@
         <div class="secTitle" id="rightTitle">集計（縦棒）</div>
         <div id="vchartWrap">
           <div id="vchart"></div>
+
+          <!-- ★追加：投票中 非公開マスク（MEDIUM演出） -->
+          <div id="resultsMask" class="resultsMask" aria-hidden="true">
+            <div class="maskFx" aria-hidden="true">
+              <span class="blob b1"></span>
+              <span class="blob b2"></span>
+              <span class="blob b3"></span>
+              <span class="sheen"></span>
+            </div>
+
+            <div class="maskInner">
+              <div class="maskTitle">投票中…</div>
+              <div class="maskSub">結果は「解答終了」で公開</div>
+
+              <div class="uni" aria-hidden="true">
+                <span></span><span></span><span></span><span></span><span></span>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div id="textAnswersBox">
@@ -557,6 +769,8 @@
 
     const vchart = document.getElementById("vchart");
     const rightTitle = document.getElementById("rightTitle");
+    
+    const resultsMask = document.getElementById("resultsMask");
 
     const textBox = document.getElementById("textAnswersBox");
     const textList = document.getElementById("textAnswersList");
@@ -1096,6 +1310,7 @@ ttsBtn.onclick = async () => {
     let currentView = "quiz";
     let choiceOrder = ["A","B","C","D","E"];
     let currentQuestion = null;
+    let currentRevealMode = "live"; // ★追加：live / closed
 
     let lastAnswers = {};
 
@@ -1396,6 +1611,22 @@ ttsBtn.onclick = async () => {
       return Array.isArray(choiceOrder) ? choiceOrder : [];
     }
 
+    function shouldHideResults(){
+      // textは元々「closedで一覧公開」なので、ここでは従来仕様を優先して隠さない
+      if (currentMode === "text") return false;
+      return (currentRevealMode === "closed") && (currentStatus === "open") && (isQR === false);
+    }
+    
+    function syncRevealUI(){
+      const hide = shouldHideResults();
+      if (resultsMask) resultsMask.classList.toggle("show", hide);
+    
+      // タイトルも切り替える（見た目で分かるように）
+      rightTitle.textContent =
+        (currentMode === "text") ? "文字入力（件数＋一覧）" :
+        hide ? "集計（非公開）" : "集計（縦棒）";
+    }
+
     function recomputeAndRenderFromAnswers(ans){
       const keys = Object.keys(ans || {});
       const n = keys.length;
@@ -1573,6 +1804,7 @@ onValue(activityRef, snap => {
   const a = snap.val() || {};
   currentStatus = a.status || "-";
   currentMode = a.mode || null;
+  currentRevealMode = (a.revealMode === "closed") ? "closed" : "live";
 
   // ★安全弁：cElが存在するときだけ消す（存在しないと全停止→QRが出ない）
   if (currentMode === "text" && typeof cEl !== "undefined" && cEl) {
@@ -1642,6 +1874,7 @@ onValue(activityRef, snap => {
     // view/mode/statusが変わったタイミングで即描画（TEXTのclosed表示を確実に反映）
     recomputeAndRenderFromAnswers(lastAnswers);
   }
+  syncRevealUI();
 });
 
  // qid：常に保持し、quiz状態なら即適用
