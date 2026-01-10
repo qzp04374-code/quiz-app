@@ -48,6 +48,22 @@
     body.poll.closed .grid{ grid-template-columns: 1fr !important; }
 
     /* textモード：右側を（人数バー＋一覧）に最適化 */
+    /* ===========================
+       TEXTモード：上段＝問題+件数 / 下段＝TEXT一覧(全幅)
+       ※ #textAnswersBox を .grid 直下に移動した前提
+    =========================== */
+    
+    /* text回答一覧は“2段目で全幅”にする */
+    #textAnswersBox{
+      grid-column: 1 / -1;     /* 全列にまたがる */
+    }
+    
+    /* TEXTモード時は grid を2段に：上(問題+件数) / 下(TEXT一覧) */
+    body.textmode .grid{
+      grid-template-rows: minmax(220px, 38vh) 1fr;
+    }
+    
+    /* 上段（左/右）を少し締める：右は件数バー中心 */
     body.textmode #vchartWrap{
       flex: 0 0 auto;
       height: 120px;
@@ -57,11 +73,23 @@
       justify-content:flex-start;
       padding: 10px 12px;
     }
+    
+    /* 下段（TEXT一覧）は残り全部を使ってスクロール */
     body.textmode #textAnswersBox{
-      display:block !important;
-      flex: 1 1 auto;
-      max-height:none !important;
-      overflow:auto;
+      max-height: none !important;  /* 38vh制限を解除 */
+      overflow: auto;
+      min-height: 0;
+    }
+    
+    /* 画面が広いときは2カラムで“読みやすく” */
+    @media (min-width: 1100px){
+      body.textmode #textAnswersList{
+        column-count: 2;
+        column-gap: 12px;
+      }
+      body.textmode .textItem{
+        break-inside: avoid;
+      }
     }
 
     .wrap{
@@ -724,11 +752,11 @@
             </div>
           </div>
         </div>
-
-        <div id="textAnswersBox">
-          <div id="textAnswersTitle">文字回答（解答終了で表示）</div>
-          <div id="textAnswersList"></div>
-        </div>
+      </div>
+      <!-- ★ここに移動：TEXT回答を“全幅の広い段”で表示 -->
+      <div id="textAnswersBox">
+        <div id="textAnswersTitle">文字回答（解答終了で表示）</div>
+        <div id="textAnswersList"></div>
       </div>
     </div>
   </div>
