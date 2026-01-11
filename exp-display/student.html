@@ -468,21 +468,23 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
-
+    import {
+      getDatabase, ref, onValue, set, runTransaction
+    } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+  
     const firebaseConfig = {
       apiKey: "AIzaSyBke-wTU16skpbK8z80ddK04tE154dHERQ",
       authDomain: "satosan-41eac.firebaseapp.com",
       databaseURL: "https://satosan-41eac-default-rtdb.asia-southeast1.firebasedatabase.app",
       projectId: "satosan-41eac"
     };
-
+  
     const app = initializeApp(firebaseConfig);
     const db  = getDatabase(app);
-
+  
     const url  = new URL(window.location.href);
     const room = url.searchParams.get("room") || "kyoto-01";
-
+  
     const padShell    = document.getElementById("padShell");
     const padArea     = document.getElementById("padArea");
     const roomLabel   = document.getElementById("roomLabel");
@@ -490,42 +492,54 @@
     const statusText  = document.getElementById("statusText");
     const modeText    = document.getElementById("modeText");
     const hudMode     = document.getElementById("hudMode");
-
+  
     const container   = document.getElementById("answer-container");
     const submitBtn   = document.getElementById("submitBtn");
     const overlay     = document.getElementById("overlay");
     const overlayText = document.getElementById("overlayText");
     const toast       = document.getElementById("toast");
-
+  
     roomLabel.textContent = `ROOM: ${room}`;
-
+  
+    // ===== userId固定 =====
     let userId = localStorage.getItem("student_user_id");
     if (!userId) {
       userId = "user_" + Math.random().toString(36).slice(2, 10);
       localStorage.setItem("student_user_id", userId);
     }
-
+  
+    // ===== state =====
     let isOpen = false;
-    let currentMode = null;       // ox / five / text
-    let selected = null;          // O/X/A-E
+    let currentMode = null;     // ox / five / text
+    let currentView = "quiz";   // quiz / poll / standby / qr / game
+    let selected = null;        // O/X/A-E
     let sending = false;
     let textValue = "";
-
+  
+    // ===== game state =====
+    let isGame = false;
+    let gameRound = null;
+    let gamePhase = null;
+    let gameSeatsRemain = {A:0,B:0,C:0,D:0,E:0};
+    let mySeat = null;          // 座れたら "A".."E"
+    let claimBusy = false;
+  
+    // ===== UI helpers =====
     function showToast(msg){
       toast.textContent = msg;
       toast.classList.add("show");
       setTimeout(()=> toast.classList.remove("show"), 1200);
     }
-
+  
     function setOverlay(show, msg){
       overlay.classList.toggle("show", !!show);
       if (msg) overlayText.textContent = msg;
     }
-
+  
     function clearTrails(){
       padArea.querySelectorAll(".trail").forEach(el => el.remove());
     }
-
+  
     function unlockUI(){
       sending = false;
       padShell.classList.remove("fx");
@@ -535,32 +549,110 @@
       textValue = "";
       clearTrails();
       container.style.pointerEvents = "";
+      container.querySelectorAll(".btn").forEach(b => b.classList.remove("sel", "sucked"));
+      container.querySelectorAll(".btn").forEach(b => b.style.opacity = "");
     }
-
+  
     function lockUI(){
       container.classList.add("locked");
       submitBtn.disabled = true;
     }
-
+  
     function uiLabel(ch){
       const c = String(ch).trim().toUpperCase();
       if (c === "O") return "○";
       if (c === "X") return "✕";
       return c;
     }
-
+  
     function haptic(){
       try{ if (navigator.vibrate) navigator.vibrate(18); }catch(_){}
     }
-
-    function createChoiceButton(ch){
-      const c = String(ch).trim().toUpperCase();
+  
+    // ===== Game HUD line (動的に1行追加) =====
+    let gameLineEl = null;
+    function ensureGameLine(){
+      if (gameLineEl) return gameLineEl;
+      gameLineEl = document.createElement("div");
+      gameLineEl.id = "gameLine";
+      gameLineEl.style.margin = "0 16px";
+      gameLineEl.style.padding = "10px 12px";
+      gameLineEl.style.borderRadius = "16px";
+      gameLineEl.style.background = "rgba(2,6,23,.40)";
+      gameLineEl.style.border = "1px solid rgba(255,255,255,.08)";
+      gameLineEl.style.color = "rgba(203,213,225,.92)";
+      gameLineEl.style.fontWeight = "1000";
+      gameLineEl.style.letterSpacing = ".08em";
+      gameLineEl.style.fontSize = "12px";
+      // hudの直後に入れる
+      const hud = document.querySelector(".hud");
+      hud?.insertAdjacentElement("afterend", gameLineEl);
+      return gameLineEl;
+    }
+    function setGameLine(text){
+      const el = ensureGameLine();
+      el.textContent = text;
+      el.style.display = isGame ? "block" : "none";
+    }
+  
+    function normKey(k){
+      return String(k||"").trim().toUpperCase();
+    }
+  
+    function getRemainMap(game){
+      const g = game || {};
+      // 優先：seatsRemain → seats
+      const src = (g.seatsRemain && typeof g.seatsRemain === "object") ? g.seatsRemain
+                : (g.seats && typeof g.seats === "object") ? g.seats
+                : null;
+      const out = {A:0,B:0,C:0,D:0,E:0};
+      if (!src) return out;
+      ["A","B","C","D","E"].forEach(k => out[k] = Math.max(0, Math.floor(Number(src[k] || 0))));
+      return out;
+    }
+  
+    function updateGameButtonsAvailability(){
+      // ゲーム中：残席0は押せない（案内）
+      const buttons = Array.from(container.querySelectorAll(".btn"));
+      for (const b of buttons){
+        const k = normKey(b.textContent); // A..E
+        if (!["A","B","C","D","E"].includes(k)) continue;
+        const rem = Number(gameSeatsRemain[k] || 0);
+        const disabled = (!isOpen) || (mySeat != null) || claimBusy || (rem <= 0);
+        b.style.opacity = disabled ? "0.45" : "";
+        b.style.pointerEvents = disabled ? "none" : "auto";
+      }
+    }
+  
+    // ===== Button factory =====
+    function createChoiceButton(ch, onPress){
+      const c = normKey(ch);
       const btn = document.createElement("button");
       btn.className = `btn ${c}`;
       btn.type = "button";
       btn.textContent = uiLabel(c);
-
+  
       btn.onclick = () => {
+        onPress?.(c, btn);
+      };
+      return btn;
+    }
+  
+    // ===== render (quiz modes) =====
+    function renderOX(choices){
+      isGame = false;
+      submitBtn.style.display = "block";
+  
+      unlockUI();
+      container.innerHTML = "";
+      hudMode.textContent = "○✕";
+      modeText.textContent = "mode: ox";
+      setGameLine("");
+  
+      const grid = document.createElement("div");
+      grid.className = "oxGrid";
+  
+      const onPress = (c, btn) => {
         if (!isOpen || sending) return;
         selected = c;
         haptic();
@@ -568,78 +660,85 @@
         btn.classList.add("sel");
         submitBtn.disabled = false;
       };
-      return btn;
-    }
-
-    function renderOX(choices){
-      unlockUI();
-      container.innerHTML = "";
-      hudMode.textContent = "○✕";
-      modeText.textContent = "mode: ox";
-
-      const grid = document.createElement("div");
-      grid.className = "oxGrid";
-      (choices || ["O","X"]).forEach(ch => grid.appendChild(createChoiceButton(ch)));
+  
+      (choices || ["O","X"]).forEach(ch => grid.appendChild(createChoiceButton(ch, onPress)));
       container.appendChild(grid);
-
+  
       submitBtn.textContent = "START（決定）";
       submitBtn.disabled = true;
     }
-
+  
     function renderFive(choices){
+      isGame = false;
+      submitBtn.style.display = "block";
+  
       unlockUI();
       container.innerHTML = "";
       hudMode.textContent = "5択";
       modeText.textContent = "mode: five";
-
+      setGameLine("");
+  
       const grid = document.createElement("div");
       grid.className = "fiveGrid";
-
+  
       const order = (choices && choices.length) ? choices : ["A","B","C","D","E"];
       const posClass = { A:"posA", B:"posB", C:"posC", D:"posD", E:"posE" };
-
+  
+      const onPress = (c, btn) => {
+        if (!isOpen || sending) return;
+        selected = c;
+        haptic();
+        container.querySelectorAll(".btn").forEach(b => b.classList.remove("sel"));
+        btn.classList.add("sel");
+        submitBtn.disabled = false;
+      };
+  
       order.forEach(ch => {
-        const c = String(ch).trim().toUpperCase();
-        const btn = createChoiceButton(c);
+        const c = normKey(ch);
+        const btn = createChoiceButton(c, onPress);
         btn.classList.add(posClass[c] || "");
         grid.appendChild(btn);
       });
-
+  
       container.appendChild(grid);
-
+  
       submitBtn.textContent = "START（決定）";
       submitBtn.disabled = true;
     }
-
+  
     function renderText(){
+      isGame = false;
+      submitBtn.style.display = "block";
+  
       unlockUI();
       container.innerHTML = "";
       hudMode.textContent = "文字入力";
       modeText.textContent = "mode: text";
-
+      setGameLine("");
+  
       const wrap = document.createElement("div");
       wrap.className = "textWrap";
-
+  
       const title = document.createElement("div");
       title.className = "textTitle";
       title.innerHTML = `<span>テキストを入力</span><span class="counter" id="counter">0/200</span>`;
-
+  
       const ta = document.createElement("textarea");
       ta.placeholder = "短くでOK（1〜2文）";
       ta.maxLength = 200;
       ta.disabled = !isOpen;
-
+  
       const hint = document.createElement("div");
       hint.className = "hint";
       hint.textContent = "※ 送信は1回。先生が「解答終了」を押した後に投影で公開されます。";
-
+  
       wrap.appendChild(title);
       wrap.appendChild(ta);
       wrap.appendChild(hint);
       container.appendChild(wrap);
-
+  
       const counterEl = wrap.querySelector("#counter");
-
+  
       const refresh = () => {
         textValue = ta.value || "";
         counterEl.textContent = `${textValue.length}/200`;
@@ -647,13 +746,14 @@
       };
       ta.addEventListener("input", refresh);
       refresh();
-
+  
       submitBtn.textContent = "SEND（送信）";
       submitBtn.disabled = true;
-
+  
       if (isOpen) setTimeout(()=>{ try{ ta.focus(); }catch(_){ } }, 50);
     }
-
+  
+    // ===== FX for submit (quiz) =====
     function makeTrailClone(selBtn, klass){
       const areaRect = padArea.getBoundingClientRect();
       const r = selBtn.getBoundingClientRect();
@@ -669,30 +769,32 @@
       padArea.appendChild(clone);
       clone.addEventListener("animationend", () => clone.remove());
     }
-
+  
     function playSubmitFX(){
       const selBtn = container.querySelector(".btn.sel");
       if (!selBtn) return;
-
+  
       clearTrails();
       padShell.classList.add("fx");
-
+  
       makeTrailClone(selBtn, "t2");
       makeTrailClone(selBtn, "t1");
-
+  
       selBtn.classList.add("sucked");
       container.querySelectorAll(".btn").forEach(b => {
         if (b !== selBtn) b.style.opacity = "0.50";
       });
-
+  
       setTimeout(() => padShell.classList.remove("fx"), 650);
     }
-
-       submitBtn.onclick = async () => {
+  
+    // ===== submit (quiz/text only) =====
+    submitBtn.onclick = async () => {
+      if (isGame) return; // ★ゲームでは使わない
       if (!isOpen || sending) return;
-
+  
       let payload = null;
-
+  
       if (currentMode === "ox" || currentMode === "five"){
         if (!selected) return;
         payload = { value: selected, timestamp: Date.now() };
@@ -710,74 +812,228 @@
       } else {
         return;
       }
-
+  
       try{
         await set(ref(db, `rooms/${room}/answers/${userId}`), payload);
       }catch(e){
         sending = false;
         container.style.pointerEvents = "";
         showToast("送信失敗…もう一度");
-        // 再描画（従来どおり）
         if (currentMode === "text") renderText();
         if (currentMode === "ox") renderOX(["O","X"]);
         if (currentMode === "five") renderFive(["A","B","C","D","E"]);
         return;
       }
-
+  
       setTimeout(() => {
         container.style.pointerEvents = "";
         showToast("送信しました ✓");
         lockUI();
       }, (currentMode === "ox" || currentMode === "five") ? 560 : 220);
     };
-
-    // ===== 追加：タイマー更新では再描画しない（status/mode/configだけ見る）=====
+  
+    // ===== Game render =====
+    function renderGameFive(){
+      isGame = true;
+      submitBtn.style.display = "none"; // ★決定ボタンは使わない
+  
+      // ラウンドが切り替わるたびに参加できるように
+      unlockUI();
+      mySeat = null;
+      claimBusy = false;
+  
+      container.innerHTML = "";
+      hudMode.textContent = `GAME${(gameRound!=null ? ` R${gameRound}` : "")}`;
+      modeText.textContent = "mode: game(A-E)";
+  
+      const grid = document.createElement("div");
+      grid.className = "fiveGrid";
+  
+      const order = ["A","B","C","D","E"];
+      const posClass = { A:"posA", B:"posB", C:"posC", D:"posD", E:"posE" };
+  
+      const onPress = async (c, btn) => {
+        if (!isGame) return;
+        if (!isOpen) return;
+        if (mySeat != null) return;
+        if (claimBusy) return;
+  
+        // 残席が見えてる場合：0は押せない（ガイド）
+        const rem = Number(gameSeatsRemain[c] || 0);
+        if (rem <= 0){
+          showToast(`${c} は満席！`);
+          return;
+        }
+  
+        haptic();
+        claimBusy = true;
+        updateGameButtonsAvailability();
+  
+        // 「どこに集まっているか」の参考用（display_gameの混雑表示に使える）
+        // ※上書きなので人数カウントは増えない
+        set(ref(db, `rooms/${room}/answers/${userId}`), { value: c, timestamp: Date.now(), game: true }).catch(()=>{});
+  
+        const okSeat = await claimSeatTransaction(c);
+  
+        claimBusy = false;
+  
+        if (okSeat){
+          mySeat = okSeat;
+          showToast(`${okSeat} に座れた！`);
+          lockUI(); // このラウンドは固定
+        }else{
+          showToast("取れなかった！別の椅子へ");
+        }
+  
+        updateGameButtonsAvailability();
+        updateGameLine();
+      };
+  
+      order.forEach(ch => {
+        const btn = createChoiceButton(ch, onPress);
+        btn.classList.add(posClass[ch] || "");
+        grid.appendChild(btn);
+      });
+  
+      container.appendChild(grid);
+      updateGameButtonsAvailability();
+      updateGameLine();
+    }
+  
+    function updateGameLine(){
+      if (!isGame){
+        setGameLine("");
+        return;
+      }
+      const r = gameSeatsRemain || {A:0,B:0,C:0,D:0,E:0};
+      const remainText = `残席 A${r.A} B${r.B} C${r.C} D${r.D} E${r.E}`;
+      const meText = mySeat ? ` / あなた: ${mySeat}` : "";
+      const ph = gamePhase ? ` / phase:${gamePhase}` : "";
+      setGameLine(remainText + meText + ph);
+    }
+  
+    // ===== Core: 先着確保（transaction） =====
+    async function claimSeatTransaction(choiceKey){
+      const k = normKey(choiceKey);
+      if (!["A","B","C","D","E"].includes(k)) return null;
+  
+      const gameRef = ref(db, `rooms/${room}/activity/game`);
+  
+      try{
+        const res = await runTransaction(gameRef, (game) => {
+          if (!game || typeof game !== "object") return game;
+  
+          const phase = String(game.phase || "").trim();
+          // phaseが無くても status=open運用があるので、phaseは緩めに
+          if (phase && phase !== "running") return game;
+  
+          game.players ??= {};
+  
+          // すでに確保済みなら何もしない
+          if (game.players[userId]?.seat) return game;
+  
+          // 残席マップの場所（seatsRemain優先、無ければ seats）
+          if (!game.seatsRemain && !game.seats){
+            // 先生側の初期化待ち
+            return game;
+          }
+          const target = (game.seatsRemain && typeof game.seatsRemain === "object") ? "seatsRemain" : "seats";
+          game[target] ??= {A:0,B:0,C:0,D:0,E:0};
+  
+          const remain = Math.max(0, Math.floor(Number(game[target][k] || 0)));
+          if (remain <= 0) return game;
+  
+          game[target][k] = remain - 1;
+          game.players[userId] = { seat: k, at: Date.now() };
+          return game;
+        });
+  
+        const g = res.snapshot.val();
+        const seat = g?.players?.[userId]?.seat ? normKey(g.players[userId].seat) : null;
+        if (seat && ["A","B","C","D","E"].includes(seat)) return seat;
+        return null;
+      }catch(e){
+        console.warn("[game] claim failed:", e);
+        return null;
+      }
+    }
+  
+    // ===== 再描画条件（タイマー更新では再描画しない）=====
     let lastStatus = null;
     let lastMode = null;
+    let lastView = null;
     let lastConfigKey = "";
-
+  
     function makeConfigKey(mode, config){
       const c = config || {};
       if (mode === "text") return "text";
       const arr = Array.isArray(c.choices) ? c.choices : [];
       return arr.map(x => String(x).trim().toUpperCase()).join(",");
     }
-
-    // ===== activity監視（mode + open/closed）=====
+  
+    // ===== activity監視 =====
     const activityRef = ref(db, `rooms/${room}/activity`);
     onValue(activityRef, snap => {
       const data = snap.val() || {};
       const status = data.status || "-";
       const mode = data.mode || null;
+      const view = data.view || "quiz";
       const config = data.config || {};
-
-      // 1) 毎回やる：状態（open/closed）だけは追随
+      const game = data.game || null;
+  
+      // 1) 毎回追随：open/closed
       isOpen = (status === "open");
       currentMode = mode;
-
+      currentView = view;
+  
       statusText.textContent = `status: ${status}`;
       dot.classList.toggle("open", isOpen);
       dot.classList.toggle("closed", !isOpen);
-
-      // overlay（closedは文言を分ける）
+  
+      // game state（毎回追随：ここは座席表示の更新に使う）
+      isGame = (view === "game");
+      gameRound = (game && game.round != null) ? Number(game.round) : null;
+      gamePhase = (game && game.phase != null) ? String(game.phase) : null;
+      gameSeatsRemain = getRemainMap(game);
+  
+      // overlay
       if (!isOpen){
         const msg = (status === "closed")
-          ? "解答は締切です。先生の次の操作を待ってください。"
-          : "先生が出題を開始すると、解答ボタンが使えるようになります。";
+          ? (isGame ? "このラウンドは締切！次のラウンドを待ってください。" : "解答は締切です。先生の次の操作を待ってください。")
+          : "先生の操作を待っています…";
         setOverlay(true, msg);
       }else{
         setOverlay(false);
       }
-
-      // 2) ★本題：タイマー更新などで再描画しない
+  
+      // 2) 再描画判定（タイマー更新などは無視）
       const cfgKey = makeConfigKey(mode, config);
       const shouldRerender =
         (status !== lastStatus) ||
         (mode !== lastMode) ||
+        (view !== lastView) ||
         (cfgKey !== lastConfigKey);
-
+  
+      // 3) 再描画しない場合でも、ゲーム情報だけは更新
       if (!shouldRerender){
-        // 既存UIを維持しつつ、入力可否だけ更新
+        if (isGame){
+          // roundが変わったら参加リセット（ここが重要）
+          // view/mode/statusは同じでも round は変わるのでここで見る
+          const prevRound = Number(container.dataset.gameRound || "NaN");
+          if (!Number.isNaN(gameRound) && gameRound !== prevRound){
+            container.dataset.gameRound = String(gameRound);
+            renderGameFive();
+            updateGameButtonsAvailability();
+            updateGameLine();
+            return;
+          }
+  
+          updateGameButtonsAvailability();
+          updateGameLine();
+          return;
+        }
+  
+        // textの入力継続（従来）
         const ta = container.querySelector("textarea");
         if (ta){
           ta.disabled = (!isOpen) || container.classList.contains("locked");
@@ -791,24 +1047,36 @@
         }
         return;
       }
-
-      // 3) 本質的に変化したので再描画
+  
+      // 4) 本質的に変化したので再描画
       lastStatus = status;
       lastMode = mode;
+      lastView = view;
       lastConfigKey = cfgKey;
-
+  
+      // ゲーム
+      if (view === "game"){
+        container.dataset.gameRound = (gameRound != null ? String(gameRound) : "");
+        renderGameFive();
+        updateGameButtonsAvailability();
+        updateGameLine();
+        return;
+      }
+  
+      // 通常投票
       if (currentMode === "ox")   return renderOX(config.choices || ["O","X"]);
       if (currentMode === "five") return renderFive(config.choices || ["A","B","C","D","E"]);
       if (currentMode === "text") return renderText();
-
+  
       // modeが無い（初期/待機）
       hudMode.textContent = "待機";
       modeText.textContent = `mode: ${currentMode || "-"}`;
       container.innerHTML = "";
+      submitBtn.style.display = "block";
       submitBtn.disabled = true;
       setOverlay(true, "先生が出題を開始すると、解答ボタンが使えるようになります。");
     });
-
+  
   </script>
 </body>
 </html>
