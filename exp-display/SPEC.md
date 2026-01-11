@@ -1,61 +1,90 @@
-# SPEC.md（ClassSync exp-display 仕様の正本）
+# SPEC: ClassSync（授業リアルタイム投票システム）
 
 ## 1. 目的
-授業運用の循環を壊さない：
-参加(QR) → 待機(standby) → 出題(open) → 可視化(集計) → 回収(closedで解説/公開) → 次へ
+- 学生（student）→ ○× / 5択 / TEXT で回答
+- 教員（index）→ 出題開始/終了、集計、QR表示、投影制御
+- 投影（display）→ 問題・集計・QR・読み上げ（TTS）
+- Firebase Realtime Database を介した同期
 
-## 2. 画面と役割
-- index.html：教員操作（ルーム切替、次へ/戻る、クイック投票、解答終了、QR、タイマー）
-- display.html：投影（QR導線、縦棒集計、closedで正解/解説を上段、TTS/SE、タイマー表示）
-- student.html：学生回答UI（activity.mode/config に従い UI を切替、openのみ送信可）
-- import-csv.html：CSV→Firebaseへ questions を投入
-- dict-editor.html：TTS辞書（dict/tts-dict.json）の編集支援
+## 2. Firebase構造（固定＋拡張）
+ルート：
+rooms/{room}/
+  activity/
+    status: "open" | "closed" | ...
+    view: "quiz" | "poll" | "standby" | "qr"
+    mode: "ox" | "five" | "text"
+    qr: true/false （未設定になることがある）
+    config: { choices: [...] }  // 表示順など
+    revealMode: "live" | "closed"
+    timer: { running, endsAt, durationSec, autoClose, ... }
+    expectedN: number（母数。0/未設定なら従来通り）
+  answers/{userId}: string または { value, timestamp }
+  result/{O,X,A..E}: number
 
-## 3. 不変条件（Invariant）
-1) display起動で `activity.qr=true`（強制QR）
-2) QR中は投影が参加導線を最優先（問題表示・操作系は抑止されること）
-3) QR解除は “待機(standby)” を作る（いきなりquizにしない／欠損状態を作らない）
-4) 集計は display が `answers` を直接集計（result依存禁止）
-5) 集計は縦棒のみ
-   - quiz中：choice順は「表示中の問題 choices」を最優先（表示と集計の一致を保証）
-   - poll中：choice順は `activity.config.choices`（なければ mode から補完）
-6) `status="closed"` のとき
-   - quiz：正解・解説を最上段へ
-   - text：回答一覧は「解答終了で公開」になること
-7) poll に入ったら quizの問題購読は解除（混線防止）
+固定ルーム：
+- kyoto-01/02, sendai-01/02, nagoya-01/02
 
-## 4. DB構造（前提）
-rooms/<room>/
-- activity: {
-    qr: boolean,
-    view: "qr" | "standby" | "quiz" | "poll",
-    status: "open" | "closed" | "ready" | "-",
-    mode: "ox" | "five" | "text" | null,
-    config: { choices?: string[] } | { type:"text" } | null,
-    timer: { running:boolean, endsAt?:number, durationSec?:number, autoClose?:boolean }
-  }
-- quiz/current_question_id: string
-- questions/<qid>: { question, choices?, answer?, explanation?, mode? }
-- answers/<userId>: string | { value:string, ... }
+## 3. 画面仕様
 
-## 5. view/mode/config の基本
-- view:
-  - quiz：問題＋集計
-  - poll：集計のみ（口頭質問の投票）
-  - standby：待機（先生操作待ち）
-  - qr：参加導線
-- mode:
-  - ox / five / text
-- config:
-  - ox:   { choices:["O","X"] }
-  - five: { choices:["A","B","C","D","E"] }
-  - text: { type:"text" }
+### 3.1 student.html
+- room は URL `?room=xxx`
+- status=open で操作可能（closedではロック）
+- 回答UI（iPhone風、大きいボタン）
+  - ○（O） / ×（X）/ 5択 / TEXT
+  - 決定ボタンで確定（押し間違い→決定方式）
+- 送信後UIロック
+- TEXT入力はタイマー更新で消えない（activity監視の再描画条件を絞る）
 
-## 6. タイマー（teacher → display）
-- index が `activity.timer` を更新
-- display は `endsAt` を監視してカウント表示＋必要なら `status="closed"` へ自動遷移（open中かつQRでない時）
+### 3.2 index.html（教員）
+必須操作：
+- 回答開始（open）
+  - answers/result のリセットを伴う運用が基本
+- 回答終了（closed）
+- 集計リセット
+- QR表示（学生用URL生成）
+- グラフ表示に戻る
+- ルーム選択
+- revealMode 切替（スイッチ風UI）
+- タイマーボタン（横並び・丸ボタン）
+- 教員用リアルタイム結果表示（counts/TEXT最新）
 
-## 7. CSV仕様（要点）
-- 必須：question_id（またはqid相当）, question
-- 任意：choiceA..choiceE, answer, explanation, mode
-- import-csv はヘッダを正規化して読み取る（大小・記号差を吸収）
+UI/安定性：
+- ルーム切替時は購読（onValue）を解除して貼り直す（重複購読防止）
+- ルーム表示右に状態を表示
+  `room:... / view:... / status:... / mode:... / reveal:...`
+
+### 3.3 display.html（投影）
+- 画面上部：ROOM/ status/ 参加人数/ タイマー/ 音ON/ 読み上げON/ 読む
+- 問題表示（左）
+- 集計（右、縦棒）
+- revealMode:
+  - live：投票中も表示
+  - closed：投票中はマスク（音は鳴る）、closedで公開
+- TEXTモード：
+  - closed で一覧表示（運用）
+- QR表示（安定版）：
+  - `qr:true` または `view:"qr"` で show
+  - それ以外は必ず hide（固まり防止）
+- TTS（Web Speech API）
+  - stopTTSで runId++ / cancel / speaking解除 / 遅延タイマー解除
+  - open時 start.mp3 → 1秒後に読み上げ（運用）
+  - QR中は読まない
+
+## 4. 音（SE）
+- poyon.mp3：投票が1件増えるたび
+- gong.mp3：解答終了（closed）
+- countdown.mp3：残り3秒（タイマー）
+- start.mp3：出題開始（open）
+
+運用注意：
+- 最初の音アンロックは無音再生（muted/volume0で一瞬再生）推奨
+
+## 5. 既知の運用注意
+- DevTools の
+  `A listener indicated an asynchronous response...`
+  は拡張由来のケースが多い。授業運用PCは拡張を最小限に。
+- favicon 404 は `<link rel="icon" href="data:,">` で消せる（任意）
+
+## 6. 将来拡張（前提）
+- 早押し、勝者表示、スライド同期、ポイント制、モード切替など
+- 構造は activity/mode/view/config に寄せて拡張する
