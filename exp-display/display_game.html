@@ -1,0 +1,675 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>ClassSync Game Display</title>
+  <link rel="icon" href="data:,">
+
+  <style>
+    :root{
+      --bg1:#0b1220;
+      --bg2:#0f1b33;
+      --panel: rgba(255,255,255,.06);
+      --panel2: rgba(255,255,255,.08);
+      --line: rgba(255,255,255,.10);
+      --text: rgba(255,255,255,.92);
+      --muted: rgba(203,213,225,.75);
+
+      --a:#34d399; --b:#60a5fa; --c:#f59e0b; --d:#a78bfa; --e:#fb7185;
+    }
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, "SF Pro Display", "Hiragino Sans", "Noto Sans JP", sans-serif;
+      color:var(--text);
+      background:
+        radial-gradient(900px 600px at 20% 0%, rgba(96,165,250,.18), transparent 60%),
+        radial-gradient(800px 600px at 80% 10%, rgba(245,158,11,.14), transparent 55%),
+        linear-gradient(180deg, var(--bg1), var(--bg2));
+      min-height:100vh;
+      overflow:hidden;
+    }
+    .wrap{
+      padding:22px 26px 18px;
+      display:grid;
+      grid-template-rows: auto 1fr auto;
+      height:100vh;
+      gap:14px;
+    }
+
+    /* header */
+    .top{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:14px;
+    }
+    .brand{
+      display:flex; flex-direction:column; gap:4px;
+      padding:14px 16px;
+      border-radius:18px;
+      background:var(--panel);
+      border:1px solid var(--line);
+      min-width: 380px;
+    }
+    .brand .title{
+      font-size:22px;
+      letter-spacing:.06em;
+      font-weight:950;
+    }
+    .brand .sub{
+      font-size:13px;
+      color:var(--muted);
+      font-weight:800;
+    }
+    .metaRow{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+    }
+    .pill{
+      padding:10px 12px;
+      border-radius:999px;
+      background:var(--panel);
+      border:1px solid var(--line);
+      font-weight:900;
+      letter-spacing:.04em;
+      color:rgba(255,255,255,.88);
+      white-space:nowrap;
+    }
+    .pill strong{ color:#fff; }
+    .pill.ok{ background:rgba(34,197,94,.12); border-color:rgba(34,197,94,.20); }
+    .pill.warn{ background:rgba(245,158,11,.12); border-color:rgba(245,158,11,.20); }
+    .pill.bad{ background:rgba(239,68,68,.12); border-color:rgba(239,68,68,.20); }
+
+    /* main grid */
+    .main{
+      display:grid;
+      grid-template-columns: 1.35fr .85fr;
+      gap:14px;
+      min-height:0;
+    }
+    .panel{
+      background:var(--panel);
+      border:1px solid var(--line);
+      border-radius:22px;
+      padding:18px;
+      box-shadow: 0 18px 40px rgba(0,0,0,.28);
+      min-height:0;
+    }
+
+    .gameHdr{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:12px;
+      margin-bottom:12px;
+    }
+    .gameHdr h1{
+      margin:0;
+      font-size:34px;
+      font-weight:1000;
+      letter-spacing:.04em;
+    }
+    .gameHdr .hint{
+      margin-top:6px;
+      color:var(--muted);
+      font-weight:800;
+      font-size:14px;
+      line-height:1.35;
+    }
+
+    /* seats */
+    .seats{
+      display:grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap:12px;
+      margin-top:10px;
+    }
+    .seatCard{
+      border-radius:20px;
+      padding:14px;
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.04);
+      position:relative;
+      overflow:hidden;
+      min-height:150px;
+    }
+    .seatCard .k{
+      font-size:54px;
+      font-weight:1100;
+      line-height:1;
+      letter-spacing:.02em;
+      margin:0 0 6px;
+    }
+    .seatCard .row{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
+      font-weight:900;
+      color:rgba(255,255,255,.88);
+    }
+    .seatCard .row small{ color:var(--muted); font-weight:900; }
+    .bar{
+      height:12px;
+      border-radius:999px;
+      background:rgba(255,255,255,.10);
+      overflow:hidden;
+      margin-top:10px;
+      border:1px solid rgba(255,255,255,.10);
+    }
+    .bar > div{
+      height:100%;
+      width:0%;
+      border-radius:999px;
+      background:rgba(255,255,255,.55);
+      transition:width 140ms ease;
+    }
+
+    .A .k{ color:var(--a); } .A .bar>div{ background:rgba(52,211,153,.85); }
+    .B .k{ color:var(--b); } .B .bar>div{ background:rgba(96,165,250,.85); }
+    .C .k{ color:var(--c); } .C .bar>div{ background:rgba(245,158,11,.88); }
+    .D .k{ color:var(--d); } .D .bar>div{ background:rgba(167,139,250,.85); }
+    .E .k{ color:var(--e); } .E .bar>div{ background:rgba(251,113,133,.85); }
+
+    /* right side */
+    .rightBox{
+      display:flex;
+      flex-direction:column;
+      min-height:0;
+      gap:12px;
+    }
+    .bigNum{
+      display:flex;
+      align-items:baseline;
+      justify-content:space-between;
+      gap:10px;
+      padding:16px;
+      border-radius:20px;
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.04);
+    }
+    .bigNum .label{
+      color:var(--muted);
+      font-weight:900;
+      letter-spacing:.08em;
+    }
+    .bigNum .val{
+      font-size:54px;
+      font-weight:1100;
+      line-height:1;
+      color:#fff;
+    }
+    .mini{
+      display:grid;
+      grid-template-columns: repeat(2, minmax(0,1fr));
+      gap:12px;
+    }
+    .mini .card{
+      padding:14px 14px;
+      border-radius:20px;
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.04);
+      min-height:88px;
+    }
+    .mini .card .t{
+      color:var(--muted);
+      font-weight:900;
+      letter-spacing:.08em;
+      font-size:12px;
+      margin-bottom:6px;
+    }
+    .mini .card .n{
+      font-size:28px;
+      font-weight:1100;
+    }
+
+    /* QR overlay */
+    #qrLayer{
+      position:fixed;
+      inset:0;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background: rgba(0,0,0,.62);
+      backdrop-filter: blur(10px);
+      opacity:0;
+      pointer-events:none;
+      transition:opacity 220ms ease;
+      z-index:50;
+    }
+    #qrLayer.show{
+      opacity:1;
+      pointer-events:auto;
+    }
+    .qrCard{
+      width:min(920px, 92vw);
+      border-radius:28px;
+      padding:22px;
+      background: rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.12);
+      box-shadow: 0 28px 60px rgba(0,0,0,.45);
+      display:grid;
+      grid-template-columns: 1fr 520px;
+      gap:18px;
+      align-items:center;
+    }
+    .qrCard h2{
+      margin:0 0 10px;
+      font-size:34px;
+      font-weight:1100;
+      letter-spacing:.06em;
+    }
+    .qrCard .txt{
+      color:rgba(203,213,225,.88);
+      font-weight:850;
+      line-height:1.5;
+      font-size:16px;
+    }
+    .qrBox{
+      width:520px;
+      height:520px;
+      border-radius:22px;
+      background:#fff;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      overflow:hidden;
+    }
+    .qrUrl{
+      margin-top:10px;
+      font-size:14px;
+      color:rgba(203,213,225,.9);
+      word-break:break-all;
+      font-weight:800;
+      opacity:.9;
+    }
+
+    /* footer */
+    .foot{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
+      color:rgba(203,213,225,.68);
+      font-weight:850;
+      letter-spacing:.06em;
+      font-size:12px;
+      padding:0 4px;
+    }
+    .build{
+      opacity:.85;
+    }
+
+    @media (max-width: 1100px){
+      .main{ grid-template-columns: 1fr; }
+      .brand{ min-width:0; }
+      .qrCard{ grid-template-columns: 1fr; }
+      .qrBox{ width:min(520px, 86vw); height:min(520px, 86vw); margin:0 auto; }
+    }
+  </style>
+</head>
+
+<body>
+<div class="wrap">
+  <div class="top">
+    <div class="brand">
+      <div class="title">ClassSync – Game Display</div>
+      <div class="sub" id="roomLine">ROOM: (none)</div>
+    </div>
+
+    <div class="metaRow">
+      <div class="pill" id="statePill">status: <strong>-</strong></div>
+      <div class="pill" id="roundPill">round: <strong>-</strong></div>
+      <div class="pill" id="phasePill">phase: <strong>-</strong></div>
+      <div class="pill" id="seatPill">seats: <strong>-</strong></div>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="panel">
+      <div class="gameHdr">
+        <div>
+          <h1 id="headline">椅子取り（A〜E）</h1>
+          <div class="hint" id="hintLine">先生が開始すると受付がOPENになります。混雑したら別の椅子へ！</div>
+        </div>
+        <div class="pill warn" id="modePill">mode: <strong>five</strong></div>
+      </div>
+
+      <div class="seats" id="seatsGrid"></div>
+    </div>
+
+    <div class="panel rightBox">
+      <div class="bigNum">
+        <div>
+          <div class="label">参加（answers数）</div>
+          <div class="val" id="participantsVal">0</div>
+        </div>
+        <div style="text-align:right;">
+          <div class="label">着席（players）</div>
+          <div class="val" id="seatedVal">0</div>
+        </div>
+      </div>
+
+      <div class="mini">
+        <div class="card">
+          <div class="t">立ち（推定）</div>
+          <div class="n" id="standingVal">0</div>
+        </div>
+        <div class="card">
+          <div class="t">混雑最大</div>
+          <div class="n" id="maxCrowdVal">-</div>
+        </div>
+        <div class="card">
+          <div class="t">指示（prompt）</div>
+          <div class="n" id="promptVal" style="font-size:18px; line-height:1.25;">—</div>
+        </div>
+        <div class="card">
+          <div class="t">備考</div>
+          <div class="n" id="noteVal" style="font-size:18px; line-height:1.25;">warmup: 3</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <div id="statusLine">—</div>
+    <div class="build" id="buildLine">build: 2026-01-11 / display-game-v1</div>
+  </div>
+</div>
+
+<!-- QR overlay -->
+<div id="qrLayer">
+  <div class="qrCard">
+    <div>
+      <h2>参加はこちら</h2>
+      <div class="txt">
+        スマホでQRを読み取り、A〜Eを操作して椅子を確保！<br>
+        うまく座れなかったら、すぐ別の椅子へ。
+      </div>
+      <div class="qrUrl" id="qrUrlText">—</div>
+    </div>
+    <div class="qrBox">
+      <div id="qrDiv"></div>
+    </div>
+  </div>
+</div>
+
+<!-- QRCode.js（任意：ローカルに置く or CDNに差し替え） -->
+<script src="./qrcode.min.js"></script>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+  import {
+    getDatabase, ref, onValue
+  } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js";
+
+  // ========= Firebase Config =========
+  // TODO: ここに既存の index/display/student と同じ firebaseConfig をコピペしてください
+  const firebaseConfig = {
+    // apiKey: "...",
+    // authDomain: "...",
+    // databaseURL: "...",
+    // projectId: "...",
+    // storageBucket: "...",
+    // messagingSenderId: "...",
+    // appId: "..."
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db  = getDatabase(app);
+
+  // ========= Utils =========
+  function qs(name){
+    return new URLSearchParams(location.search).get(name);
+  }
+  const room = qs("room") || "nagoya-01";
+
+  const roomLine = document.getElementById("roomLine");
+  roomLine.textContent = `ROOM: ${room}`;
+
+  const statePill = document.getElementById("statePill");
+  const roundPill = document.getElementById("roundPill");
+  const phasePill = document.getElementById("phasePill");
+  const seatPill  = document.getElementById("seatPill");
+  const modePill  = document.getElementById("modePill");
+
+  const participantsVal = document.getElementById("participantsVal");
+  const seatedVal = document.getElementById("seatedVal");
+  const standingVal = document.getElementById("standingVal");
+  const maxCrowdVal = document.getElementById("maxCrowdVal");
+  const promptVal = document.getElementById("promptVal");
+  const noteVal = document.getElementById("noteVal");
+  const statusLine = document.getElementById("statusLine");
+
+  const seatsGrid = document.getElementById("seatsGrid");
+
+  // QR
+  const qrLayer = document.getElementById("qrLayer");
+  const qrDiv = document.getElementById("qrDiv");
+  const qrUrlText = document.getElementById("qrUrlText");
+
+  const studentUrl = `https://qzp04374-code.github.io/quiz-app/exp-display/student.html?room=${encodeURIComponent(room)}`;
+  qrUrlText.textContent = studentUrl;
+
+  function safeDrawQR(){
+    try{
+      if (!qrDiv) return;
+      qrDiv.innerHTML = "";
+      if (!window.QRCode){
+        qrDiv.innerHTML = `<div style="padding:18px;font-weight:900;color:#111;">QRCode.js が未読込</div>`;
+        return;
+      }
+      // eslint-disable-next-line no-undef
+      new QRCode(qrDiv, { text: studentUrl, width: 520, height: 520 });
+    }catch(e){
+      console.error("QR draw failed:", e);
+      try{ qrDiv.innerHTML = `<div style="padding:18px;font-weight:900;color:#111;">QR生成に失敗</div>`; }catch(_){}
+    }
+  }
+  safeDrawQR();
+  window.addEventListener("load", safeDrawQR);
+
+  function showQR(){ qrLayer.classList.add("show"); }
+  function hideQR(){ qrLayer.classList.remove("show"); }
+
+  // ========= Game helpers =========
+  const KEYS = ["A","B","C","D","E"];
+
+  function buildPattern(totalSeats){
+    const base = "ABCDE";
+    let s = "";
+    for (let i=0;i<Math.max(0,totalSeats);i++){
+      s += base[i % 5];
+    }
+    return s;
+  }
+
+  function countSeatsFromPattern(pattern){
+    const seats = {A:0,B:0,C:0,D:0,E:0};
+    for (const ch of String(pattern||"")){
+      const k = String(ch).toUpperCase();
+      if (seats[k] != null) seats[k]++;
+    }
+    return seats;
+  }
+
+  function extractAnswerValue(v){
+    if (v == null) return "";
+    if (typeof v === "string") return v;
+    if (typeof v === "object" && typeof v.value === "string") return v.value;
+    return "";
+  }
+
+  function countAnswers(ans){
+    const c = {A:0,B:0,C:0,D:0,E:0};
+    const obj = ans || {};
+    for (const uid of Object.keys(obj)){
+      const v = extractAnswerValue(obj[uid]);
+      const k = String(v).trim().toUpperCase();
+      if (c[k] != null) c[k]++;
+    }
+    return c;
+  }
+
+  function sum(obj){
+    return Object.values(obj||{}).reduce((s,n)=>s+(Number(n)||0),0);
+  }
+
+  // ========= Render =========
+  function setPill(el, label, value, tone){
+    el.classList.remove("ok","warn","bad");
+    if (tone) el.classList.add(tone);
+    el.innerHTML = `${label}: <strong>${value}</strong>`;
+  }
+
+  function renderSeats({
+    seatsInitial, seatsRemain, answersCount
+  }){
+    seatsGrid.innerHTML = "";
+    const maxAns = Math.max(1, ...KEYS.map(k => answersCount[k]||0));
+
+    for (const k of KEYS){
+      const init = Number(seatsInitial?.[k] ?? 0);
+      const rem  = Number(seatsRemain?.[k] ?? init ?? 0);
+      const occ  = Math.max(0, init - rem);
+      const ans  = Number(answersCount?.[k] ?? 0);
+
+      // 混雑バー：answersの比率
+      const crowdPct = Math.round((ans / maxAns) * 100);
+
+      const card = document.createElement("div");
+      card.className = `seatCard ${k}`;
+
+      card.innerHTML = `
+        <div class="k">${k}</div>
+        <div class="row"><small>残席</small><span>${rem} / ${init}</span></div>
+        <div class="row" style="margin-top:6px;"><small>着席</small><span>${occ}</span></div>
+        <div class="row" style="margin-top:6px;"><small>押してる（参考）</small><span>${ans}</span></div>
+        <div class="bar"><div style="width:${crowdPct}%"></div></div>
+      `;
+      seatsGrid.appendChild(card);
+    }
+  }
+
+  // ========= Firebase subscribe =========
+  const activityRef = ref(db, `rooms/${room}/activity`);
+  const answersRef  = ref(db, `rooms/${room}/answers`);
+
+  let lastAnswers = {};
+  let lastActivity = {};
+
+  function recompute(){
+    const a = lastActivity || {};
+    const status = a.status || "-";
+    const view = a.view || "quiz";
+    const mode = a.mode || "five";
+
+    // QR安定判定（既存方針）
+    const qrOn = (a.qr === true) || (a.qr === "true") || (a.view === "qr");
+    if (qrOn) showQR(); else hideQR();
+
+    // game object（無ければ推定表示）
+    const g = a.game || {};
+    const round = (g.round != null) ? g.round : "-";
+    const phase = g.phase || (status === "open" ? "running" : status === "closed" ? "reveal" : "-");
+
+    // seats 初期/残席
+    // 優先：game.seatsInitial / game.seatsRemain（または seats を残席として扱う）
+    // 無い場合：totalSeats から pattern を作って初期を推定、残席=初期（暫定）
+    const warmup = Number(g.warmupRounds ?? 3);
+    const totalSeats = Number(g.totalSeats ?? 0);
+
+    let seatsInitial = null;
+    let seatsRemain  = null;
+
+    if (g.seatsInitial && typeof g.seatsInitial === "object"){
+      seatsInitial = {A:0,B:0,C:0,D:0,E:0, ...g.seatsInitial};
+    }
+
+    // seatsRemain優先、無ければ seats を残席扱い
+    if (g.seatsRemain && typeof g.seatsRemain === "object"){
+      seatsRemain = {A:0,B:0,C:0,D:0,E:0, ...g.seatsRemain};
+    } else if (g.seats && typeof g.seats === "object"){
+      seatsRemain = {A:0,B:0,C:0,D:0,E:0, ...g.seats};
+    }
+
+    // 初期が無い場合は totalSeats から作る
+    if (!seatsInitial){
+      const t = totalSeats > 0 ? totalSeats : 10; // totalSeats未設定時の仮
+      const pattern = g.pattern || buildPattern(t);
+      seatsInitial = countSeatsFromPattern(pattern);
+    }
+
+    // 残席が無い場合は初期と同じ（暫定）
+    if (!seatsRemain){
+      seatsRemain = { ...seatsInitial };
+    }
+
+    // players（先着確保が入ったらここが着席数の根拠になる）
+    const players = (g.players && typeof g.players === "object") ? g.players : {};
+    const seated = Object.keys(players).length;
+
+    // answers（参考：今どこに集まっているか）
+    const answersCount = countAnswers(lastAnswers);
+    const participants = Object.keys(lastAnswers||{}).length;
+
+    // 立ち（推定）：参加 - 着席（playersベース）
+    const standing = Math.max(0, participants - seated);
+
+    // 混雑最大（answersベース）
+    let maxKey = "-";
+    let maxVal = -1;
+    for (const k of KEYS){
+      const v = answersCount[k] || 0;
+      if (v > maxVal){ maxVal = v; maxKey = k; }
+    }
+
+    // pills
+    const statusTone = (status === "open") ? "ok" : (status === "closed") ? "warn" : "";
+    setPill(statePill, "status", status, statusTone);
+    setPill(roundPill, "round", round, "");
+    setPill(phasePill, "phase", phase, "");
+    setPill(modePill, "mode", mode, (mode === "five") ? "ok" : "warn");
+
+    const totalInitSeats = sum(seatsInitial);
+    const totalRemainSeats = sum(seatsRemain);
+    setPill(seatPill, "seats", `${totalRemainSeats}/${totalInitSeats}`, "");
+
+    participantsVal.textContent = String(participants);
+    seatedVal.textContent = String(seated);
+    standingVal.textContent = String(standing);
+    maxCrowdVal.textContent = (maxKey === "-" ? "-" : `${maxKey} (${maxVal})`);
+
+    const prompt = (g.prompt != null) ? String(g.prompt) : "—";
+    promptVal.textContent = prompt;
+
+    const warmTxt =
+      (round !== "-" && Number(round) <= warmup)
+        ? `warmup: ${warmup}（椅子減らない）`
+        : `warmup: ${warmup}`;
+    noteVal.textContent = warmTxt;
+
+    statusLine.textContent =
+      `room:${room} / view:${view} / status:${status} / mode:${mode} / qr:${qrOn ? "on":"off"}`;
+
+    renderSeats({ seatsInitial, seatsRemain, answersCount });
+  }
+
+  onValue(activityRef, (snap) => {
+    lastActivity = snap.val() || {};
+    recompute();
+  });
+
+  onValue(answersRef, (snap) => {
+    lastAnswers = snap.val() || {};
+    recompute();
+  });
+
+</script>
+</body>
+</html>
