@@ -1,52 +1,53 @@
-# quiz-app (ClassSync / exp-display)
+# ClassSync（授業リアルタイム投票システム）
 
-授業運用の循環を最優先にした、投影（display）＋学生（student）＋教員（index）＋運用ツール群（CSV投入/TTS辞書）で構成されたクイズ運用アプリです。
+授業で使用するリアルタイム双方向クラスルーム投票システム。
+Firebase Realtime Database を介して、学生端末（student）からの回答を、教員端末（index）で制御し、投影端末（display）で可視化する。
 
----
+## 構成（主要ページ）
+- `index.html`（教員操作）
+  - 出題開始/終了、集計リセット、QR表示、結果公開方式切替、タイマー操作
+  - 教員用リアルタイム結果（counts / TEXT最新表示）
+- `display.html`（投影）
+  - 問題表示、集計グラフ、QR表示、TTS（問題読み上げ）
+  - revealMode による「投票中マスク → 終了で公開」対応
+- `student.html`（学生回答）
+  - ○× / 5択 / TEXT の回答
+  - status=open で操作可能、決定で確定（押し間違い→決定方式）
+  - タイマー更新でTEXT入力が消えない（再描画制御）
 
-## まず見るもの（仕様の正本）
-`exp-display/` 配下に仕様と運用ルールを置いています。
+## 対応ルーム（固定）
+- kyoto-01 / kyoto-02
+- sendai-01 / sendai-02
+- nagoya-01 / nagoya-02
 
-- `exp-display/SPEC.md` … 仕様の正本（DB構造・画面挙動・view/mode/timer/TTS）
-- `exp-display/STABLE_CHECKLIST.md` … **壊さない不変条件**＋毎回のスモークテスト
-- `exp-display/CHANGELOG.md` … 変更ログ（1行で差分を追う）
+URLパラメータで room を指定：
+- student: `.../student.html?room=nagoya-01`
+- display: `.../display.html?room=nagoya-01`
 
----
+## 主要機能
+- 投票モード：`ox` / `five` / `text`
+- 投票開始/終了：`activity.status = open/closed`
+- 投影結果の公開方式：`activity.revealMode = live/closed`
+  - live: 投票中もリアルタイム公開
+  - closed: 投票中はマスク表示、closedで公開
+- QR表示（安定版）
+  - `activity.qr === true` または `activity.view === "qr"` で表示
+  - それ以外は必ず非表示（固まり防止）
+- TTS（display）
+  - OFF→ON→読む、次問題でもリロード不要を目標に runId方式で安定化
+  - open時：start.mp3 → 1秒後に読み上げ（運用）
+- 音（SE）
+  - `poyon.mp3`：投票1件増
+  - `gong.mp3`：解答終了
+  - `countdown.mp3`：残り3秒
+  - `start.mp3`：出題開始
 
-## 画面（URL）
-- 教員画面：`/quiz-app/exp-display/index.html`
-- 投影：`/quiz-app/exp-display/display.html`
-- 学生：`/quiz-app/exp-display/student.html`
-- CSV投入：`/quiz-app/exp-display/import-csv.html`
-- 読み上げ辞書：`/quiz-app/exp-display/dict-editor.html`（tts-dict.json編集）
+## 注意
+Chrome拡張由来のコンソールエラー
+`A listener indicated an asynchronous response ...` は拡張（multi-tabs等）の可能性が高く、アプリ本体の不具合ではない。
+投影PCは拡張を最小限にするのが安全。
 
-運用時は room を付与します：
-- `.../display.html?room=kyoto-01`
-- `.../student.html?room=kyoto-01`
-- `.../import-csv.html?room=kyoto-01`
-
----
-
-## 授業当日の標準手順（推奨）
-1. CSV投入（`import-csv.html`）
-2. 投影を開く（`display.html`）
-   - 起動時はQR強制ON（参加導線）
-3. 学生が入室（参加人数が増える）
-4. 教員画面で「QRを消す」→ standby（出題待ち）
-5. 「次の問題」→ quiz/open で出題開始
-6. 必要ならタイマー（20/30/60）で自動close運用
-7. 「解答終了」→ `status="closed"` で正解・解説を上段表示
-8. 次の問題へ
-
----
-
-## 安定版タグ（重要）
-タグを「復旧ポイント」として運用します（stableは付け替えない）。
-
----
-
-## 開発ポリシー（削除事故を防ぐ）
-- 既存機能は削除しない（無効化は flag で）
-- 1回の変更で触るファイルは原則1つ
-- 変更後は `STABLE_CHECKLIST.md` の Smoke Test を通す
-- キャッシュ事故回避のため build 表示 + `?v=<build>` 運用を推奨
+## ドキュメント
+- `SPEC.md`：Firebase構造・画面仕様・挙動
+- `CHANGELOG.md`：変更履歴（安定化対応含む）
+- `STABLE_CHECKLIST.md`：運用前チェックリスト（QR/TTS/投票/ルーム切替）
