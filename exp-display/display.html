@@ -1260,6 +1260,8 @@ ttsBtn.onclick = async () => {
   // ON
   ttsEnabled = true;
   ttsUnlocked = true; // ユーザー操作済み扱い（自動読み上げ許可）
+  ttsAutoSpokenKey = null;   // ★追加：ONにしたら自動の「1回だけ」判定をリセット
+  ttsClosedKey = "";         // ★追加（任意）：closed読み上げの多重防止もリセットしたい場合
   ttsBtn.classList.add("on");
   ttsBtn.textContent = "🗣 読み上げON";
 
@@ -1280,6 +1282,8 @@ ttsBtn.onclick = async () => {
       ttsBtn.textContent = "🗣 読み上げON";
 
       await unlockSound();
+      ttsAutoSpokenKey = null;   // ★追加：手動は必ず読ませたいのでリセット
+      stopTTS();                 // ★追加：残留タイマー/発話を確実に掃除してから読む
       await speakCurrent({ withJingle:true, auto:false });
     };
   }
@@ -1930,16 +1934,12 @@ onValue(activityRef, snap => {
   }
   // ★追加：openに切り替わった瞬間（出題開始）
   if (lastStatus !== "open" && currentStatus === "open") {
-    // 出題開始SE
     playStart();
   
-    // 読み上げは3秒後から
+    // ★予約は maybeAutoSpeak が担当（一本化）
     ttsOpenReadyAt = Date.now() + OPEN_READ_DELAY_MS;
-    if (ttsOpenDelayTimer) clearTimeout(ttsOpenDelayTimer);
-    ttsOpenDelayTimer = setTimeout(() => {
-      ttsOpenDelayTimer = null;
-      maybeAutoSpeak();
-    }, OPEN_READ_DELAY_MS);
+    if (ttsOpenDelayTimer) { clearTimeout(ttsOpenDelayTimer); ttsOpenDelayTimer = null; }
+    maybeAutoSpeak(); // ←ここで呼ぶだけ
   }
 
   if (lastStatus !== "closed" && currentStatus === "closed") {
