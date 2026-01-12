@@ -679,6 +679,9 @@
 
   // ========= Game helpers =========
   const KEYS = ["A","B","C","D","E"];
+  
+  // 残席の前回値（pop判定用）※未定義だと描画が止まる
+  const prevRemainByKey = { A:null, B:null, C:null, D:null, E:null };
 
   function buildPattern(totalSeats){
     const base = "ABCDE";
@@ -812,100 +815,92 @@
   let lastActivity = {};
 
   function recompute(){
-    const a = lastActivity || {};
-    const status = a.status || "-";
-    const view = a.view || "quiz";
-    const mode = a.mode || "five";
-
-    // QR安定判定（既存方針）
-    const qrOn = (a.qr === true) || (a.qr === "true") || (a.view === "qr");
-    if (qrOn) showQR(); else hideQR();
-
-    // game object（無ければ推定表示）
-    const g = a.game || {};
-    const round = (g.round != null) ? g.round : "-";
-    const phase = g.phase || (status === "open" ? "running" : status === "closed" ? "reveal" : "-");
-
-    // seats 初期/残席
-    // 優先：game.seatsInitial / game.seatsRemain（または seats を残席として扱う）
-    // 無い場合：totalSeats から pattern を作って初期を推定、残席=初期（暫定）
-    const warmup = Number(g.warmupRounds ?? 3);
-    const totalSeats = Number(g.totalSeats ?? 0);
-
-    let seatsInitial = null;
-    let seatsRemain  = null;
-
-    if (g.seatsInitial && typeof g.seatsInitial === "object"){
-      seatsInitial = {A:0,B:0,C:0,D:0,E:0, ...g.seatsInitial};
+    try{
+      const a = lastActivity || {};
+      const status = a.status || "-";
+      const view = a.view || "quiz";
+      const mode = a.mode || "five";
+  
+      const qrOn = (a.qr === true) || (a.qr === "true") || (a.view === "qr");
+      if (qrOn) showQR(); else hideQR();
+  
+      const g = a.game || {};
+      const round = (g.round != null) ? g.round : "-";
+      const phase = g.phase || (status === "open" ? "running" : status === "closed" ? "reveal" : "-");
+  
+      const warmup = Number(g.warmupRounds ?? 3);
+      const totalSeats = Number(g.totalSeats ?? 0);
+  
+      let seatsInitial = null;
+      let seatsRemain  = null;
+  
+      if (g.seatsInitial && typeof g.seatsInitial === "object"){
+        seatsInitial = {A:0,B:0,C:0,D:0,E:0, ...g.seatsInitial};
+      }
+  
+      if (g.seatsRemain && typeof g.seatsRemain === "object"){
+        seatsRemain = {A:0,B:0,C:0,D:0,E:0, ...g.seatsRemain};
+      } else if (g.seats && typeof g.seats === "object"){
+        seatsRemain = {A:0,B:0,C:0,D:0,E:0, ...g.seats};
+      }
+  
+      if (!seatsInitial){
+        const t = totalSeats > 0 ? totalSeats : 10;
+        const pattern = g.pattern || buildPattern(t);
+        seatsInitial = countSeatsFromPattern(pattern);
+      }
+  
+      if (!seatsRemain){
+        seatsRemain = { ...seatsInitial };
+      }
+  
+      const players = (g.players && typeof g.players === "object") ? g.players : {};
+      const seated = Object.keys(players).length;
+  
+      const answersCount = countAnswers(lastAnswers);
+      const participants = Object.keys(lastAnswers||{}).length;
+  
+      const standing = Math.max(0, participants - seated);
+  
+      let maxKey = "-";
+      let maxVal = -1;
+      for (const k of KEYS){
+        const v = answersCount[k] || 0;
+        if (v > maxVal){ maxVal = v; maxKey = k; }
+      }
+  
+      const statusTone = (status === "open") ? "ok" : (status === "closed") ? "warn" : "";
+      setPill(statePill, "status", status, statusTone);
+      setPill(roundPill, "round", round, "");
+      setPill(phasePill, "phase", phase, "");
+      setPill(modePill, "mode", mode, (mode === "five") ? "ok" : "warn");
+  
+      const totalInitSeats = sum(seatsInitial);
+      const totalRemainSeats = sum(seatsRemain);
+      setPill(seatPill, "seats", `${totalRemainSeats}/${totalInitSeats}`, "");
+  
+      participantsVal.textContent = String(participants);
+      seatedVal.textContent = String(seated);
+      standingVal.textContent = String(standing);
+      maxCrowdVal.textContent = (maxKey === "-" ? "-" : `${maxKey} (${maxVal})`);
+  
+      const prompt = (g.prompt != null) ? String(g.prompt) : "—";
+      promptVal.textContent = prompt;
+  
+      const warmTxt =
+        (round !== "-" && Number(round) <= warmup)
+          ? `warmup: ${warmup}（椅子減らない）`
+          : `warmup: ${warmup}`;
+      noteVal.textContent = warmTxt;
+  
+      statusLine.textContent =
+        `room:${room} / view:${view} / status:${status} / mode:${mode} / qr:${qrOn ? "on":"off"}`;
+  
+      renderSeats({ seatsInitial, seatsRemain, answersCount });
+    }catch(e){
+      console.error(e);
+      statusLine.textContent = `ERROR: ${e?.message || e}`;
     }
-
-    // seatsRemain優先、無ければ seats を残席扱い
-    if (g.seatsRemain && typeof g.seatsRemain === "object"){
-      seatsRemain = {A:0,B:0,C:0,D:0,E:0, ...g.seatsRemain};
-    } else if (g.seats && typeof g.seats === "object"){
-      seatsRemain = {A:0,B:0,C:0,D:0,E:0, ...g.seats};
-    }
-
-    // 初期が無い場合は totalSeats から作る
-    if (!seatsInitial){
-      const t = totalSeats > 0 ? totalSeats : 10; // totalSeats未設定時の仮
-      const pattern = g.pattern || buildPattern(t);
-      seatsInitial = countSeatsFromPattern(pattern);
-    }
-
-    // 残席が無い場合は初期と同じ（暫定）
-    if (!seatsRemain){
-      seatsRemain = { ...seatsInitial };
-    }
-
-    // players（先着確保が入ったらここが着席数の根拠になる）
-    const players = (g.players && typeof g.players === "object") ? g.players : {};
-    const seated = Object.keys(players).length;
-
-    // answers（参考：今どこに集まっているか）
-    const answersCount = countAnswers(lastAnswers);
-    const participants = Object.keys(lastAnswers||{}).length;
-
-    // 立ち（推定）：参加 - 着席（playersベース）
-    const standing = Math.max(0, participants - seated);
-
-    // 混雑最大（answersベース）
-    let maxKey = "-";
-    let maxVal = -1;
-    for (const k of KEYS){
-      const v = answersCount[k] || 0;
-      if (v > maxVal){ maxVal = v; maxKey = k; }
-    }
-
-    // pills
-    const statusTone = (status === "open") ? "ok" : (status === "closed") ? "warn" : "";
-    setPill(statePill, "status", status, statusTone);
-    setPill(roundPill, "round", round, "");
-    setPill(phasePill, "phase", phase, "");
-    setPill(modePill, "mode", mode, (mode === "five") ? "ok" : "warn");
-
-    const totalInitSeats = sum(seatsInitial);
-    const totalRemainSeats = sum(seatsRemain);
-    setPill(seatPill, "seats", `${totalRemainSeats}/${totalInitSeats}`, "");
-
-    participantsVal.textContent = String(participants);
-    seatedVal.textContent = String(seated);
-    standingVal.textContent = String(standing);
-    maxCrowdVal.textContent = (maxKey === "-" ? "-" : `${maxKey} (${maxVal})`);
-
-    const prompt = (g.prompt != null) ? String(g.prompt) : "—";
-    promptVal.textContent = prompt;
-
-    const warmTxt =
-      (round !== "-" && Number(round) <= warmup)
-        ? `warmup: ${warmup}（椅子減らない）`
-        : `warmup: ${warmup}`;
-    noteVal.textContent = warmTxt;
-
-    statusLine.textContent =
-      `room:${room} / view:${view} / status:${status} / mode:${mode} / qr:${qrOn ? "on":"off"}`;
-
-    renderSeats({ seatsInitial, seatsRemain, answersCount });
   }
 
   onValue(activityRef, (snap) => {
