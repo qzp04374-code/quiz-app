@@ -330,6 +330,50 @@
       animation: pop var(--anim-pop) ease-out;
     }
     
+    /* ===== runnerLayer（画面全体に重ねる）===== */
+    #runnerLayer{
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 40; /* QRより下にしたいなら 40→30 など調整 */
+    }
+    
+    /* ===== runnerFx（画面下→椅子へ走る）===== */
+    .runnerFx{
+      position: fixed;
+      left: 0;
+      top: 0;
+      font-size: 34px;
+      line-height: 1;
+      z-index: 41;
+      pointer-events: none;
+      user-select: none;
+      filter: drop-shadow(0 14px 18px rgba(0,0,0,.35));
+      will-change: transform, opacity;
+      opacity: 0;
+    
+      /* 重要：遅延補正のため animation-delay を JS で負にする */
+      animation: runToSeat var(--anim-run, 650ms) cubic-bezier(.14,.9,.22,1) forwards;
+    }
+    
+    /* 画面下 → 椅子へ */
+    @keyframes runToSeat{
+      0%{
+        transform: translate(var(--from-x), var(--from-y)) scale(.92);
+        opacity: 0;
+      }
+      12%{ opacity: 1; }
+      70%{
+        transform: translate(var(--to-x), var(--to-y)) scale(1.02);
+        opacity: 1;
+      }
+      100%{
+        transform: translate(calc(var(--to-x) + 8px), calc(var(--to-y) + 6px)) scale(.78);
+        opacity: 0;
+      }
+    }
+
+    
     /* ===== runner（走る→座る：最小演出）===== */
     .runner{
       position:absolute;
@@ -651,6 +695,7 @@
   const statusLine = document.getElementById("statusLine");
 
   const seatsGrid = document.getElementById("seatsGrid");
+  const runnerLayer = document.getElementById("runnerLayer");
 
   // QR
   const qrLayer = document.getElementById("qrLayer");
@@ -712,15 +757,100 @@
     return "";
   }
 
-  function countAnswers(ans){
-    const c = {A:0,B:0,C:0,D:0,E:0};
-    const obj = ans || {};
-    for (const uid of Object.keys(obj)){
-      const v = extractAnswerValue(obj[uid]);
-      const k = String(v).trim().toUpperCase();
-      if (c[k] != null) c[k]++;
+  function extractTimestamp(v){
+  if (v && typeof v === "object" && typeof v.timestamp === "number") return v.timestamp;
+  return 0;
+}
+
+/** 前回→今回で増えた回答（新規 or 変更）をイベント化 */
+function diffAnswerEvents(prevObj, nextObj){
+  const evs = [];
+  const prev = prevObj || {};
+  const next = nextObj || {};
+
+  for (const uid of Object.keys(next)){
+    const before = prev[uid];
+    const after  = next[uid];
+
+    const vBefore = extractAnswerValue(before);
+    const vAfter  = extractAnswerValue(after);
+
+    // 追加、または値変更（上書き運用でも反応する）
+    if (before == null || vAfter !== vBefore){
+      const k = String(vAfter).trim().toUpperCase();
+      if (["A","B","C","D","E"].includes(k)){
+        const ts = extractTimestamp(after); // 無い場合0
+        evs.push({ key: k, ts });
+      }
     }
-    return c;
+  }
+
+  return evs;
+}
+
+  // ===== 追加：押した時刻を読む（{value,timestamp} 対応）=====
+  function extractTimestamp(v){
+    if (v && typeof v === "object" && typeof v.timestamp === "number") return v.timestamp;
+    return 0;
+  }
+  
+  // ===== 追加：前回→今回で増えた回答をイベント化 =====
+  function diffAnswerEvents(prevObj, nextObj){
+    const evs = [];
+    const prev = prevObj || {};
+    const next = nextObj || {};
+  
+    for (const uid of Object.keys(next)){
+      const before = prev[uid];
+      const after  = next[uid];
+  
+      const vBefore = extractAnswerValue(before);
+      const vAfter  = extractAnswerValue(after);
+  
+      if (before == null || vAfter !== vBefore){
+        const k = String(vAfter).trim().toUpperCase();
+        if (["A","B","C","D","E"].includes(k)){
+          const ts = extractTimestamp(after); // 無い場合0
+          evs.push({ key: k, ts });
+        }
+      }
+    }
+    return evs;
+  }
+  
+  // ===== 追加：画面下→椅子へ走る人を生成（押した時刻に合わせて開始）=====
+  const RUN_MS = 650; // CSSの --anim-run と同じにする
+  
+  function spawnRunnerToKey(key, pressedAtMs){
+    if (!runnerLayer) return;
+  
+    const card = seatsGrid.querySelector(`.seatCard.${key}`);
+    if (!card) return;
+  
+    const rect = card.getBoundingClientRect();
+    const toX = rect.left + rect.width * 0.62;
+    const toY = rect.top  + 112;
+  
+    const fromX = Math.round(window.innerWidth * (0.15 + Math.random() * 0.70));
+    const fromY = Math.round(window.innerHeight + 40);
+  
+    const lag = pressedAtMs ? (Date.now() - pressedAtMs) : 0;
+    const neg = Math.max(0, Math.min(RUN_MS - 60, lag)); // 0〜(RUN_MS-60)
+  
+    const el = document.createElement("div");
+    el.className = "runnerFx";
+    el.textContent = "🏃";
+  
+    el.style.setProperty("--from-x", `${fromX}px`);
+    el.style.setProperty("--from-y", `${fromY}px`);
+    el.style.setProperty("--to-x",   `${Math.round(toX)}px`);
+    el.style.setProperty("--to-y",   `${Math.round(toY)}px`);
+  
+    // 押した時間に合わせる：負のdelayで途中から再生
+    el.style.animationDelay = `-${neg}ms`;
+  
+    runnerLayer.appendChild(el);
+    setTimeout(()=> el.remove(), RUN_MS + 300);
   }
 
   function sum(obj){
@@ -786,9 +916,6 @@
           <div class="legL"></div>
           <div class="legR"></div>
         </div>
-        
-        <!-- ★追加：走る人（pop時だけCSSで表示） -->
-        <div class="runner" aria-hidden="true">🏃</div>
         
         <div class="seatInfo">
           <div class="miniStat">
@@ -913,8 +1040,22 @@
   });
 
   onValue(answersRef, (snap) => {
-    lastAnswers = snap.val() || {};
+    const next = snap.val() || {};
+    const evs = diffAnswerEvents(lastAnswers, next);
+  
+    lastAnswers = next;
     recompute();
+  
+    // DOMが描画された次フレームで走らせる
+    if (evs.length){
+      requestAnimationFrame(() => {
+        // 一度に多すぎると重いので上限（必要なら調整）
+        const limited = evs.slice(0, 8);
+        for (const ev of limited){
+          spawnRunnerToKey(ev.key, ev.ts);
+        }
+      });
+    }
   });
 
 </script>
