@@ -1022,6 +1022,21 @@
         pvExplanationNext.textContent = "";
         return;
       }
+      
+      if (view === "game"){
+        pvQid.textContent = "ID: —";
+        pvQuestion.textContent = "（ゲーム中：椅子取り A〜E）";
+        pvChoices.innerHTML = "";
+        pvAnswer.textContent = "";
+        pvExplanation.textContent = "";
+      
+        pvQidNext.textContent = "ID: —";
+        pvQuestionNext.textContent = "—";
+        pvChoicesNext.innerHTML = "";
+        pvAnswerNext.textContent = "";
+        pvExplanationNext.textContent = "";
+        return;
+      }
 
       // 現在
       const q = state.question;
