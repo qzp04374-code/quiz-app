@@ -756,6 +756,18 @@
     if (typeof v === "object" && typeof v.value === "string") return v.value;
     return "";
   }
+
+  /* ★追加：answers を A〜E で集計（display_game(2) と同等） */
+  function countAnswers(ans){
+    const c = {A:0,B:0,C:0,D:0,E:0};
+    const obj = ans || {};
+    for (const uid of Object.keys(obj)){
+      const v = extractAnswerValue(obj[uid]);
+      const k = String(v).trim().toUpperCase();
+      if (c[k] != null) c[k]++;
+    }
+    return c;
+  }
   
   // ★追加：timestamp を安全に読む（{value,timestamp} 対応）
   function extractTimestamp(v){
@@ -814,14 +826,31 @@ function cssMs(varName, fallbackMs){
 // ===== 追加：画面下→椅子へ走る人を生成（押した時刻に合わせて開始）=====
 const RUN_MS = cssMs("--anim-run", 650);
   
-  // ===== 追加：画面下→椅子へ走る人を生成（押した時刻に合わせて開始）=====
-  const RUN_MS = 650; // CSSの --anim-run と同じにする
+  // ★追加：CSS変数（ms/s）→ 数値ms に変換
+  function cssMs(varName, fallbackMs){
+    const raw = getComputedStyle(document.documentElement)
+      .getPropertyValue(varName)
+      .trim();
   
+    if (!raw) return fallbackMs;
+  
+    // "650ms" / "0.65s" / "650" などを許容
+    const n = parseFloat(raw);
+    if (!Number.isFinite(n)) return fallbackMs;
+  
+    if (raw.endsWith("ms")) return n;
+    if (raw.endsWith("s"))  return Math.round(n * 1000);
+    return n; // 単位なしは ms 扱い
+  }
+  
+  // ===== 画面下→椅子へ走る人を生成（押した時刻に合わせて開始）=====
   function spawnRunnerToKey(key, pressedAtMs){
     if (!runnerLayer) return;
   
     const card = seatsGrid.querySelector(`.seatCard.${key}`);
     if (!card) return;
+  
+    const runMs = cssMs("--anim-run", 650);
   
     const rect = card.getBoundingClientRect();
     const toX = rect.left + rect.width * 0.62;
@@ -831,7 +860,7 @@ const RUN_MS = cssMs("--anim-run", 650);
     const fromY = Math.round(window.innerHeight + 40);
   
     const lag = pressedAtMs ? (Date.now() - pressedAtMs) : 0;
-    const neg = Math.max(0, Math.min(RUN_MS - 60, lag)); // 0〜(RUN_MS-60)
+    const neg = Math.max(0, Math.min(runMs - 60, lag)); // 0〜(runMs-60)
   
     const el = document.createElement("div");
     el.className = "runnerFx";
@@ -846,7 +875,7 @@ const RUN_MS = cssMs("--anim-run", 650);
     el.style.animationDelay = `-${neg}ms`;
   
     runnerLayer.appendChild(el);
-    setTimeout(()=> el.remove(), RUN_MS + 300);
+    setTimeout(()=> el.remove(), runMs + 300);
   }
 
   function sum(obj){
@@ -885,8 +914,10 @@ const RUN_MS = cssMs("--anim-run", 650);
       const prev = prevRemainByKey[k];
       if (prev != null && rem < prev){
         card.classList.add("pop");
-        setTimeout(()=> card.classList.remove("pop"), cssMs("--anim-pop", 650) + 50);
+        const popMs = cssMs("--anim-pop", 650);
+        setTimeout(()=> card.classList.remove("pop"), popMs + 60);
       }
+      
       prevRemainByKey[k] = rem;
   
       // “人”ドット（多すぎると重いので最大8個 +N）
