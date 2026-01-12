@@ -757,7 +757,7 @@
     return "";
   }
 
-  function extractTimestamp(v){
+  
   if (v && typeof v === "object" && typeof v.timestamp === "number") return v.timestamp;
   return 0;
 }
@@ -787,36 +787,6 @@ function diffAnswerEvents(prevObj, nextObj){
 
   return evs;
 }
-
-  // ===== 追加：押した時刻を読む（{value,timestamp} 対応）=====
-  function extractTimestamp(v){
-    if (v && typeof v === "object" && typeof v.timestamp === "number") return v.timestamp;
-    return 0;
-  }
-  
-  // ===== 追加：前回→今回で増えた回答をイベント化 =====
-  function diffAnswerEvents(prevObj, nextObj){
-    const evs = [];
-    const prev = prevObj || {};
-    const next = nextObj || {};
-  
-    for (const uid of Object.keys(next)){
-      const before = prev[uid];
-      const after  = next[uid];
-  
-      const vBefore = extractAnswerValue(before);
-      const vAfter  = extractAnswerValue(after);
-  
-      if (before == null || vAfter !== vBefore){
-        const k = String(vAfter).trim().toUpperCase();
-        if (["A","B","C","D","E"].includes(k)){
-          const ts = extractTimestamp(after); // 無い場合0
-          evs.push({ key: k, ts });
-        }
-      }
-    }
-    return evs;
-  }
   
   // ===== 追加：画面下→椅子へ走る人を生成（押した時刻に合わせて開始）=====
   const RUN_MS = 650; // CSSの --anim-run と同じにする
