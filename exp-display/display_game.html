@@ -126,55 +126,218 @@
     .seats{
       display:grid;
       grid-template-columns: repeat(5, minmax(0, 1fr));
-      gap:12px;
-      margin-top:10px;
+      gap:14px;
+      margin-top:12px;
     }
+    
+    /* ===== seatCard: game look ===== */
     .seatCard{
-      border-radius:20px;
-      padding:14px;
-      border:1px solid var(--line);
-      background:rgba(255,255,255,.04);
+      border-radius:24px;
+      padding:16px 16px 14px;
+      border:1px solid rgba(255,255,255,.12);
+      background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.04));
       position:relative;
       overflow:hidden;
-      min-height:150px;
+      min-height:190px;
+      box-shadow: 0 18px 40px rgba(0,0,0,.22);
+      transform: translateZ(0);
     }
-    .seatCard .k{
-      font-size:54px;
+    
+    /* 背景のうっすら光 */
+    .seatCard::before{
+      content:"";
+      position:absolute; inset:-40% -40%;
+      background: radial-gradient(circle at 30% 30%, rgba(255,255,255,.14), transparent 55%);
+      opacity:.55;
+      transform: rotate(8deg);
+      pointer-events:none;
+    }
+    .seatCard::after{
+      content:"";
+      position:absolute; inset:0;
+      background: linear-gradient(135deg, rgba(255,255,255,.08), transparent 40%);
+      opacity:.55;
+      pointer-events:none;
+    }
+    
+    /* 席札（A〜E） */
+    .seatTop{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      position:relative;
+      z-index:2;
+    }
+    .seatKey{
+      font-size:56px;
       font-weight:1100;
       line-height:1;
       letter-spacing:.02em;
-      margin:0 0 6px;
+      text-shadow: 0 10px 26px rgba(0,0,0,.28);
     }
-    .seatCard .row{
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
+    .seatBadge{
+      padding:8px 10px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.16);
+      background: rgba(2,6,23,.35);
+      color: rgba(203,213,225,.92);
+      font-weight:1000;
+      letter-spacing:.08em;
+      font-size:12px;
+      white-space:nowrap;
+    }
+    
+    /* 椅子アイコン（CSSで簡易） */
+    .chair{
+      position:relative;
+      margin-top:10px;
+      height:62px;
+      z-index:2;
+      opacity:.95;
+      filter: drop-shadow(0 16px 18px rgba(0,0,0,.22));
+    }
+    .chair .back{
+      position:absolute;
+      left:18%;
+      top:0;
+      width:64%;
+      height:34px;
+      border-radius:14px;
+      background: rgba(255,255,255,.16);
+      border:1px solid rgba(255,255,255,.18);
+    }
+    .chair .seat{
+      position:absolute;
+      left:12%;
+      top:28px;
+      width:76%;
+      height:18px;
+      border-radius:12px;
+      background: rgba(255,255,255,.22);
+      border:1px solid rgba(255,255,255,.20);
+    }
+    .chair .legL, .chair .legR{
+      position:absolute;
+      top:42px;
+      width:10px;
+      height:22px;
+      border-radius:8px;
+      background: rgba(255,255,255,.14);
+      border:1px solid rgba(255,255,255,.14);
+    }
+    .chair .legL{ left:18%; }
+    .chair .legR{ right:18%; }
+    
+    /* 下部情報 */
+    .seatInfo{
+      margin-top:12px;
+      display:grid;
+      grid-template-columns: 1fr 1fr;
       gap:10px;
-      font-weight:900;
-      color:rgba(255,255,255,.88);
+      position:relative;
+      z-index:2;
     }
-    .seatCard .row small{ color:var(--muted); font-weight:900; }
-    .bar{
+    .miniStat{
+      padding:10px 10px;
+      border-radius:18px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(2,6,23,.26);
+      min-height:54px;
+    }
+    .miniStat .t{
+      font-size:12px;
+      color: rgba(203,213,225,.80);
+      font-weight:900;
+      letter-spacing:.08em;
+    }
+    .miniStat .v{
+      margin-top:6px;
+      font-size:22px;
+      font-weight:1100;
+      line-height:1;
+    }
+    
+    /* 着席の“人”表示 */
+    .people{
+      display:flex;
+      flex-wrap:wrap;
+      gap:6px;
+      margin-top:6px;
+    }
+    .p{
+      width:10px; height:10px;
+      border-radius:999px;
+      background: rgba(255,255,255,.55);
+      border:1px solid rgba(255,255,255,.20);
+      opacity:.9;
+    }
+    .pMore{
+      font-size:12px;
+      font-weight:1000;
+      color: rgba(203,213,225,.92);
+      margin-left:2px;
+    }
+    
+    /* 混雑バー（押してる参考） */
+    .crowdBar{
       height:12px;
       border-radius:999px;
-      background:rgba(255,255,255,.10);
+      background: rgba(255,255,255,.10);
       overflow:hidden;
-      margin-top:10px;
       border:1px solid rgba(255,255,255,.10);
+      position:relative;
+      z-index:2;
+      margin-top:10px;
     }
-    .bar > div{
+    .crowdBar > div{
       height:100%;
       width:0%;
       border-radius:999px;
-      background:rgba(255,255,255,.55);
-      transition:width 140ms ease;
+      background: rgba(255,255,255,.55);
+      transition: width 140ms ease;
     }
-
-    .A .k{ color:var(--a); } .A .bar>div{ background:rgba(52,211,153,.85); }
-    .B .k{ color:var(--b); } .B .bar>div{ background:rgba(96,165,250,.85); }
-    .C .k{ color:var(--c); } .C .bar>div{ background:rgba(245,158,11,.88); }
-    .D .k{ color:var(--d); } .D .bar>div{ background:rgba(167,139,250,.85); }
-    .E .k{ color:var(--e); } .E .bar>div{ background:rgba(251,113,133,.85); }
+    
+    /* 状態：満席 / 残り少 */
+    .seatCard.full{
+      filter: grayscale(.25);
+      opacity:.72;
+    }
+    .seatCard.full .seatBadge{
+      background: rgba(239,68,68,.18);
+      border-color: rgba(239,68,68,.28);
+      color: rgba(254,202,202,.95);
+    }
+    .seatCard.low:not(.full){
+      box-shadow: 0 20px 48px rgba(245,158,11,.14), 0 18px 40px rgba(0,0,0,.22);
+    }
+    .seatCard.low:not(.full) .seatBadge{
+      background: rgba(245,158,11,.16);
+      border-color: rgba(245,158,11,.24);
+    }
+    
+    /* 演出：残席が減ったらポップ */
+    @keyframes pop {
+      0%{ transform: translateY(0) scale(1); }
+      40%{ transform: translateY(-4px) scale(1.02); }
+      100%{ transform: translateY(0) scale(1); }
+    }
+    .seatCard.pop{
+      animation: pop 220ms ease-out;
+    }
+    
+    /* 色割当（キー色） */
+    .A .seatKey{ color:var(--a); }
+    .B .seatKey{ color:var(--b); }
+    .C .seatKey{ color:var(--c); }
+    .D .seatKey{ color:var(--d); }
+    .E .seatKey{ color:var(--e); }
+    
+    .A .crowdBar > div{ background:rgba(52,211,153,.85); }
+    .B .crowdBar > div{ background:rgba(96,165,250,.85); }
+    .C .crowdBar > div{ background:rgba(245,158,11,.88); }
+    .D .crowdBar > div{ background:rgba(167,139,250,.85); }
+    .E .crowdBar > div{ background:rgba(251,113,133,.85); }
 
     /* right side */
     .rightBox{
@@ -522,31 +685,76 @@
     el.innerHTML = `${label}: <strong>${value}</strong>`;
   }
 
-  function renderSeats({
-    seatsInitial, seatsRemain, answersCount
-  }){
+  function renderSeats({ seatsInitial, seatsRemain, answersCount }){
     seatsGrid.innerHTML = "";
     const maxAns = Math.max(1, ...KEYS.map(k => answersCount[k]||0));
-
+  
     for (const k of KEYS){
       const init = Number(seatsInitial?.[k] ?? 0);
       const rem  = Number(seatsRemain?.[k] ?? init ?? 0);
       const occ  = Math.max(0, init - rem);
       const ans  = Number(answersCount?.[k] ?? 0);
-
-      // 混雑バー：answersの比率
+  
       const crowdPct = Math.round((ans / maxAns) * 100);
-
+  
       const card = document.createElement("div");
       card.className = `seatCard ${k}`;
-
+  
+      // 状態クラス
+      const isFull = (init > 0 && rem <= 0);
+      const isLow  = (!isFull && init > 0 && rem <= Math.ceil(init * 0.2));
+      if (isFull) card.classList.add("full");
+      if (isLow)  card.classList.add("low");
+  
+      // 残席が「減った」時だけ pop
+      const prev = prevRemainByKey[k];
+      if (prev != null && rem < prev){
+        card.classList.add("pop");
+        setTimeout(()=> card.classList.remove("pop"), 260);
+      }
+      prevRemainByKey[k] = rem;
+  
+      // “人”ドット（多すぎると重いので最大8個 +N）
+      const dots = Math.min(occ, 8);
+      const more = Math.max(0, occ - dots);
+      const peopleHtml =
+        `<div class="people">
+          ${Array.from({length:dots}).map(()=>`<span class="p"></span>`).join("")}
+          ${more ? `<span class="pMore">+${more}</span>` : ``}
+        </div>`;
+  
+      const badgeText = isFull ? "FULL" : (isLow ? "あと少し" : "空席あり");
+  
       card.innerHTML = `
-        <div class="k">${k}</div>
-        <div class="row"><small>残席</small><span>${rem} / ${init}</span></div>
-        <div class="row" style="margin-top:6px;"><small>着席</small><span>${occ}</span></div>
-        <div class="row" style="margin-top:6px;"><small>押してる（参考）</small><span>${ans}</span></div>
-        <div class="bar"><div style="width:${crowdPct}%"></div></div>
+        <div class="seatTop">
+          <div class="seatKey">${k}</div>
+          <div class="seatBadge">${badgeText}</div>
+        </div>
+  
+        <div class="chair" aria-hidden="true">
+          <div class="back"></div>
+          <div class="seat"></div>
+          <div class="legL"></div>
+          <div class="legR"></div>
+        </div>
+  
+        <div class="seatInfo">
+          <div class="miniStat">
+            <div class="t">残席</div>
+            <div class="v">${rem} <span style="font-size:14px;color:rgba(203,213,225,.85);font-weight:1000;">/ ${init}</span></div>
+          </div>
+          <div class="miniStat">
+            <div class="t">着席</div>
+            <div class="v">${occ}</div>
+            ${peopleHtml}
+          </div>
+        </div>
+  
+        <div class="crowdBar" title="押してる（参考）">
+          <div style="width:${crowdPct}%"></div>
+        </div>
       `;
+  
       seatsGrid.appendChild(card);
     }
   }
