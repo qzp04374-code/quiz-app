@@ -775,57 +775,33 @@
     return 0;
   }
 
-  // ★追加：answers を A〜E の票数に集計
-  function countAnswers(ans){
-    const c = {A:0,B:0,C:0,D:0,E:0};
-    const obj = ans || {};
-    for (const uid of Object.keys(obj)){
-      const v = extractAnswerValue(obj[uid]);
-      const k = String(v).trim().toUpperCase();
-      if (c[k] != null) c[k]++;
-    }
-    return c;
-  }
-
-/** 前回→今回で増えた回答（新規 or 変更）をイベント化 */
-function diffAnswerEvents(prevObj, nextObj){
-  const evs = [];
-  const prev = prevObj || {};
-  const next = nextObj || {};
-
-  for (const uid of Object.keys(next)){
-    const before = prev[uid];
-    const after  = next[uid];
-
-    const vBefore = extractAnswerValue(before);
-    const vAfter  = extractAnswerValue(after);
-
-    // 追加、または値変更（上書き運用でも反応する）
-    if (before == null || vAfter !== vBefore){
-      const k = String(vAfter).trim().toUpperCase();
-      if (["A","B","C","D","E"].includes(k)){
-        const ts = extractTimestamp(after); // 無い場合0
-        evs.push({ key: k, ts });
+  /** 前回→今回で増えた回答（新規 or 変更）をイベント化 */
+  function diffAnswerEvents(prevObj, nextObj){
+    const evs = [];
+    const prev = prevObj || {};
+    const next = nextObj || {};
+  
+    for (const uid of Object.keys(next)){
+      const before = prev[uid];
+      const after  = next[uid];
+  
+      const vBefore = extractAnswerValue(before);
+      const vAfter  = extractAnswerValue(after);
+  
+      // 追加、または値変更（上書き運用でも反応する）
+      if (before == null || vAfter !== vBefore){
+        const k = String(vAfter).trim().toUpperCase();
+        if (["A","B","C","D","E"].includes(k)){
+          const ts = extractTimestamp(after); // 無い場合0
+          evs.push({ key: k, ts });
+        }
       }
     }
+  
+    return evs;
   }
 
-  return evs;
-}
-
-// ★追加：CSS変数（"650ms" / "0.65s"）を ms(number) に変換
-function cssMs(varName, fallbackMs){
-  const raw = getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
-  if (!raw) return fallbackMs;
-  if (raw.endsWith("ms")) return Number(raw.replace("ms","")) || fallbackMs;
-  if (raw.endsWith("s"))  return (Number(raw.replace("s","")) * 1000) || fallbackMs;
-  const n = Number(raw);
-  return Number.isFinite(n) ? n : fallbackMs;
-}
-
-// ===== 追加：画面下→椅子へ走る人を生成（押した時刻に合わせて開始）=====
-const RUN_MS = cssMs("--anim-run", 650);
-  
+ 
   // ★追加：CSS変数（ms/s）→ 数値ms に変換
   function cssMs(varName, fallbackMs){
     const raw = getComputedStyle(document.documentElement)
