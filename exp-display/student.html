@@ -951,6 +951,7 @@
     
           return game; // ←ここだけ更新コミット
         });
+        showToast(`TX committed=${res.committed} /押:${k}`);
     
         // 重要：返す seat は「現在ラウンド」だけ
         const g = res.snapshot.val();
