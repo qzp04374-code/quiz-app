@@ -15,6 +15,10 @@
       --line: rgba(255,255,255,.10);
       --text: rgba(255,255,255,.92);
       --muted: rgba(203,213,225,.75);
+      
+      --anim-pop: 650ms;   /* 椅子がポップする時間 */
+      --anim-run: 650ms;   /* 走って座る時間 */
+      --anim-bar: 320ms;   /* 混雑バーの伸び */
 
       --a:#34d399; --b:#60a5fa; --c:#f59e0b; --d:#a78bfa; --e:#fb7185;
     }
@@ -295,7 +299,7 @@
       width:0%;
       border-radius:999px;
       background: rgba(255,255,255,.55);
-      transition: width 140ms ease;
+      transition: width var(--anim-bar) ease;
     }
     
     /* 状態：満席 / 残り少 */
@@ -323,7 +327,7 @@
       100%{ transform: translateY(0) scale(1); }
     }
     .seatCard.pop{
-      animation: pop 220ms ease-out;
+      animation: pop var(--anim-pop) ease-out;
     }
     
     /* ===== runner（走る→座る：最小演出）===== */
@@ -344,7 +348,7 @@
     /* 残席が減った瞬間(pop)にだけ走らせる */
     .seatCard.pop .runner{
       opacity:1;
-      animation: runToChair 220ms cubic-bezier(.14,.9,.22,1) forwards;
+      animation: runToChair var(--anim-run) cubic-bezier(.14,.9,.22,1) forwards;
     }
 
     /* 走る→座る（最後に少し縮めて“着席”っぽく） */
@@ -755,7 +759,7 @@
       const prev = prevRemainByKey[k];
       if (prev != null && rem < prev){
         card.classList.add("pop");
-        setTimeout(()=> card.classList.remove("pop"), 260);
+        setTimeout(()=> card.classList.remove("pop"), 740);
       }
       prevRemainByKey[k] = rem;
   
