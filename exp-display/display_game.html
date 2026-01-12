@@ -326,6 +326,46 @@
       animation: pop 220ms ease-out;
     }
     
+    /* ===== runner（走る→座る：最小演出）===== */
+    .runner{
+      position:absolute;
+      left:-44px;              /* 画面外スタート */
+      top:104px;               /* 椅子あたりの高さに合わせる */
+      font-size:30px;
+      line-height:1;
+      z-index:3;               /* 椅子より手前 */
+      opacity:0;
+      filter: drop-shadow(0 10px 16px rgba(0,0,0,.35));
+      transform: translateX(0) translateY(0) scale(.95);
+      pointer-events:none;
+      user-select:none;
+    }
+
+    /* 残席が減った瞬間(pop)にだけ走らせる */
+    .seatCard.pop .runner{
+      opacity:1;
+      animation: runToChair 220ms cubic-bezier(.14,.9,.22,1) forwards;
+    }
+
+    /* 走る→座る（最後に少し縮めて“着席”っぽく） */
+    @keyframes runToChair{
+      0%{
+        transform: translateX(0) translateY(12px) scale(.92);
+        opacity:0;
+      }
+      12%{
+        opacity:1;
+      }
+      70%{
+        transform: translateX(170px) translateY(-10px) scale(1.02);
+        opacity:1;
+      }
+      100%{
+        transform: translateX(188px) translateY(-16px) scale(.78);
+        opacity:0;
+      }
+    }
+
     /* 色割当（キー色） */
     .A .seatKey{ color:var(--a); }
     .B .seatKey{ color:var(--b); }
@@ -504,6 +544,8 @@
       </div>
 
       <div class="seats" id="seatsGrid"></div>
+      <!-- ★追加：走る人を描くレイヤー（椅子の上に重ねる） -->
+      <div id="runnerLayer"></div>
     </div>
 
     <div class="panel rightBox">
@@ -737,7 +779,10 @@
           <div class="legL"></div>
           <div class="legR"></div>
         </div>
-  
+        
+        <!-- ★追加：走る人（pop時だけCSSで表示） -->
+        <div class="runner" aria-hidden="true">🏃</div>
+        
         <div class="seatInfo">
           <div class="miniStat">
             <div class="t">残席</div>
