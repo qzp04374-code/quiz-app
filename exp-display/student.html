@@ -916,42 +916,56 @@
     async function claimSeatTransaction(choiceKey){
       const k = normKey(choiceKey);
       if (!["A","B","C","D","E"].includes(k)) return null;
-  
+    
       const gameRef = ref(db, `rooms/${room}/activity/game`);
-  
+    
       try{
         const res = await runTransaction(gameRef, (game) => {
-          if (!game || typeof game !== "object") return game;
-  
+          if (!game || typeof game !== "object") return; // ←中断
+    
           const phase = String(game.phase || "").trim();
-          // phaseが無くても status=open運用があるので、phaseは緩めに
-          if (phase && phase !== "running") return game;
-  
+          if (phase && phase !== "running") return;      // ←中断
+    
+          const round = Number(game.round || 0);
+    
           game.players ??= {};
-  
-          // すでに確保済みなら何もしない
-          if (game.players[userId]?.seat) return game;
-  
-          // 残席マップの場所（seatsRemain優先、無ければ seats）
-          if (!game.seatsRemain && !game.seats){
-            // 先生側の初期化待ち
-            return game;
-          }
-          const target = (game.seatsRemain && typeof game.seatsRemain === "object") ? "seatsRemain" : "seats";
+    
+          // すでに“今ラウンド”で座ってたら、そのまま（DB更新はしない）
+          const cur = game.players[userId];
+          if (cur && Number(cur.round || 0) === round && cur.seat) return; // ←中断
+    
+          // seatsRemain優先、無ければseats
+          const hasSeatsRemain = (game.seatsRemain && typeof game.seatsRemain === "object");
+          const hasSeats       = (game.seats && typeof game.seats === "object");
+          if (!hasSeatsRemain && !hasSeats) return; // ←中断（先生側初期化待ち）
+    
+          const target = hasSeatsRemain ? "seatsRemain" : "seats";
           game[target] ??= {A:0,B:0,C:0,D:0,E:0};
-  
+    
           const remain = Math.max(0, Math.floor(Number(game[target][k] || 0)));
-          if (remain <= 0) return game;
-  
+          if (remain <= 0) return; // ←中断（満席）
+    
+          // 確保
           game[target][k] = remain - 1;
-          game.players[userId] = { seat: k, at: Date.now() };
-          return game;
+          game.players[userId] = { seat: k, round, at: Date.now() };
+    
+          return game; // ←ここだけ更新コミット
         });
-  
+    
+        // 重要：返す seat は「現在ラウンド」だけ
         const g = res.snapshot.val();
-        const seat = g?.players?.[userId]?.seat ? normKey(g.players[userId].seat) : null;
-        if (seat && ["A","B","C","D","E"].includes(seat)) return seat;
-        return null;
+        const p = g?.players?.[userId];
+    
+        if (!p) return null;
+        if (Number(p.round || 0) !== Number(gameRound || 0)) return null;
+    
+        const seat = normKey(p.seat);
+        if (!["A","B","C","D","E"].includes(seat)) return null;
+    
+        // 押したキーと違う seat が返ってきたら事故なので無効（好みで外してOK）
+        if (seat !== k) return null;
+    
+        return seat;
       }catch(e){
         console.warn("[game] claim failed:", e);
         return null;
