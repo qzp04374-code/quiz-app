@@ -448,6 +448,12 @@
       align-items:center;
       gap:10px;
     }
+    /* Game buttons */
+    #gameDisplayBtn{ background: linear-gradient(135deg, #22c55e, #16a34a) !important; }
+    #gameStartBtn{ background: linear-gradient(135deg, #0ea5e9, #2563eb) !important; }
+    #gameNextRoundBtn{ background: linear-gradient(135deg, #a855f7, #7c3aed) !important; }
+    #gameCloseBtn{ background: rgba(255,159,10,.92) !important; border-color: rgba(255,159,10,.55) !important; }
+    #gameEndBtn{ background: rgba(255,69,58,.92) !important; border-color: rgba(255,69,58,.55) !important; }
 
   </style>
 </head>
@@ -519,6 +525,12 @@
           <button id="dictBtn" class="tile tile-admin2">読み方（辞書）</button>
           <!-- ★追加：母数を今回の投票人数で固定 -->
           <button id="setExpectedFromVotesBtn" class="tile tile-admin">母数=投票人数</button>
+          <!-- ===== Game controls ===== -->
+          <button id="gameDisplayBtn" class="tile tile-admin2">ゲーム表示</button>
+          <button id="gameStartBtn" class="tile tile-admin2">ゲーム開始</button>
+          <button id="gameNextRoundBtn" class="tile tile-admin2">次ラウンド</button>
+          <button id="gameCloseBtn" class="tile tile-admin">締切（公開）</button>
+          <button id="gameEndBtn" class="tile tile-admin">ゲーム終了</button>
         </div>
       </section>
     </div>
@@ -656,6 +668,11 @@
     const btnQT   = document.getElementById("quickTextBtn");
     const btnReveal = document.getElementById("revealBtn"); 
     const btnSetExpectedFromVotes = document.getElementById("setExpectedFromVotesBtn");
+    const btnGameDisplay = document.getElementById("gameDisplayBtn");
+    const btnGameStart   = document.getElementById("gameStartBtn");
+    const btnGameNext    = document.getElementById("gameNextRoundBtn");
+    const btnGameClose   = document.getElementById("gameCloseBtn");
+    const btnGameEnd     = document.getElementById("gameEndBtn");
 
     async function clearAnswers(){ await set(answersRef(), {}); }
 
@@ -830,6 +847,113 @@
         status:"ready",
         mode:null,
         config:null
+      });
+    }
+    
+    function seatsFromTotal(totalSeats){
+      const keys = ["A","B","C","D","E"];
+      const n = Math.max(0, Math.floor(Number(totalSeats || 0)));
+      const base = Math.floor(n / keys.length);
+      const rem  = n % keys.length;
+      const seats = {};
+      keys.forEach((k, i) => seats[k] = base + (i < rem ? 1 : 0));
+      return seats;
+    }
+    
+    async function resetGamePlayersAndAnswers(room=currentRoom){
+      // players リセット（display_gameが players を読むので空オブジェクトに）
+      await set(ref(db, `rooms/${room}/activity/game/players`), {});
+      // answersもリセット（押してる参考表示などに使うなら毎回クリアが安全）
+      await set(ref(db, `rooms/${room}/answers`), {});
+    }
+    
+    async function startGameFlow(){
+      // 既存の game 設定があればそれを優先
+      const a = state.activity || {};
+      const g = a.game || {};
+    
+      const curTotal = Number(g.totalSeats || 0) || 0;
+      const curWarm  = Number(g.warmupRounds || 0) || 0;
+    
+      const totalSeats = Math.max(1, parseInt(prompt("総椅子数 totalSeats（例: 5,6,10）", String(curTotal || 5)), 10) || 5);
+      const warmupRounds = Math.max(0, parseInt(prompt("warmupRounds（最初の何ラウンド椅子減らさない？）", String(curWarm || 3)), 10) || 3);
+    
+      const seats = seatsFromTotal(totalSeats);
+    
+      await resetGamePlayersAndAnswers(currentRoom);
+    
+      await update(activityRef(), {
+        qr:false,
+        view:"game",
+        status:"open",
+        mode:"five",
+        config:{ choices:["A","B","C","D","E"] },
+        game:{
+          phase:"running",
+          round:1,
+          totalSeats,
+          warmupRounds,
+          seats
+        },
+        timer:{ running:false }
+      });
+    }
+    
+    async function nextRoundFlow(){
+      // 現在の設定を読む
+      const a = state.activity || {};
+      const g = a.game || {};
+    
+      const round = Math.max(1, Number(g.round || 1));
+      const warm  = Math.max(0, Number(g.warmupRounds || 3));
+      const total = Math.max(1, Number(g.totalSeats || 5));
+    
+      const newRound = round + 1;
+    
+      // warmup中は減らさない。warmup後は毎ラウンド -1（最低1）
+      const newTotal =
+        (newRound <= warm) ? total : Math.max(1, total - 1);
+    
+      const seats = seatsFromTotal(newTotal);
+    
+      await resetGamePlayersAndAnswers(currentRoom);
+    
+      await update(activityRef(), {
+        qr:false,
+        view:"game",
+        status:"open",
+        mode:"five",
+        config:{ choices:["A","B","C","D","E"] },
+        game:{
+          phase:"running",
+          round:newRound,
+          totalSeats:newTotal,
+          warmupRounds:warm,
+          seats
+        },
+        timer:{ running:false }
+      });
+    }
+    
+    async function closeRoundFlow(){
+      await update(activityRef(), {
+        status:"closed",
+        view:"game",
+        game: { ...(state.activity.game || {}), phase:"reveal" }
+      });
+    }
+    
+    async function endGameFlow(){
+      const ok = confirm("ゲームを終了して standy に戻しますか？");
+      if (!ok) return;
+    
+      await update(activityRef(), {
+        qr:false,
+        view:"standby",
+        status:"ready",
+        mode:null,
+        config:null,
+        timer:{ running:false }
       });
     }
 
@@ -1119,7 +1243,15 @@
     btnQR.onclick = async () => { await toggleQR(); };
     btnReveal.onclick = async () => { await toggleRevealMode(); };
     btnSetExpectedFromVotes.onclick = async () => { await setExpectedFromVotes(); };
+    btnGameDisplay.onclick = () => {
+      window.open(`https://qzp04374-code.github.io/quiz-app/exp-display/display_game.html?room=${encodeURIComponent(currentRoom)}`, "_blank");
+    };
     
+    btnGameStart.onclick = async () => { await startGameFlow(); };
+    btnGameNext.onclick  = async () => { await nextRoundFlow(); };
+    btnGameClose.onclick = async () => { await closeRoundFlow(); };
+    btnGameEnd.onclick   = async () => { await endGameFlow(); };
+
     btnQ2.onclick = async () => { await startQuickPoll("ox"); };
     btnQ5.onclick = async () => { await startQuickPoll("five"); };
     btnQT.onclick = async () => { await startQuickPoll("text"); };
