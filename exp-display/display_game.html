@@ -756,11 +756,12 @@
     if (typeof v === "object" && typeof v.value === "string") return v.value;
     return "";
   }
-
   
-  if (v && typeof v === "object" && typeof v.timestamp === "number") return v.timestamp;
-  return 0;
-}
+  // ★追加：timestamp を安全に読む（{value,timestamp} 対応）
+  function extractTimestamp(v){
+    if (v && typeof v === "object" && typeof v.timestamp === "number") return v.timestamp;
+    return 0;
+  }
 
 /** 前回→今回で増えた回答（新規 or 変更）をイベント化 */
 function diffAnswerEvents(prevObj, nextObj){
