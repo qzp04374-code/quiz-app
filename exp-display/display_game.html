@@ -17,9 +17,9 @@
       --muted: rgba(203,213,225,.75);
       
       --anim-pop: 700ms;   /* ポップ少し長め */
-      --anim-run: 820ms;   /* 走る：少しゆっくり（でも遅すぎない） */
+      --anim-run: 900ms;   /* 走る：少しゆっくり（でも遅すぎない） */
       --anim-bar: 360ms;   /* バー */
-      --anim-gap: 90ms;    /* 連続回答の間隔（新規）
+      --anim-gap: 90ms;    /* 連続回答の間隔（新規） */
 
       --a:#34d399; --b:#60a5fa; --c:#f59e0b; --d:#a78bfa; --e:#fb7185;
     }
@@ -860,7 +860,7 @@
     
     // ほぼ「カードの真下」から上がってくる（少しだけ左右ブレ）
     const fromX = Math.round(toX + (Math.random() * 240 - 120));
-    const fromY = Math.round(window.innerHeight + 120);
+    const fromY = Math.round(window.innerHeight + 220);
 
   
     const lag = pressedAtMs ? (Date.now() - pressedAtMs) : 0;
@@ -976,6 +976,10 @@
   let lastAnswers = {};
   let lastActivity = {};
 
+  // ★追加：このラウンドで「既に見たuid」を覚えておく
+  let seenAnswerUids = new Set();
+  let lastRoundKey = null;
+
   function recompute(){
     try{
       const a = lastActivity || {};
@@ -1067,23 +1071,49 @@
 
   onValue(activityRef, (snap) => {
     lastActivity = snap.val() || {};
+    
+    // ★追加：round が変わったら、そのラウンドは “新規” として扱う
+    const r = String(lastActivity?.game?.round ?? "");
+    if (r !== lastRoundKey){
+      lastRoundKey = r;
+      seenAnswerUids = new Set();
+    }
+  
     recompute();
   });
 
   onValue(answersRef, (snap) => {
     const next = snap.val() || {};
-    const evs = diffAnswerEvents(lastAnswers, next);
+  
+    // ★追加：seenに無いuidは必ずイベント化（DBに残ってても走らせる）
+    const evsSeen = [];
+    for (const uid of Object.keys(next)){
+      if (!seenAnswerUids.has(uid)){
+        const v = extractAnswerValue(next[uid]);
+        const k = String(v).trim().toUpperCase();
+        if (["A","B","C","D","E"].includes(k)){
+          evsSeen.push({ key: k, ts: extractTimestamp(next[uid]) });
+        }
+        seenAnswerUids.add(uid);
+      }
+    }
+  
+    // 従来の「値が変わった」検出も併用（上書き運用にも対応）
+    const evsDiff = diffAnswerEvents(lastAnswers, next);
   
     lastAnswers = next;
     recompute();
   
-    // DOMが描画された次フレームで走らせる
+    // seen由来 + diff由来 をまとめる（重複は許容、気になるなら後でuniq化）
+    const evs = [...evsSeen, ...evsDiff];
+  
     if (evs.length){
       requestAnimationFrame(() => {
-        enqueueRunnerEvents(evs); // ★捨てずに全部キューへ
+        enqueueRunnerEvents(evs); // ★捨てずに全部
       });
     }
-    
+  });
+
     // DOMが描画された次フレームで走らせる
     //if (evs.length){
       //requestAnimationFrame(() => {
