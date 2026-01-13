@@ -16,9 +16,10 @@
       --text: rgba(255,255,255,.92);
       --muted: rgba(203,213,225,.75);
       
-      --anim-pop: 650ms;   /* 椅子がポップする時間 */
-      --anim-run: 650ms;   /* 走って座る時間 */
-      --anim-bar: 320ms;   /* 混雑バーの伸び */
+      --anim-pop: 700ms;   /* ポップ少し長め */
+      --anim-run: 820ms;   /* 走る：少しゆっくり（でも遅すぎない） */
+      --anim-bar: 360ms;   /* バー */
+      --anim-gap: 90ms;    /* 連続回答の間隔（新規）
 
       --a:#34d399; --b:#60a5fa; --c:#f59e0b; --d:#a78bfa; --e:#fb7185;
     }
@@ -353,7 +354,7 @@
       opacity: 0;
     
       /* 重要：遅延補正のため animation-delay を JS で負にする */
-      animation: runToSeat var(--anim-run, 650ms) cubic-bezier(.14,.9,.22,1) forwards;
+      animation: runToSeat var(--anim-run, 650ms) cubic-bezier(.08,.85,.2,1) forwards;
     }
     
     /* 画面下 → 椅子へ */
@@ -728,6 +729,31 @@
 
   // ========= Game helpers =========
   const KEYS = ["A","B","C","D","E"];
+
+  // ===== runnerFx キュー（同時回答でも全員ぶん出す）=====
+  let runnerQueue = [];
+  let runnerDrainTimer = null;
+  
+  function enqueueRunnerEvents(evs){
+    if (!evs || !evs.length) return;
+    runnerQueue.push(...evs);
+  
+    // すでに流し中なら何もしない
+    if (runnerDrainTimer) return;
+  
+    const gapMs = cssMs("--anim-gap", 90); // 連続出現の間隔（CSS変数で調整）
+    const step = () => {
+      const ev = runnerQueue.shift();
+      if (!ev){
+        runnerDrainTimer = null;
+        return;
+      }
+      spawnRunnerToKey(ev.key, ev.ts);
+      runnerDrainTimer = setTimeout(step, gapMs);
+    };
+  
+    step();
+  }  
   
   // 残席の前回値（pop判定用）※未定義だと描画が止まる
   const prevRemainByKey = { A:null, B:null, C:null, D:null, E:null };
@@ -829,11 +855,13 @@
     const runMs = cssMs("--anim-run", 650);
   
     const rect = card.getBoundingClientRect();
-    const toX = rect.left + rect.width * 0.62;
-    const toY = rect.top  + 112;
-  
-    const fromX = Math.round(window.innerWidth * (0.15 + Math.random() * 0.70));
-    const fromY = Math.round(window.innerHeight + 40);
+    const toX = rect.left + rect.width * 0.52;
+    const toY = rect.top  + rect.height * 0.62;
+    
+    // ほぼ「カードの真下」から上がってくる（少しだけ左右ブレ）
+    const fromX = Math.round(toX + (Math.random() * 240 - 120));
+    const fromY = Math.round(window.innerHeight + 120);
+
   
     const lag = pressedAtMs ? (Date.now() - pressedAtMs) : 0;
     const neg = Math.max(0, Math.min(runMs - 60, lag)); // 0〜(runMs-60)
@@ -1052,13 +1080,20 @@
     // DOMが描画された次フレームで走らせる
     if (evs.length){
       requestAnimationFrame(() => {
-        // 一度に多すぎると重いので上限（必要なら調整）
-        const limited = evs.slice(0, 8);
-        for (const ev of limited){
-          spawnRunnerToKey(ev.key, ev.ts);
-        }
+        enqueueRunnerEvents(evs); // ★捨てずに全部キューへ
       });
     }
+    
+    // DOMが描画された次フレームで走らせる
+    //if (evs.length){
+      //requestAnimationFrame(() => {
+        // 一度に多すぎると重いので上限（必要なら調整）
+        //const limited = evs.slice(0, 8);
+        //for (const ev of limited){
+          //spawnRunnerToKey(ev.key, ev.ts);
+        //}
+      //});
+    //}
   });
 
 </script>
