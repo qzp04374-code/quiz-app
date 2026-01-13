@@ -874,13 +874,23 @@
     const minVisibleMs = 280; // ここを大きくすると「必ず見える」寄り、小さくすると「時刻同期」寄り
     const maxNeg = Math.max(0, runMs - minVisibleMs);
     const neg = Math.max(0, Math.min(maxNeg, lag));
+
+    // ★追加：要素を作る（これが無いと落ちる）
+    const el = document.createElement("div");
+    el.className = "runnerFx";
+    el.textContent = "🏃";
+    
+    el.style.setProperty("--from-x", `${fromX}px`);
+    el.style.setProperty("--from-y", `${fromY}px`);
+    el.style.setProperty("--to-x",   `${Math.round(toX)}px`);
+    el.style.setProperty("--to-y",   `${Math.round(toY)}px`);
     
     // 押した時間に合わせる：負のdelayで途中から再生（ただし見える時間を確保）
     el.style.animationDelay = `-${neg}ms`;
-
-  
+    
     runnerLayer.appendChild(el);
     setTimeout(()=> el.remove(), runMs + 300);
+
   }
 
   function sum(obj){
@@ -1113,18 +1123,6 @@
         enqueueRunnerEvents(evs); // ★捨てずに全部
       });
     }
-  });
-
-    // DOMが描画された次フレームで走らせる
-    //if (evs.length){
-      //requestAnimationFrame(() => {
-        // 一度に多すぎると重いので上限（必要なら調整）
-        //const limited = evs.slice(0, 8);
-        //for (const ev of limited){
-          //spawnRunnerToKey(ev.key, ev.ts);
-        //}
-      //});
-    //}
   });
 
 </script>
