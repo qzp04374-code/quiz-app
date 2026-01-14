@@ -1107,11 +1107,24 @@
       const game = data.game || null;
   
       // 1) 毎回追随：open/closed
-      isOpen = (status === "open");
       currentMode = mode;
       currentView = view;
+      
+      // game state（毎回追随：ここは座席表示の更新に使う）
+      isGame = (view === "game");
+      gameRound = (game && game.round != null) ? Number(game.round) : null;
+      gamePhase = (game && game.phase != null) ? String(game.phase) : null;
+      gameSeatsRemain = getRemainMap(game);
+      
+      // ★入力可能判定：ゲーム中は phase を優先
+      const quizInputOpen = (status === "open");
+      const gameInputOpen = (view === "game") && (gamePhase === "open" || gamePhase === "running");
+      isOpen = isGame ? gameInputOpen : quizInputOpen;
   
-      statusText.textContent = `status: ${status}`;
+      statusText.textContent = isGame
+        ? `status: ${status} / phase: ${gamePhase || "-"}`
+        : `status: ${status}`;
+
       dot.classList.toggle("open", isOpen);
       dot.classList.toggle("closed", !isOpen);
   
