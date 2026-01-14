@@ -60,13 +60,13 @@
     
     /* TEXTモード時は grid を2段に：上(問題+件数) / 下(TEXT一覧) */
     body.textmode .grid{
-      grid-template-rows: minmax(220px, 38vh) 1fr;
+      grid-template-rows: minmax(170px, 28vh) 1fr;
     }
     
     /* 上段（左/右）を少し締める：右は件数バー中心 */
     body.textmode #vchartWrap{
       flex: 0 0 auto;
-      height: 120px;
+      height: 92px;
     }
     body.textmode #vchart{
       align-items:center;
@@ -83,13 +83,16 @@
     
     /* 画面が広いときは2カラムで“読みやすく” */
     @media (min-width: 1100px){
+      
+      /* ✅ TEXT回答：段組みをやめて「1段（1カラム）」に固定 */
       body.textmode #textAnswersList{
-        column-count: 2;
-        column-gap: 12px;
+        column-count: 1;
+        column-gap: 0;
       }
       body.textmode .textItem{
-        break-inside: avoid;
+        break-inside: auto; /* 2カラム用の指定を無効化 */
       }
+
     }
 
     .wrap{
@@ -347,17 +350,17 @@
       margin:0 0 8px 0;
       font-size:13px;
     }
+    /* ✅ TEXT回答を“もっと大きい字”に（プロジェクタ向け） */
     .textItem{
-      padding:10px 10px;
-      border-radius:14px;
-      border:1px solid rgba(255,255,255,.08);
-      background:rgba(0,0,0,.25);
-      margin-bottom:8px;
-      font-size:clamp(18px, 2.1vw, 24px);
-      line-height:1.35;
-      color:#f9fafb;
-      white-space:pre-wrap;
+      font-size:clamp(22px, 2.6vw, 32px);
+      line-height:1.45;
+      margin-bottom:10px; /* 少し見やすく */
     }
+    .textItem .no{
+      min-width:52px; /* 番号の桁ズレ防止（お好み） */
+      font-size:0.95em;
+    }
+
     .textItem .no{
       display:inline-block;
       min-width:44px;
