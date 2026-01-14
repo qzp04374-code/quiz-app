@@ -907,7 +907,47 @@
       // 触った瞬間に phase が music じゃないなら止めておく
       if (!((lastActivity?.game?.phase) === "music")) stopBgm();
     }
+    unlockSE(); // ★追加：SEも最初のタップでアンロック
   }, { passive:true });
+
+  // ========= SE (poyon) =========
+  const POYON_POOL = Array.from({ length: 4 }, () => {
+    const a = new Audio("poyon.mp3");
+    a.preload = "auto";
+    a.volume = 0.9;
+    return a;
+  });
+  let poyonIdx = 0;
+  let seUnlocked = false;
+  
+  function unlockSE(){
+    if (seUnlocked) return;
+    try{
+      // 無音で一瞬再生 → 以後のSEが鳴りやすくなる
+      const a = POYON_POOL[0];
+      const v = a.volume;
+      a.volume = 0;
+      a.currentTime = 0;
+      a.play().then(() => {
+        a.pause();
+        a.currentTime = 0;
+        a.volume = v;
+        seUnlocked = true;
+      }).catch(() => {
+        // ここで失敗しても、次の操作で解決することが多い
+      });
+    }catch(_){}
+  }
+  
+  function playPoyon(delayMs = 0){
+    window.setTimeout(() => {
+      try{
+        const a = POYON_POOL[poyonIdx++ % POYON_POOL.length];
+        a.currentTime = 0;
+        a.play().catch(() => {});
+      }catch(_){}
+    }, Math.max(0, delayMs));
+  }
 
   // ===== runnerFx キュー（同時回答でも全員ぶん出す）=====
   let runnerQueue = [];
@@ -1160,6 +1200,7 @@
 
   let lastAnswers = {};
   let lastActivity = {};
+  let prevTotalRemainSeatsForSE = null;
 
   // ★追加：このラウンドで「既に見たuid」を覚えておく
   let seenAnswerUids = new Set();
@@ -1235,6 +1276,20 @@
   
       const totalInitSeats = sum(seatsInitial);
       const totalRemainSeats = sum(seatsRemain);
+
+      // ★追加：座れた（残席が減った）瞬間に poyon
+      const phaseNow = String(lastActivity?.game?.phase || "");
+      if (prevTotalRemainSeatsForSE == null) prevTotalRemainSeatsForSE = totalRemainSeats;
+      
+      const diff = (prevTotalRemainSeatsForSE - totalRemainSeats);
+      if (diff > 0 && phaseNow === "open"){
+        // 同一フレームで複数減った場合も、回数ぶん鳴らす（少しずらす）
+        for (let i = 0; i < diff; i++){
+          playPoyon(i * 70);
+        }
+      }
+      prevTotalRemainSeatsForSE = totalRemainSeats;
+
       setPill(seatPill, "seats", `${totalRemainSeats}/${totalInitSeats}`, "");
       // ★追加：空き席の大表示
       const freeSeatsBig = document.getElementById("freeSeatsBig");
