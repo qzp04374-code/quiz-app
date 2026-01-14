@@ -942,50 +942,7 @@
         timer:{ running:false }
       });
     }
-
-    async function nextRoundFlow(){
-      // 現在の設定を読む
-      const a = state.activity || {};
-      const g = a.game || {};
-    
-      const round = Math.max(1, Number(g.round || 1));
-      const warm  = Math.max(0, Number(g.warmupRounds || 3));
-      const total = Math.max(1, Number(g.totalSeats || 5));
-    
-      const newRound = round + 1;
-    
-      // warmup中は減らさない。warmup後は毎ラウンド -1（最低1）
-      const newTotal =
-        (newRound <= warm) ? total : Math.max(1, total - 1);
-    
-      const seats = seatsFromTotal(newTotal);
-    
-      await resetGamePlayersAndAnswers(currentRoom);
-    
-      const now = Date.now();
-      const seats = seatsFromTotal(totalSeats);
-      
-      await resetGamePlayersAndAnswers(currentRoom);
-      
-      await update(activityRef(), {
-        qr:false,
-        view:"game",
-        status:"closed", // ★音楽中は学生ロック
-        mode:"five",
-        config:{ choices:["A","B","C","D","E"] },
-        game:{
-          phase:"music",          // ★BGM再生フェーズ
-          round:1,
-          totalSeats,
-          warmupRounds,
-          seatsInitial: seats,    // ★初期席
-          seatsRemain:  seats,    // ★残席（これを減らす）
-          musicStartedAt: now
-        },
-        timer:{ running:false }
-      });
-    }
-    
+   
     async function closeRoundFlow(){
       await update(activityRef(), {
         status:"closed",
