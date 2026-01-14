@@ -875,18 +875,20 @@
       const curTotal = Number(g.totalSeats || 0) || 0;
       const curWarm  = Number(g.warmupRounds || 0) || 0;
     
-      const totalSeats = Math.max(1, parseInt(prompt("総椅子数 totalSeats（例: 5,6,10）", String(curTotal || 5)), 10) || 5);
-      const warmupRounds = Math.max(0, parseInt(prompt("warmupRounds（最初の何ラウンド椅子減らさない？）", String(curWarm || 3)), 10) || 3);
+      const totalSeats = Math.max(
+        1,
+        parseInt(prompt("総椅子数 totalSeats（例: 5,6,10）", String(curTotal || 5)), 10) || 5
+      );
+      const warmupRounds = Math.max(
+        0,
+        parseInt(prompt("warmupRounds（最初の何ラウンド椅子減らさない？）", String(curWarm || 3)), 10) || 3
+      );
     
       const seats = seatsFromTotal(totalSeats);
     
       await resetGamePlayersAndAnswers(currentRoom);
     
       const now = Date.now();
-      const seats = seatsFromTotal(newTotal);
-      
-      await resetGamePlayersAndAnswers(currentRoom);
-      
       await update(activityRef(), {
         qr:false,
         view:"game",
@@ -895,6 +897,45 @@
         config:{ choices:["A","B","C","D","E"] },
         game:{
           phase:"music",          // ★BGM再生フェーズ
+          round:1,
+          totalSeats,
+          warmupRounds,
+          seatsInitial: seats,    // ★初期席
+          seatsRemain:  seats,    // ★残席（これを減らす）
+          musicStartedAt: now
+        },
+        timer:{ running:false }
+      });
+    }
+    
+    async function nextRoundFlow(){
+      // 現在の設定を読む
+      const a = state.activity || {};
+      const g = a.game || {};
+    
+      const round = Math.max(1, Number(g.round || 1));
+      const warm  = Math.max(0, Number(g.warmupRounds || 3));
+      const total = Math.max(1, Number(g.totalSeats || 5));
+    
+      const newRound = round + 1;
+    
+      // warmup中は減らさない。warmup後は毎ラウンド -1（最低1）
+      const newTotal =
+        (newRound <= warm) ? total : Math.max(1, total - 1);
+    
+      const seats = seatsFromTotal(newTotal);
+    
+      await resetGamePlayersAndAnswers(currentRoom);
+    
+      const now = Date.now();
+      await update(activityRef(), {
+        qr:false,
+        view:"game",
+        status:"closed", // ★音楽中は学生ロック
+        mode:"five",
+        config:{ choices:["A","B","C","D","E"] },
+        game:{
+          phase:"music",
           round:newRound,
           totalSeats:newTotal,
           warmupRounds:warm,
@@ -903,6 +944,24 @@
           musicStartedAt: now
         },
         timer:{ running:false }
+      });
+    }
+    
+    // 締切（ラウンド終了演出へ）
+    async function closeRoundFlow(){
+      await update(activityRef(), {
+        status:"closed",
+        view:"game",
+        game: { ...(state.activity.game || {}), phase:"reveal", endedAt: Date.now() }
+      });
+    }
+    
+    // ストップ（音楽停止→受付OPEN）
+    async function stopMusicAndOpenFlow(){
+      await update(activityRef(), {
+        status:"open", // ★ここで学生受付開始
+        view:"game",
+        game: { ...(state.activity.game || {}), phase:"open", openedAt: Date.now() }
       });
     }
     
