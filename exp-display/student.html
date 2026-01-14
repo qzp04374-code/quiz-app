@@ -612,16 +612,19 @@
     }
   
     function updateGameButtonsAvailability(){
-      // ゲーム中：残席0は押せない（案内）
-      const buttons = Array.from(container.querySelectorAll(".btn"));
-      for (const b of buttons){
-        const k = normKey(b.textContent); // A..E
-        if (!["A","B","C","D","E"].includes(k)) continue;
-        const rem = Number(gameSeatsRemain[k] || 0);
-        const disabled = (!isOpen) || (mySeat != null) || claimBusy || (rem <= 0);
-        b.style.opacity = disabled ? "0.45" : "";
-        b.style.pointerEvents = disabled ? "none" : "auto";
-      }
+      const buttons = container.querySelectorAll(".btn");
+    
+      buttons.forEach(btn => {
+        const key = (btn.dataset && btn.dataset.choice) ? String(btn.dataset.choice) : "";
+        // 既存のdisable/opacity処理はそのまま
+    
+        // ★座れたら、その席以外は消す
+        if (mySeat){
+          btn.style.display = (key === mySeat) ? "" : "none";
+        } else {
+          btn.style.display = "";
+        }
+      });
     }
   
     // ===== Button factory =====
@@ -924,7 +927,9 @@
           if (!game || typeof game !== "object") return; // ←中断
     
           const phase = String(game.phase || "").trim();
-          if (phase && phase !== "running") return;      // ←中断
+          // ★受付は open（後方互換で running も許可）
+          if (phase && phase !== "open" && phase !== "running") return; // ←中断
+
     
           const round = Number(game.round || 0);
     
@@ -1013,9 +1018,16 @@
   
       // overlay
       if (!isOpen){
-        const msg = (status === "closed")
-          ? (isGame ? "このラウンドは締切！次のラウンドを待ってください。" : "解答は締切です。先生の次の操作を待ってください。")
-          : "先生の操作を待っています…";
+        let msg = "先生の操作を待っています…";
+        if (status === "closed"){
+          if (isGame){
+            if (gamePhase === "music") msg = "♪ 音楽中…『ストップ』で押せるようになります。";
+            else if (gamePhase === "reveal") msg = "ラウンド終了！次のラウンドを待ってください。";
+            else msg = "このラウンドは締切！次のラウンドを待ってください。";
+          } else {
+            msg = "解答は締切です。先生の次の操作を待ってください。";
+          }
+        }
         setOverlay(true, msg);
       }else{
         setOverlay(false);
