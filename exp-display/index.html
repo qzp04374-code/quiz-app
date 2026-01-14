@@ -853,9 +853,28 @@
     function seatsFromTotal(totalSeats){
       const keys = ["A","B","C","D","E"];
       const n = Math.max(0, Math.floor(Number(totalSeats || 0)));
+    
+      // 常に全キーを持つ（display/student 側が扱いやすい）
+      const seats = { A:0, B:0, C:0, D:0, E:0 };
+    
+      // ★残り席数が4以下なら、空席の位置（A〜E）をランダムにする
+      if (n <= 4){
+        // Fisher–Yates shuffle（sort乱数より偏りが少ない）
+        const shuffled = [...keys];
+        for (let i = shuffled.length - 1; i > 0; i--){
+          const j = Math.floor(Math.random() * (i + 1));
+          [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+    
+        for (let i = 0; i < n; i++){
+          seats[shuffled[i]] = 1; // n個だけ「1席」
+        }
+        return seats;
+      }
+    
+      // ★5以上は従来通り：均等割り（A→E）
       const base = Math.floor(n / keys.length);
       const rem  = n % keys.length;
-      const seats = {};
       keys.forEach((k, i) => seats[k] = base + (i < rem ? 1 : 0));
       return seats;
     }
