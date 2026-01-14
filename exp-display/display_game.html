@@ -44,6 +44,20 @@
       gap:14px;
     }
 
+    .freeSeatsBig{
+      margin: 6px 0 10px;
+      padding: 10px 14px;
+      border-radius: 18px;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.10);
+      font-size: clamp(28px, 3.6vw, 52px);
+      font-weight: 1100;
+      letter-spacing: .06em;
+      color: rgba(248,250,252,.96);
+      text-shadow: 0 10px 30px rgba(0,0,0,.45);
+    }
+    .freeSeatsBig strong{ color:#22c55e; }
+
     /* header */
     .top{
       display:flex;
@@ -598,6 +612,9 @@
         <div class="pill warn" id="modePill">mode: <strong>five</strong></div>
       </div>
 
+      <!-- ★追加：空き席を大表示 -->
+      <div id="freeSeatsBig" class="freeSeatsBig">空き席: <strong>-</strong></div>
+      
       <div class="seats" id="seatsGrid"></div>
       <!-- ★追加：走る人を描くレイヤー（椅子の上に重ねる） -->
       <div id="runnerLayer"></div>
@@ -665,7 +682,7 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
   import {
-    getDatabase, ref, onValue
+    getDatabase, ref, onValue, update
   } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js";
 
   // ========= Firebase Config =========
@@ -735,6 +752,36 @@
 
   // ========= Game helpers =========
   const KEYS = ["A","B","C","D","E"];
+
+  // ========= BGM =========
+  const bgm = new Audio("game_01.mp3");
+  bgm.loop = true;
+  bgm.volume = 0.8;
+  
+  let audioUnlocked = false;
+  async function tryPlayBgm(){
+    try{
+      await bgm.play();
+      audioUnlocked = true;
+    }catch(_){
+      // 自動再生NGの環境あり：最初のクリックで解決する
+    }
+  }
+  function stopBgm(){
+    try{
+      bgm.pause();
+      bgm.currentTime = 0;
+    }catch(_){}
+  }
+  
+  window.addEventListener("pointerdown", async () => {
+    // 1回触れば以後は鳴る（環境対策）
+    if (!audioUnlocked){
+      await tryPlayBgm();
+      // 触った瞬間に phase が music じゃないなら止めておく
+      if (!((lastActivity?.game?.phase) === "music")) stopBgm();
+    }
+  }, { passive:true });
 
   // ===== runnerFx キュー（同時回答でも全員ぶん出す）=====
   let runnerQueue = [];
@@ -1004,7 +1051,14 @@
       const g = a.game || {};
       const round = (g.round != null) ? g.round : "-";
       const phase = g.phase || (status === "open" ? "running" : status === "closed" ? "reveal" : "-");
-  
+      
+      // ★BGM制御：music のときだけ再生
+      if (view === "game" && phase === "music"){
+        tryPlayBgm();
+      } else {
+        stopBgm();
+      }
+
       const warmup = Number(g.warmupRounds ?? 3);
       const totalSeats = Number(g.totalSeats ?? 0);
   
@@ -1055,7 +1109,11 @@
       const totalInitSeats = sum(seatsInitial);
       const totalRemainSeats = sum(seatsRemain);
       setPill(seatPill, "seats", `${totalRemainSeats}/${totalInitSeats}`, "");
-  
+      // ★追加：空き席の大表示
+      const freeSeatsBig = document.getElementById("freeSeatsBig");
+      if (freeSeatsBig){
+        freeSeatsBig.innerHTML = `空き席: <strong>${totalRemainSeats}</strong>`;
+      }
       participantsVal.textContent = String(participants);
       seatedVal.textContent = String(seated);
       standingVal.textContent = String(standing);
