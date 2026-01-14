@@ -882,18 +882,25 @@
     
       await resetGamePlayersAndAnswers(currentRoom);
     
+      const now = Date.now();
+      const seats = seatsFromTotal(newTotal);
+      
+      await resetGamePlayersAndAnswers(currentRoom);
+      
       await update(activityRef(), {
         qr:false,
         view:"game",
-        status:"open",
+        status:"closed", // ★音楽中は学生ロック
         mode:"five",
         config:{ choices:["A","B","C","D","E"] },
         game:{
-          phase:"running",
-          round:1,
-          totalSeats,
-          warmupRounds,
-          seats
+          phase:"music",          // ★BGM再生フェーズ
+          round:newRound,
+          totalSeats:newTotal,
+          warmupRounds:warm,
+          seatsInitial: seats,
+          seatsRemain:  seats,
+          musicStartedAt: now
         },
         timer:{ running:false }
       });
@@ -918,18 +925,25 @@
     
       await resetGamePlayersAndAnswers(currentRoom);
     
+      const now = Date.now();
+      const seats = seatsFromTotal(totalSeats);
+      
+      await resetGamePlayersAndAnswers(currentRoom);
+      
       await update(activityRef(), {
         qr:false,
         view:"game",
-        status:"open",
+        status:"closed", // ★音楽中は学生ロック
         mode:"five",
         config:{ choices:["A","B","C","D","E"] },
         game:{
-          phase:"running",
-          round:newRound,
-          totalSeats:newTotal,
-          warmupRounds:warm,
-          seats
+          phase:"music",          // ★BGM再生フェーズ
+          round:1,
+          totalSeats,
+          warmupRounds,
+          seatsInitial: seats,    // ★初期席
+          seatsRemain:  seats,    // ★残席（これを減らす）
+          musicStartedAt: now
         },
         timer:{ running:false }
       });
@@ -939,7 +953,7 @@
       await update(activityRef(), {
         status:"closed",
         view:"game",
-        game: { ...(state.activity.game || {}), phase:"reveal" }
+        game: { ...(state.activity.game || {}), phase:"reveal", endedAt: Date.now() }
       });
     }
     
@@ -1264,7 +1278,16 @@
     
     btnGameStart.onclick = async () => { await startGameFlow(); };
     btnGameNext.onclick  = async () => { await nextRoundFlow(); };
-    btnGameClose.onclick = async () => { await closeRoundFlow(); };
+    async function stopMusicAndOpenFlow(){
+      await update(activityRef(), {
+        status:"open", // ★ここで学生受付開始
+        view:"game",
+        game: { ...(state.activity.game || {}), phase:"open", openedAt: Date.now() }
+      });
+    }
+    
+    btnGameClose.onclick = async () => { await stopMusicAndOpenFlow(); };
+
     btnGameEnd.onclick   = async () => { await endGameFlow(); };
 
     btnQ2.onclick = async () => { await startQuickPoll("ox"); };
