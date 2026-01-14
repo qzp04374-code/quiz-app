@@ -22,6 +22,61 @@
       --line:rgba(255,255,255,.10);
       --shadow: 0 18px 60px rgba(0,0,0,.65);
     }
+    
+    /* ===== Seat FX (win/lose) ===== */
+    .padShell{ position:relative; } /* 念のため（既にあってもOK） */
+    
+    .padShell::after{
+      content:"";
+      position:absolute;
+      inset:-2px;
+      border-radius:28px;
+      pointer-events:none;
+      opacity:0;
+      z-index:25; /* overlayより下/上は好み。今はpad内で目立つ位置 */
+    }
+    
+    /* 勝ちフラッシュ（席色） */
+    .padShell.seatWin::after{
+      background:
+        radial-gradient(900px 520px at 50% 70%,
+          color-mix(in oklab, var(--seat-flash, rgba(10,132,255,1)) 65%, transparent),
+          transparent 62%);
+      animation: seatWinFlash 620ms ease-out both;
+      filter: saturate(1.35) brightness(1.15);
+    }
+    
+    /* 負けフラッシュ＋小さく揺れる */
+    .padShell.seatLose::after{
+      background:
+        radial-gradient(900px 520px at 50% 70%,
+          rgba(255,59,48,.55),
+          transparent 62%);
+      animation: seatLoseFlash 520ms ease-out both;
+      filter: saturate(1.2) brightness(1.05);
+    }
+    .padShell.seatLose{
+      animation: seatShake 420ms ease-in-out both;
+    }
+    
+    @keyframes seatWinFlash{
+      0%   { opacity:0; transform:scale(.985); }
+      18%  { opacity:1; transform:scale(1.00); }
+      100% { opacity:0; transform:scale(1.02); }
+    }
+    @keyframes seatLoseFlash{
+      0%   { opacity:0; transform:scale(.99); }
+      22%  { opacity:.95; transform:scale(1.00); }
+      100% { opacity:0; transform:scale(1.01); }
+    }
+    @keyframes seatShake{
+      0%{ transform:translateX(0); }
+      18%{ transform:translateX(-6px); }
+      36%{ transform:translateX(6px); }
+      54%{ transform:translateX(-4px); }
+      72%{ transform:translateX(4px); }
+      100%{ transform:translateX(0); }
+}
 
     *{box-sizing:border-box;}
     html,body{height:100%;}
@@ -523,6 +578,73 @@
     let gameSeatsRemain = {A:0,B:0,C:0,D:0,E:0};
     let mySeat = null;          // 座れたら "A".."E"
     let claimBusy = false;
+
+    if (okSeat){
+      mySeat = okSeat;
+      showToast(`${okSeat} に座れた！`);
+      lockUI(); // このラウンドは固定
+    }else{
+      showToast("取れなかった！別の椅子へ");
+    }
+
+    // ===== seat FX state =====
+    let seatFxRound = -1;     // roundごとに1回だけ鳴らす
+    let seatFxDone = false;
+    
+    function seatColorVar(seatKey){
+      const k = String(seatKey || "").trim().toUpperCase();
+      const map = {
+        A:"var(--color-a)", B:"var(--color-b)", C:"var(--color-c)", D:"var(--color-d)", E:"var(--color-e)"
+      };
+      return map[k] || "var(--color-a)";
+    }
+    
+    function resetSeatFxIfNeeded(){
+      const r = (gameRound == null) ? -1 : Number(gameRound);
+      if (seatFxRound !== r){
+        seatFxRound = r;
+        seatFxDone = false;
+      }
+    }
+    
+    function fireSeatWinFx(seatKey){
+      resetSeatFxIfNeeded();
+      if (seatFxDone) return;
+      seatFxDone = true;
+    
+      padShell.style.setProperty("--seat-flash", seatColorVar(seatKey));
+    
+      padShell.classList.remove("seatLose");
+      padShell.classList.add("seatWin");
+      setTimeout(()=> padShell.classList.remove("seatWin"), 700);
+    
+      // 効果だけ（音は鳴らさない）
+      if (navigator.vibrate) navigator.vibrate(35);
+    }
+    
+    function fireSeatLoseFx(){
+      // 失敗は連打し得るので、round内でも毎回出してOK（嫌なら1回制限にしてもOK）
+      padShell.classList.remove("seatWin");
+      padShell.classList.add("seatLose");
+      setTimeout(()=> padShell.classList.remove("seatLose"), 520);
+    
+      if (navigator.vibrate) navigator.vibrate([60, 40, 60]);
+}
+
+    // ===== activity監視 =====
+    const activityRef = ref(db, `rooms/${room}/activity`);
+    onValue(activityRef, snap => {
+      const data = snap.val() || {};
+      ...
+      const game = data.game || null;
+    
+      // game state（毎回追随）
+      isGame = (view === "game");
+      gameRound = (game && game.round != null) ? Number(game.round) : null;
+      gamePhase = (game && game.phase != null) ? String(game.phase) : null;
+      gameSeatsRemain = getRemainMap(game);
+      ...
+    });
   
     // ===== UI helpers =====
     function showToast(msg){
@@ -883,9 +1005,11 @@
         if (okSeat){
           mySeat = okSeat;
           showToast(`${okSeat} に座れた！`);
+          fireSeatWinFx(okSeat);   // ★追加
           lockUI(); // このラウンドは固定
         }else{
           showToast("取れなかった！別の椅子へ");
+          fireSeatLoseFx();        // ★追加
         }
   
         updateGameButtonsAvailability();
@@ -1015,7 +1139,24 @@
       gameRound = (game && game.round != null) ? Number(game.round) : null;
       gamePhase = (game && game.phase != null) ? String(game.phase) : null;
       gameSeatsRemain = getRemainMap(game);
-  
+
+      // ★補足：DB側で seat が確定していたら、押下処理を経由しなくても反映＆FX
+      if (isGame && game && game.players && game.players[userId]){
+        const p = game.players[userId];
+        const pr = Number(p.round || 0);
+        const seat = String(p.seat || "").trim().toUpperCase();
+      
+        if (gameRound != null && pr === Number(gameRound) && ["A","B","C","D","E"].includes(seat)){
+          if (mySeat !== seat){
+            mySeat = seat;
+            fireSeatWinFx(seat);
+            lockUI();
+            updateGameButtonsAvailability();
+            updateGameLine();
+          }
+        }
+      }
+
       // overlay
       if (!isOpen){
         let msg = "先生の操作を待っています…";
