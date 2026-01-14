@@ -20,7 +20,9 @@
       --anim-run: 900ms;   /* 走る：少しゆっくり（でも遅すぎない） */
       --anim-bar: 360ms;   /* バー */
       --anim-gap: 90ms;    /* 連続回答の間隔（新規） */
-
+      
+      --anim-seatglow-step: 180ms; /* ★追加：音楽中の A→E 点滅テンポ（速すぎたら 220ms〜260ms） */
+      
       --a:#34d399; --b:#60a5fa; --c:#f59e0b; --d:#a78bfa; --e:#fb7185;
     }
     
@@ -448,6 +450,27 @@
     .D .crowdBar > div{ background:rgba(167,139,250,.85); }
     .E .crowdBar > div{ background:rgba(251,113,133,.85); }
 
+    /* ★追加：カード自身にも “キー色” を持たせる（glowで使う） */
+    .seatCard.A{ --seatColor: var(--a); }
+    .seatCard.B{ --seatColor: var(--b); }
+    .seatCard.C{ --seatColor: var(--c); }
+    .seatCard.D{ --seatColor: var(--d); }
+    .seatCard.E{ --seatColor: var(--e); }
+    
+    /* ★追加：光り方（文字色と同じ色で発光） */
+    .seatCard.glow{
+      border-color: color-mix(in srgb, var(--seatColor) 60%, rgba(255,255,255,.14));
+      box-shadow:
+        0 0 0 1px color-mix(in srgb, var(--seatColor) 40%, transparent),
+        0 14px 44px color-mix(in srgb, var(--seatColor) 22%, transparent);
+      animation: seatGlowPulse 900ms ease-in-out infinite;
+    }
+    @keyframes seatGlowPulse{
+      0%   { filter: brightness(1.00); transform: translateY(0); }
+      50%  { filter: brightness(1.18); transform: translateY(-1px); }
+      100% { filter: brightness(1.00); transform: translateY(0); }
+    }
+    
     /* right side */
     .rightBox{
       display:flex;
@@ -753,6 +776,74 @@
   // ========= Game helpers =========
   const KEYS = ["A","B","C","D","E"];
 
+  // ★追加：座席カードの発光制御（音楽中：A→Eループ / 停止：空席だけ）
+  let seatGlowTimer = null;
+  let seatGlowIdx = 0;
+  let seatGlowMode = "";        // "music" | "stopped"
+  let seatGlowMusicKey = "A";
+  
+  function stopSeatGlowLoop(){
+    if (seatGlowTimer){
+      clearInterval(seatGlowTimer);
+      seatGlowTimer = null;
+    }
+  }
+  
+  function applySeatGlow({ mode, musicKey, seatsInitial, seatsRemain }){
+    const cards = seatsGrid.querySelectorAll(".seatCard");
+    cards.forEach(card => {
+      const k = card.dataset.key;
+      if (!KEYS.includes(k)) return;
+  
+      let on = false;
+  
+      if (mode === "music"){
+        on = (k === musicKey);
+      } else {
+        const init = Number(seatsInitial?.[k] ?? 0);
+        const rem  = Number(seatsRemain?.[k] ?? init ?? 0);
+        on = (init > 0 && rem > 0); // 空席だけ光る
+      }
+  
+      card.classList.toggle("glow", on);
+    });
+  }
+  
+  function startSeatGlowLoop(){
+    stopSeatGlowLoop();
+    seatGlowMode = "music";
+    seatGlowIdx = 0;
+  
+    // cssMs() は既にこのファイルにある前提（display_game(2)でも入ってます）
+    const step = (typeof cssMs === "function")
+      ? cssMs("--anim-seatglow-step", 180)
+      : 180;
+  
+    // すぐ1回当てる
+    seatGlowMusicKey = KEYS[0];
+    applySeatGlow({ mode:"music", musicKey: seatGlowMusicKey });
+  
+    seatGlowTimer = setInterval(() => {
+      seatGlowMusicKey = KEYS[seatGlowIdx % KEYS.length];
+      seatGlowIdx++;
+      applySeatGlow({ mode:"music", musicKey: seatGlowMusicKey });
+    }, step);
+  }
+  
+  function updateSeatGlowByPhase(phase, seatsInitial, seatsRemain){
+    if (phase === "music"){
+      if (seatGlowMode !== "music") startSeatGlowLoop();
+      // renderSeats直後に当て直す（カード作り直し対策）
+      applySeatGlow({ mode:"music", musicKey: seatGlowMusicKey });
+      return;
+    }
+  
+    // music以外＝停止扱い
+    if (seatGlowMode === "music") stopSeatGlowLoop();
+    seatGlowMode = "stopped";
+    applySeatGlow({ mode:"stopped", seatsInitial, seatsRemain });
+  }
+  
   // ========= BGM =========
   const bgm = new Audio("game_01.mp3");
   bgm.loop = true;
@@ -965,6 +1056,7 @@
   
       const card = document.createElement("div");
       card.className = `seatCard ${k}`;
+      card.dataset.key = k; // ★追加：A/B/C/D/E を確実に取れるようにする
   
       // 状態クラス
       const isFull = (init > 0 && rem <= 0);
@@ -1132,6 +1224,11 @@
         `room:${room} / view:${view} / status:${status} / mode:${mode} / qr:${qrOn ? "on":"off"}`;
   
       renderSeats({ seatsInitial, seatsRemain, answersCount });
+
+      // ★追加：phaseに応じて glow を切り替え
+      const phaseForGlow = String(lastActivity?.game?.phase || "");
+      updateSeatGlowByPhase(phaseForGlow, seatsInitial, seatsRemain);
+      
     }catch(e){
       console.error(e);
       statusLine.textContent = `ERROR: ${e?.message || e}`;
