@@ -580,14 +580,6 @@
     let sending = false;
     let textValue = "";
 
-    if (okSeat){
-      mySeat = okSeat;
-      showToast(`${okSeat} に座れた！`);
-      lockUI(); // このラウンドは固定
-    }else{
-      showToast("取れなかった！別の椅子へ");
-    }
-
     // ===== seat FX state =====
     let seatFxRound = -1;     // roundごとに1回だけ鳴らす
     let seatFxDone = false;
