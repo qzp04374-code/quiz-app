@@ -909,7 +909,6 @@
     }
     
     async function nextRoundFlow(){
-      // 現在の設定を読む
       const a = state.activity || {};
       const g = a.game || {};
     
@@ -918,10 +917,7 @@
       const total = Math.max(1, Number(g.totalSeats || 5));
     
       const newRound = round + 1;
-    
-      // warmup中は減らさない。warmup後は毎ラウンド -1（最低1）
-      const newTotal =
-        (newRound <= warm) ? total : Math.max(1, total - 1);
+      const newTotal = (newRound <= warm) ? total : Math.max(1, total - 1);
     
       const seats = seatsFromTotal(newTotal);
     
@@ -946,25 +942,7 @@
         timer:{ running:false }
       });
     }
-    
-    // 締切（ラウンド終了演出へ）
-    async function closeRoundFlow(){
-      await update(activityRef(), {
-        status:"closed",
-        view:"game",
-        game: { ...(state.activity.game || {}), phase:"reveal", endedAt: Date.now() }
-      });
-    }
-    
-    // ストップ（音楽停止→受付OPEN）
-    async function stopMusicAndOpenFlow(){
-      await update(activityRef(), {
-        status:"open", // ★ここで学生受付開始
-        view:"game",
-        game: { ...(state.activity.game || {}), phase:"open", openedAt: Date.now() }
-      });
-    }
-    
+
     async function nextRoundFlow(){
       // 現在の設定を読む
       const a = state.activity || {};
