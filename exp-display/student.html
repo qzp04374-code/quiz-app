@@ -137,7 +137,8 @@
       display:flex;
       align-items:center;
       justify-content:center;
-      padding:88px 14px 18px;
+      /* ✅ topbar の実高さ（JSで入れる）+ 余白分だけ下げる */
+      padding: calc(var(--topbarH, 66px) + 16px) 14px 18px;
     }
 
     /* ✅iPhone等でtopbarが2段になる時の“食い込み”対策 */
@@ -1354,6 +1355,20 @@
       submitBtn.disabled = true;
       setOverlay(true, "先生が出題を開始すると、解答ボタンが使えるようになります。");
     });
+
+  // ✅ topbar が2段になっても被らないように、実高さをCSS変数へ反映
+  function updateTopbarInset(){
+    const tb = document.querySelector(".topbar");
+    if (!tb) return;
+    const h = tb.offsetHeight || 66;
+    document.documentElement.style.setProperty("--topbarH", h + "px");
+  }
+  
+  // 初期・遅延（フォント適用後）・リサイズで更新
+  updateTopbarInset();
+  requestAnimationFrame(updateTopbarInset);
+  setTimeout(updateTopbarInset, 200);
+  window.addEventListener("resize", updateTopbarInset);
   
   </script>
 </body>
