@@ -348,7 +348,9 @@
 
     /* 5択：右側ボタンだけ（ダイヤ配置） */
     .fiveGrid{
-      width:min(360px, 86vw);
+      width: min(320px, 100%);   /* ✅親(padArea)幅に収める */
+      max-width: 320px;
+      margin: 0 auto;           /* ✅必ず中央寄せ */
       aspect-ratio: 1.15 / 1;
       display:grid;
       grid-template-columns: 1fr 1fr 1fr;
