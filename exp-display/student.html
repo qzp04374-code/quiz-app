@@ -140,6 +140,13 @@
       padding:88px 14px 18px;
     }
 
+    /* ✅iPhone等でtopbarが2段になる時の“食い込み”対策 */
+    @media (max-width: 420px){
+      .stage{
+        padding-top: 124px;  /* ← 88px → 増やす（ここで待機中が隠れなくなる） */
+      }
+    }
+    
     .padShell{
       width:min(520px, 94vw);
       height:min(660px, 80vh);
