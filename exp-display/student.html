@@ -550,6 +550,7 @@
     <div class="status">
       <span class="pill"><span id="dot" class="dot"></span><span id="statusText">status: -</span></span>
       <span class="pill" id="modeText">mode: -</span>
+      <!-- ★追加：自分の印 -->
       <span class="pill" id="meTag">me: -</span>
     </div>
   </div>
@@ -620,6 +621,60 @@
       userId = "user_" + Math.random().toString(36).slice(2, 10);
       localStorage.setItem("student_user_id", userId);
     }
+    
+    // ===== 追加：自分表示（emoji + shortId）=====
+    const ME_EMOJI_KEY = "cs_me_emoji";
+    const ME_TAG_KEY   = "cs_me_tag";
+    const ME_COLOR_KEY = "cs_me_color";
+    
+    function hash32(s){
+      let h = 2166136261;
+      for (let i=0;i<s.length;i++){
+        h ^= s.charCodeAt(i);
+        h = Math.imul(h, 16777619);
+      }
+      return (h >>> 0);
+    }
+    
+    function getOrCreateMe(userId){
+      const savedEmoji = localStorage.getItem(ME_EMOJI_KEY);
+      const savedTag   = localStorage.getItem(ME_TAG_KEY);
+      const savedColor = localStorage.getItem(ME_COLOR_KEY);
+      if (savedEmoji && savedTag && savedColor){
+        return { emoji: savedEmoji, tag: savedTag, color: savedColor };
+      }
+    
+      const EMOJIS = ["🐶","🐱","🐼","🦊","🐸","🐵","🐯","🐰","🐨","🦁","🐮","🐷","🐧","🐻","🐹","🦄"];
+      const COLORS = ["#60a5fa","#34d399","#f59e0b","#a78bfa","#fb7185","#22c55e","#38bdf8","#f472b6"];
+    
+      const h = hash32(String(userId||""));
+      const emoji = EMOJIS[h % EMOJIS.length];
+      const num = (h % 90) + 10; // 10-99
+      const tag = `ID-${String(num).padStart(2,"0")}`;
+      const color = COLORS[h % COLORS.length];
+    
+      localStorage.setItem(ME_EMOJI_KEY, emoji);
+      localStorage.setItem(ME_TAG_KEY, tag);
+      localStorage.setItem(ME_COLOR_KEY, color);
+    
+      return { emoji, tag, color };
+    }
+    
+    const me = getOrCreateMe(userId);
+    
+    // meTag表示
+    const meTagEl = document.getElementById("meTag");
+    if (meTagEl){
+      meTagEl.textContent = `me: ${me.emoji} ${me.tag}`;
+    }
+    
+    // display側が拾えるように roster 公開
+    set(ref(db, `rooms/${room}/activity/roster/${userId}`), {
+      emoji: me.emoji,
+      tag: me.tag,
+      color: me.color,
+      at: Date.now()
+    }).catch(()=>{});
 
     // ===== 追加：自分表示（emoji + shortId）=====
     // localStorage keys
@@ -1360,15 +1415,20 @@
   function updateTopbarInset(){
     const tb = document.querySelector(".topbar");
     if (!tb) return;
-    const h = tb.offsetHeight || 66;
-    document.documentElement.style.setProperty("--topbarH", h + "px");
+    document.documentElement.style.setProperty("--topbarH", (tb.offsetHeight || 66) + "px");
   }
   
-  // 初期・遅延（フォント適用後）・リサイズで更新
+  // ✅ ここから下（呼び出しセット）を必ず付ける
   updateTopbarInset();
   requestAnimationFrame(updateTopbarInset);
   setTimeout(updateTopbarInset, 200);
   window.addEventListener("resize", updateTopbarInset);
+    
+    // 初期・遅延（フォント適用後）・リサイズで更新
+    updateTopbarInset();
+    requestAnimationFrame(updateTopbarInset);
+    setTimeout(updateTopbarInset, 200);
+    window.addEventListener("resize", updateTopbarInset);
   
   </script>
 </body>
