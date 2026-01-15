@@ -112,6 +112,26 @@
     .pill.warn{ background:rgba(245,158,11,.12); border-color:rgba(245,158,11,.20); }
     .pill.bad{ background:rgba(239,68,68,.12); border-color:rgba(239,68,68,.20); }
 
+    .rosterBar{
+      margin-top:10px;
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      justify-content:flex-end;
+      max-height:84px;
+      overflow:hidden;
+    }
+    .rosterPill{
+      padding:8px 10px;
+      border-radius:999px;
+      background:rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.12);
+      font-weight:950;
+      letter-spacing:.04em;
+      color:rgba(255,255,255,.92);
+      box-shadow: 0 10px 24px rgba(0,0,0,.18);
+    }
+
     /* main grid */
     .main{
       display:grid;
@@ -659,6 +679,7 @@
       <div class="pill" id="seatPill">seats: <strong>-</strong></div>
     </div>
   </div>
+  <div id="rosterBar" class="rosterBar"></div>
 
   <div class="main">
     <div class="panel">
@@ -779,6 +800,34 @@
   const seatsGrid = document.getElementById("seatsGrid");
   const runnerLayer = document.getElementById("runnerLayer");
 
+  // ★追加
+  const rosterBar = document.getElementById("rosterBar");
+  let roster = {}; // { userId: {emoji,tag,color,at} }
+  
+  function renderRosterBar(){
+    if (!rosterBar) return;
+  
+    const entries = Object.entries(roster || {})
+      .map(([uid, v]) => ({ uid, ...v }))
+      .sort((a,b) => (Number(b.at||0) - Number(a.at||0)));
+  
+    // 多すぎると重いので上限
+    const show = entries.slice(0, 60);
+  
+    rosterBar.innerHTML = show.map(p => {
+      const emoji = p.emoji || "🙂";
+      const tag = p.tag || "ID-??";
+      const c = p.color || "rgba(255,255,255,.35)";
+      return `<span class="rosterPill" style="box-shadow:0 0 18px color-mix(in oklab, ${c} 55%, transparent)">${emoji} ${tag}</span>`;
+    }).join("");
+  }
+  
+  // ★追加：roster 購読
+  onValue(ref(db, `rooms/${room}/activity/roster`), snap => {
+    roster = snap.val() || {};
+    renderRosterBar();
+  });
+  
   // QR
   const qrLayer = document.getElementById("qrLayer");
   const qrDiv = document.getElementById("qrDiv");
