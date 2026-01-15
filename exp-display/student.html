@@ -430,7 +430,10 @@
 
     /* overlay: closed中 */
     .overlay{
-      position:absolute; inset:0;
+      position:absolute;
+      inset:0;
+      border-radius:24px;     /* ✅ padArea の角丸に合わせる */
+      overflow:hidden;         /* ✅ 角丸からはみ出さない */
       display:flex; align-items:center; justify-content:center;
       padding:22px;
       text-align:center;
@@ -441,6 +444,7 @@
       transition: opacity .18s ease;
       z-index:30;
     }
+
     .overlay.show{opacity:1; pointer-events:auto;}
     .overlayCard{
       width:min(520px, 92vw);
@@ -550,7 +554,7 @@
     <div class="padShell" id="padShell">
       <div class="hud">
         <span>回答モード：</span><strong id="hudMode">待機</strong>
-      </div>
+      
 
       <div class="padArea" id="padArea">
         <div class="fxRing" id="fxRing"></div>
@@ -558,12 +562,12 @@
 
         <div id="answer-container"></div>
         <button id="submitBtn" class="submit" disabled>START（決定）</button>
-      </div>
 
-      <div id="overlay" class="overlay">
-        <div class="overlayCard">
-          <h3>待機中</h3>
-          <p id="overlayText">先生が出題を開始すると、解答ボタンが使えるようになります。</p>
+        <div id="overlay" class="overlay">
+          <div class="overlayCard">
+            <h3>待機中</h3>
+            <p id="overlayText">先生が出題を開始すると、解答ボタンが使えるようになります。</p>
+          </div>
         </div>
       </div>
     </div>
