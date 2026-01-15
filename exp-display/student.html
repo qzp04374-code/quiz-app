@@ -675,67 +675,7 @@
       color: me.color,
       at: Date.now()
     }).catch(()=>{});
-
-    // ===== 追加：自分表示（emoji + shortId）=====
-    // localStorage keys
-    const ME_EMOJI_KEY = "cs_me_emoji";
-    const ME_TAG_KEY   = "cs_me_tag";
-    const ME_COLOR_KEY = "cs_me_color";
-    
-    function hash32(s){
-      let h = 2166136261;
-      for (let i=0;i<s.length;i++){
-        h ^= s.charCodeAt(i);
-        h = Math.imul(h, 16777619);
-      }
-      return (h >>> 0);
-    }
-    
-    function getOrCreateMe(userId){
-      // 既存があればそれを使う（端末内で固定）
-      const savedEmoji = localStorage.getItem(ME_EMOJI_KEY);
-      const savedTag   = localStorage.getItem(ME_TAG_KEY);
-      const savedColor = localStorage.getItem(ME_COLOR_KEY);
-      if (savedEmoji && savedTag && savedColor){
-        return { emoji: savedEmoji, tag: savedTag, color: savedColor };
-      }
-    
-      // 無ければ userId から決定的に作る（毎回変わらない）
-      const EMOJIS = ["🐶","🐱","🐼","🦊","🐸","🐵","🐯","🐰","🐨","🦁","🐮","🐷","🐧","🐻","🐹","🦄"];
-      const COLORS = ["#60a5fa","#34d399","#f59e0b","#a78bfa","#fb7185","#22c55e","#38bdf8","#f472b6"];
-    
-      const h = hash32(String(userId||""));
-      const emoji = EMOJIS[h % EMOJIS.length];
-      const num = (h % 90) + 10; // 10-99
-      const tag = `ID-${String(num).padStart(2,"0")}`;
-      const color = COLORS[h % COLORS.length];
-    
-      localStorage.setItem(ME_EMOJI_KEY, emoji);
-      localStorage.setItem(ME_TAG_KEY, tag);
-      localStorage.setItem(ME_COLOR_KEY, color);
-    
-      return { emoji, tag, color };
-    }
-    
-    const me = getOrCreateMe(userId);
-    
-    // 画面表示（上部に pill を追加するので、後で要素を参照）
-    const meTagEl = document.getElementById("meTag");
-    if (meTagEl){
-      meTagEl.textContent = `me: ${me.emoji} ${me.tag}`;
-      meTagEl.style.borderColor = "rgba(255,255,255,.16)";
-      meTagEl.style.boxShadow = `0 0 0 1px rgba(255,255,255,.06), 0 0 22px color-mix(in oklab, ${me.color} 55%, transparent)`;
-    }
-    
-    // Firebase に roster を公開（display 側が拾う）
-    // ※ activity配下なので「ゲーム/問題」を跨いでも同一端末は同じ表示になる
-    set(ref(db, `rooms/${room}/activity/roster/${userId}`), {
-      emoji: me.emoji,
-      tag: me.tag,
-      color: me.color,
-      at: Date.now()
-    }).catch(()=>{});
-    
+  
     // ===== state =====
     let isOpen = false;
     let currentMode = null;     // ox / five / text
@@ -1423,12 +1363,6 @@
   requestAnimationFrame(updateTopbarInset);
   setTimeout(updateTopbarInset, 200);
   window.addEventListener("resize", updateTopbarInset);
-    
-    // 初期・遅延（フォント適用後）・リサイズで更新
-    updateTopbarInset();
-    requestAnimationFrame(updateTopbarInset);
-    setTimeout(updateTopbarInset, 200);
-    window.addEventListener("resize", updateTopbarInset);
   
   </script>
 </body>
