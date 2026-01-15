@@ -491,6 +491,46 @@
       .posE{ width:86px; height:86px; }
       textarea{ min-height:130px; }
     }
+
+  /* ✅スマホで pill が切れないように折り返す */
+  .topbar{
+    flex-wrap: wrap;              /* ★追加：折り返し許可 */
+    align-items: flex-start;      /* ★追加：上寄せ */
+  }
+  
+  /* ROOM表示はスマホだと1行目に確保（切れ防止） */
+  .topbar .room{
+    flex: 1 1 120px;
+    min-width: 120px;
+  }
+  
+  /* pill群は折り返して2段以上になってOK */
+  .status{
+    flex: 1 1 260px;
+    flex-wrap: wrap;              /* ★追加：折り返し */
+    justify-content: flex-end;
+    gap: 8px;
+  }
+  
+  /* pillを少しだけ小さくしてスマホに収めやすく */
+  .pill{
+    font-size: 12.5px;            /* ★追加：お好みで 12〜13.5 */
+    padding: 7px 10px;            /* ★追加：少し詰める */
+    white-space: nowrap;          /* ★追加：pill内は折り返さない */
+  }
+  
+  /* me表示が長いときの保険 */
+  #meTag{
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  /* ✅iPhoneのノッチ対策（上が切れるケース防止） */
+  body{
+    padding-top: calc(env(safe-area-inset-top) + 10px);
+  }
+
   </style>
 </head>
 
