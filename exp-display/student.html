@@ -563,6 +563,8 @@
         <div class="fxRing2" id="fxRing2"></div>
 
         <div id="answer-container"></div>
+        <!-- ✅ HotPotato 操作用（所持者だけ有効） -->
+        <button id="passBtn" class="submit" style="display:none;">渡す →</button>
         <button id="submitBtn" class="submit" disabled>START（決定）</button>
 
         <div id="overlay" class="overlay">
@@ -604,8 +606,9 @@
     const modeText    = document.getElementById("modeText");
     const hudMode     = document.getElementById("hudMode");
   
-    const container   = document.getElementById("answer-container");
     const submitBtn   = document.getElementById("submitBtn");
+    const passBtn   = document.getElementById("passBtn");
+    const container = document.getElementById("answer-container");
     const overlay     = document.getElementById("overlay");
     const overlayText = document.getElementById("overlayText");
     const toast       = document.getElementById("toast");
