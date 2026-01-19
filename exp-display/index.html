@@ -639,6 +639,10 @@
     // refs
     function activityRef(room=currentRoom){ return ref(db, `rooms/${room}/activity`); }
     function answersRef(room=currentRoom){ return ref(db, `rooms/${room}/answers`); }
+    function gameRef(room=currentRoom){
+      return ref(db, `rooms/${room}/activity/game`);
+    }
+
     function qidRef(room=currentRoom){ return ref(db, `rooms/${room}/quiz/current_question_id`); }
     function questionsRef(room=currentRoom){ return ref(db, `rooms/${room}/questions`); }
     function questionRef(qid, room=currentRoom){ return ref(db, `rooms/${room}/questions/${qid}`); }
@@ -791,7 +795,46 @@
         timer:{ running:false }
       });
     }
-    async function setExpectedFromVotes(){
+
+      async function startHotPotatoGame(){
+        const rosterSnap = await get(ref(db, `rooms/${currentRoom}/activity/roster`));
+        const roster = rosterSnap.val() || {};
+        const ids = Object.keys(roster);
+      
+        if (ids.length < 2){
+          alert("参加者が2人以上必要です");
+          return;
+        }
+      
+        // grid（縦横）は display 側で描画、ここでは順序だけ
+        const order = [...ids]; // 今は単純並び（後でシャッフル可）
+        const holder = order[Math.floor(Math.random() * order.length)];
+      
+        const now = Date.now();
+      
+        await update(activityRef(), {
+          view: "game",
+          status: "open",
+          game: {
+            type: "hotpotato",
+            phase: "running",
+            round: 1,
+            common: {
+              participants: Object.fromEntries(ids.map(id => [id, true])),
+              holder,
+              lastAction: { by: "teacher", at: now }
+            },
+            state: {
+              grid: {
+                order,
+                cols: Math.ceil(Math.sqrt(order.length))
+              }
+            }
+          }
+        });
+      }
+
+      async function setExpectedFromVotes(){
       // いまのanswers数を母数にする（出席確認用）
       const snap = await get(answersRef());
       const ans = snap.val() || {};
@@ -849,127 +892,7 @@
         config:null
       });
     }
-    
-    function seatsFromTotal(totalSeats){
-      const keys = ["A","B","C","D","E"];
-      const n = Math.max(0, Math.floor(Number(totalSeats || 0)));
-    
-      // 常に全キーを持つ（display/student 側が扱いやすい）
-      const seats = { A:0, B:0, C:0, D:0, E:0 };
-    
-      // ★残り席数が4以下なら、空席の位置（A〜E）をランダムにする
-      if (n <= 4){
-        // Fisher–Yates shuffle（sort乱数より偏りが少ない）
-        const shuffled = [...keys];
-        for (let i = shuffled.length - 1; i > 0; i--){
-          const j = Math.floor(Math.random() * (i + 1));
-          [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-        }
-    
-        for (let i = 0; i < n; i++){
-          seats[shuffled[i]] = 1; // n個だけ「1席」
-        }
-        return seats;
-      }
-    
-      // ★5以上は従来通り：均等割り（A→E）
-      const base = Math.floor(n / keys.length);
-      const rem  = n % keys.length;
-      keys.forEach((k, i) => seats[k] = base + (i < rem ? 1 : 0));
-      return seats;
-    }
-    
-    async function resetGamePlayersAndAnswers(room=currentRoom){
-      // players リセット（display_gameが players を読むので空オブジェクトに）
-      await set(ref(db, `rooms/${room}/activity/game/players`), {});
-      // answersもリセット（押してる参考表示などに使うなら毎回クリアが安全）
-      await set(ref(db, `rooms/${room}/answers`), {});
-    }
-    
-    async function startGameFlow(){
-      // 既存の game 設定があればそれを優先
-      const a = state.activity || {};
-      const g = a.game || {};
-    
-      const curTotal = Number(g.totalSeats || 0) || 0;
-      const curWarm  = Number(g.warmupRounds || 0) || 0;
-    
-      const totalSeats = Math.max(
-        1,
-        parseInt(prompt("総椅子数 totalSeats（例: 5,6,10）", String(curTotal || 5)), 10) || 5
-      );
-      const warmupRounds = Math.max(
-        0,
-        parseInt(prompt("warmupRounds（最初の何ラウンド椅子減らさない？）", String(curWarm || 3)), 10) || 3
-      );
-    
-      const seats = seatsFromTotal(totalSeats);
-    
-      await resetGamePlayersAndAnswers(currentRoom);
-    
-      const now = Date.now();
-      await update(activityRef(), {
-        qr:false,
-        view:"game",
-        status:"closed", // ★音楽中は学生ロック
-        mode:"five",
-        config:{ choices:["A","B","C","D","E"] },
-        game:{
-          phase:"music",          // ★BGM再生フェーズ
-          round:1,
-          totalSeats,
-          warmupRounds,
-          seatsInitial: seats,    // ★初期席
-          seatsRemain:  seats,    // ★残席（これを減らす）
-          musicStartedAt: now
-        },
-        timer:{ running:false }
-      });
-    }
-    
-    async function nextRoundFlow(){
-      const a = state.activity || {};
-      const g = a.game || {};
-    
-      const round = Math.max(1, Number(g.round || 1));
-      const warm  = Math.max(0, Number(g.warmupRounds || 3));
-      const total = Math.max(1, Number(g.totalSeats || 5));
-    
-      const newRound = round + 1;
-      const newTotal = (newRound <= warm) ? total : Math.max(1, total - 1);
-    
-      const seats = seatsFromTotal(newTotal);
-    
-      await resetGamePlayersAndAnswers(currentRoom);
-    
-      const now = Date.now();
-      await update(activityRef(), {
-        qr:false,
-        view:"game",
-        status:"closed", // ★音楽中は学生ロック
-        mode:"five",
-        config:{ choices:["A","B","C","D","E"] },
-        game:{
-          phase:"music",
-          round:newRound,
-          totalSeats:newTotal,
-          warmupRounds:warm,
-          seatsInitial: seats,
-          seatsRemain:  seats,
-          musicStartedAt: now
-        },
-        timer:{ running:false }
-      });
-    }
-   
-    async function closeRoundFlow(){
-      await update(activityRef(), {
-        status:"closed",
-        view:"game",
-        game: { ...(state.activity.game || {}), phase:"reveal", endedAt: Date.now() }
-      });
-    }
-    
+        
     async function endGameFlow(){
       const ok = confirm("ゲームを終了して standy に戻しますか？");
       if (!ok) return;
@@ -1288,9 +1211,7 @@
     btnGameDisplay.onclick = () => {
       window.open(`https://qzp04374-code.github.io/quiz-app/exp-display/display_game.html?room=${encodeURIComponent(currentRoom)}`, "_blank");
     };
-    
-    btnGameStart.onclick = async () => { await startGameFlow(); };
-    btnGameNext.onclick  = async () => { await nextRoundFlow(); };
+       
     async function stopMusicAndOpenFlow(){
       await update(activityRef(), {
         status:"open", // ★ここで学生受付開始
@@ -1299,9 +1220,7 @@
       });
     }
     
-    btnGameClose.onclick = async () => { await stopMusicAndOpenFlow(); };
-
-    btnGameEnd.onclick   = async () => { await endGameFlow(); };
+       btnGameEnd.onclick   = async () => { await endGameFlow(); };
 
     btnQ2.onclick = async () => { await startQuickPoll("ox"); };
     btnQ5.onclick = async () => { await startQuickPoll("five"); };
