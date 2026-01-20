@@ -183,7 +183,7 @@
 
     #question{
       margin:0;
-      font-size:clamp(30px, 4.1vw, 44px);
+      font-size:clamp(34px, 4.6vw, 54px); /* ✅少し大きく */
       line-height:1.12;
       font-weight:900;
       letter-spacing:.02em;
@@ -205,17 +205,17 @@
     .choice{
       background:rgba(2,6,23,.6);
       border:1px solid rgba(255,255,255,.08);
-      border-radius:16px;
-      padding:10px 12px;
-      font-size:clamp(18px, 2.05vw, 22px);
-      line-height:1.20;
+      border-radius:18px;
+      padding:14px 16px;
+      font-size:clamp(28px, 3.0vw, 40px);
+      line-height:1.22;
       display:flex;
-      gap:10px;
+      gap:14px;
       align-items:flex-start;
     }
     .badge{
-      min-width:46px;
-      height:34px;
+      min-width:64px;   /* ✅拡大 */
+      height:46px;      /* ✅拡大 */
       border-radius:999px;
       display:inline-flex;
       align-items:center;
@@ -225,6 +225,7 @@
       margin-top:2px;
       flex:0 0 auto;
       letter-spacing:.06em;
+      font-size:22px;   /* ✅バッジ文字も大きく */
     }
     .badge.A{background:var(--color-a);}
     .badge.B{background:var(--color-b);}
