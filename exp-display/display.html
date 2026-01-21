@@ -1400,7 +1400,7 @@ ttsBtn.onclick = async () => {
 
     // ===== Auto-fit question text (ONLY question) =====
     function fitQuestionToLeftScroll({
-      minPx = 20,     // これ以下には縮めない（好みで18〜24）
+      minPx = 28,     // これ以下には縮めない（好みで18〜24）
       step = 2,       // 2pxずつ縮める
       maxLoops = 30,  // 無限ループ防止
     } = {}) {
@@ -1430,7 +1430,7 @@ ttsBtn.onclick = async () => {
     let _fitReq = 0;
     function requestFitQuestion() {
       cancelAnimationFrame(_fitReq);
-      _fitReq = requestAnimationFrame(() => fitQuestionToLeftScroll());
+      _fitReq = requestAnimationFrame(() => fitQuestionToLeftScroll({ minPx: 30 });
     }
     
     // ===== Timer =====
