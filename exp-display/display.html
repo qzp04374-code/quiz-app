@@ -411,13 +411,21 @@
       margin:8px 0 8px;
     }
     #qrcode canvas{
-      width:min(520px, 68vw) !important;
-      height:min(520px, 68vw) !important;
-      border-radius:18px;
-      background:#fff;
-      padding:8px;
-      box-sizing:border-box;
-    }
+  width:520px !important;
+  height:520px !important;
+  border-radius:18px;
+  background:#fff;
+  padding:10px;
+  box-sizing:border-box;
+  image-rendering: pixelated; /* 一部環境で効く */
+}
+@media (max-width: 820px){
+  #qrcode canvas{
+    width: min(520px, 86vw) !important;
+    height: min(520px, 86vw) !important;
+  }
+}
+
     #qrCount{ margin-top:6px; color:rgba(203,213,225,.9); font-size:14px; }
 
     #toast{
@@ -1430,7 +1438,7 @@ ttsBtn.onclick = async () => {
     let _fitReq = 0;
     function requestFitQuestion() {
       cancelAnimationFrame(_fitReq);
-      _fitReq = requestAnimationFrame(() => fitQuestionToLeftScroll({ minPx: 30 });
+      _fitReq = requestAnimationFrame(() => fitQuestionToLeftScroll({ minPx: 30 }));
     }
     
     // ===== Timer =====
