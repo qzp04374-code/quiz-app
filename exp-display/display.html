@@ -733,6 +733,7 @@
         <button id="soundBtn" class="soundBtn">🔈 音OFF（タップでON）</button>
         <button id="ttsBtn" class="soundBtn">🗣 読み上げOFF</button>
         <button id="ttsSpeakBtn" class="soundBtn">🔘 読む</button>
+        <button id="tuneBtn" class="soundBtn">⚙ 表示調整</button>
 
       </div>
     </div>
@@ -1482,7 +1483,191 @@ ttsBtn.onclick = async () => {
       });
     }
 
+    // ===== Display tuning (per QID, localStorage) =====
+    const tuneBtn   = document.getElementById("tuneBtn");
+    const tunePanel = document.getElementById("tunePanel");
+    const tuneClose = document.getElementById("tuneClose");
     
+    const tpQMax = document.getElementById("tpQMax");
+    const tpCMax = document.getElementById("tpCMax");
+    const tpCH   = document.getElementById("tpCH");
+    
+    const tpQMaxVal = document.getElementById("tpQMaxVal");
+    const tpCMaxVal = document.getElementById("tpCMaxVal");
+    const tpCHVal   = document.getElementById("tpCHVal");
+    
+    const tpSave     = document.getElementById("tpSave");
+    const tpResetQ   = document.getElementById("tpResetQ");
+    const tpResetAll = document.getElementById("tpResetAll");
+    const tpHint     = document.getElementById("tpHint");
+    
+    let _tuneDefaults = null;
+    
+    function readDefaultsOnce(){
+      if (_tuneDefaults) return _tuneDefaults;
+      const cs = getComputedStyle(document.documentElement);
+      _tuneDefaults = {
+        qMax: Number(cs.getPropertyValue("--qMax").trim()) || 64,
+        cMax: Number(cs.getPropertyValue("--cMax").trim()) || 46,
+        cH:   Number(cs.getPropertyValue("--cH").trim())   || 76,
+      };
+      return _tuneDefaults;
+    }
+    
+    function setCssVars(t){
+      if (!t) return;
+      const root = document.documentElement.style;
+      if (Number.isFinite(t.qMax)) root.setProperty("--qMax", String(Math.round(t.qMax)));
+      if (Number.isFinite(t.cMax)) root.setProperty("--cMax", String(Math.round(t.cMax)));
+      if (Number.isFinite(t.cH))   root.setProperty("--cH",   String(Math.round(t.cH)));
+    }
+    
+    function getTuneKey(room, qid){
+      const r = String(room || "room");
+      const q = String(qid || "__noqid__");
+      return `cls:disp:tune:${r}:${q}`;
+    }
+    
+    function loadTune(room, qid){
+      try{
+        const raw = localStorage.getItem(getTuneKey(room, qid));
+        if (!raw) return null;
+        const obj = JSON.parse(raw);
+        return { qMax: Number(obj.qMax), cMax: Number(obj.cMax), cH: Number(obj.cH) };
+      }catch(e){
+        console.warn("tune load failed:", e);
+        return null;
+      }
+    }
+    
+    function saveTune(room, qid, t){
+      try{
+        localStorage.setItem(getTuneKey(room, qid), JSON.stringify({
+          qMax: Math.round(Number(t.qMax)),
+          cMax: Math.round(Number(t.cMax)),
+          cH:   Math.round(Number(t.cH)),
+          at: Date.now(),
+        }));
+        return true;
+      }catch(e){
+        console.warn("tune save failed:", e);
+        return false;
+      }
+    }
+    
+    function deleteTune(room, qid){
+      try{ localStorage.removeItem(getTuneKey(room, qid)); }catch(e){}
+    }
+    
+    function deleteAllTunes(room){
+      const prefix = `cls:disp:tune:${String(room || "room")}:`;
+      try{
+        const keys = [];
+        for (let i=0; i<localStorage.length; i++){
+          const k = localStorage.key(i);
+          if (k && k.startsWith(prefix)) keys.push(k);
+        }
+        keys.forEach(k => localStorage.removeItem(k));
+      }catch(e){}
+    }
+    
+    function reflectUiFromCss(){
+      const cs = getComputedStyle(document.documentElement);
+      const qMax = Number(cs.getPropertyValue("--qMax").trim()) || 64;
+      const cMax = Number(cs.getPropertyValue("--cMax").trim()) || 46;
+      const cH   = Number(cs.getPropertyValue("--cH").trim())   || 76;
+    
+      tpQMax.value = String(qMax);
+      tpCMax.value = String(cMax);
+      tpCH.value   = String(cH);
+    
+      tpQMaxVal.textContent = String(qMax);
+      tpCMaxVal.textContent = String(cMax);
+      tpCHVal.textContent   = String(cH);
+    }
+    
+    function reflectVals(){
+      tpQMaxVal.textContent = tpQMax.value;
+      tpCMaxVal.textContent = tpCMax.value;
+      tpCHVal.textContent   = tpCH.value;
+    }
+    
+    function applyTuneForCurrentQid(){
+      // room 変数は、このファイルでは `room` が存在します:contentReference[oaicite:8]{index=8}
+      const roomName = (typeof room !== "undefined") ? room : "room";
+      const qid = (typeof currentQid !== "undefined") ? currentQid : null;
+    
+      const d = readDefaultsOnce();
+      const t = loadTune(roomName, qid);
+    
+      if (t && Number.isFinite(t.qMax) && Number.isFinite(t.cMax) && Number.isFinite(t.cH)){
+        setCssVars(t);
+        if (tpHint) tpHint.textContent = `適用中：QID=${qid || "-"}（保存済み）`;
+      }else{
+        setCssVars(d);
+        if (tpHint) tpHint.textContent = `初期値：QID=${qid || "-"}（未保存）`;
+      }
+    
+      reflectUiFromCss();
+      requestFitQuestion();
+    }
+    
+    // UI events
+    if (tuneBtn && tunePanel && tuneClose){
+      tuneBtn.addEventListener("click", () => {
+        tunePanel.classList.toggle("show");
+        reflectUiFromCss();
+      });
+      tuneClose.addEventListener("click", () => tunePanel.classList.remove("show"));
+    }
+    
+    [tpQMax, tpCMax, tpCH].forEach(inp => {
+      if (!inp) return;
+      inp.addEventListener("input", () => {
+        reflectVals();
+        setCssVars({
+          qMax: Number(tpQMax.value),
+          cMax: Number(tpCMax.value),
+          cH:   Number(tpCH.value),
+        });
+        requestFitQuestion();
+      });
+    });
+    
+    if (tpSave){
+      tpSave.addEventListener("click", () => {
+        const roomName = (typeof room !== "undefined") ? room : "room";
+        const qid = (typeof currentQid !== "undefined") ? currentQid : null;
+    
+        const ok = saveTune(roomName, qid, {
+          qMax: Number(tpQMax.value),
+          cMax: Number(tpCMax.value),
+          cH:   Number(tpCH.value),
+        });
+        if (tpHint) tpHint.textContent = ok ? `保存しました：QID=${qid || "-"}（この端末のみ）` : "保存に失敗しました";
+        applyTuneForCurrentQid();
+      });
+    }
+    
+    if (tpResetQ){
+      tpResetQ.addEventListener("click", () => {
+        const roomName = (typeof room !== "undefined") ? room : "room";
+        const qid = (typeof currentQid !== "undefined") ? currentQid : null;
+        deleteTune(roomName, qid);
+        if (tpHint) tpHint.textContent = `初期化しました：QID=${qid || "-"}`;
+        applyTuneForCurrentQid();
+      });
+    }
+    
+    if (tpResetAll){
+      tpResetAll.addEventListener("click", () => {
+        const roomName = (typeof room !== "undefined") ? room : "room";
+        deleteAllTunes(roomName);
+        if (tpHint) tpHint.textContent = "このROOMの保存を全て初期化しました";
+        applyTuneForCurrentQid();
+      });
+    }
+
     // ===== Timer =====
     let timerState = null;
     let timerInterval = null;
@@ -1848,6 +2033,7 @@ function applyCurrentQid(){
     qEl.textContent = "（問題を待っています…）";
     cEl.innerHTML = "";
     updateAnswerUI();
+    applyTuneForCurrentQid();
     requestFitQuestion();
     return;
   }
@@ -1880,6 +2066,7 @@ function applyCurrentQid(){
       updateAnswerUI();
       maybeAutoSpeak();
       recomputeAndRenderFromAnswers(lastAnswers);
+      applyTuneForCurrentQid();
       requestFitQuestion();
     }
     return;
@@ -1914,6 +2101,7 @@ function applyCurrentQid(){
       updateAnswerUI();
       maybeAutoSpeak();
       recomputeAndRenderFromAnswers(lastAnswers);
+      applyTuneForCurrentQid();
       requestFitQuestion();
       return;
     }
@@ -2054,6 +2242,89 @@ onValue(activityRef, snap => {
 
       recomputeAndRenderFromAnswers(ans);
     });
-  </script>
+
+    /* ===== Display tuning panel (localStorage) ===== */
+    #tunePanel{
+      position: fixed;
+      right: 14px;
+      top: 76px;
+      width: 360px;
+      max-width: calc(100vw - 28px);
+      background: rgba(17,24,39,.92);
+      border: 1px solid rgba(255,255,255,.14);
+      border-radius: 18px;
+      box-shadow: 0 22px 70px rgba(0,0,0,.65);
+      padding: 12px 12px;
+      z-index: 1300;
+      display: none;
+      backdrop-filter: blur(10px);
+    }
+    #tunePanel.show{ display:block; }
+    
+    .tpHead{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
+    .tpTitle{ font-weight:1000; letter-spacing:.06em; font-size:13px; color:rgba(226,232,240,.95); }
+    .tpClose{
+      border:1px solid rgba(255,255,255,.18);
+      background: rgba(2,6,23,.45);
+      color:#fff;
+      border-radius: 999px;
+      padding: 6px 10px;
+      cursor:pointer;
+      font-weight:900;
+    }
+    .tpRow{ margin-top:10px; display:grid; grid-template-columns: 1fr; gap:6px; }
+    .tpLab{ font-size:12px; color: rgba(203,213,225,.9); font-weight:900; letter-spacing:.06em; }
+    .tpVal{ font-size:12px; color: rgba(203,213,225,.9); font-weight:900; text-align:right; }
+    .tpRow input[type="range"]{ width:100%; }
+    .tpFoot{ margin-top:12px; display:flex; flex-wrap:wrap; gap:8px; }
+    .tpBtn{
+      border:1px solid rgba(255,255,255,.18);
+      background: rgba(34,197,94,.16);
+      color:#fff;
+      border-radius: 12px;
+      padding: 8px 10px;
+      cursor:pointer;
+      font-weight:1000;
+      letter-spacing:.04em;
+    }
+    .tpBtn.ghost{ background: rgba(2,6,23,.35); }
+    .tpHint{ margin-top:10px; font-size:12px; color: rgba(203,213,225,.85); line-height:1.35; }
+
+    </script>
+
+    <!-- ===== Display tuning panel (per QID, localStorage) ===== -->
+    <div id="tunePanel" aria-hidden="true">
+      <div class="tpHead">
+        <div class="tpTitle">表示微調整（このPCのローカル保存）</div>
+        <button id="tuneClose" class="tpClose">✕</button>
+      </div>
+  
+      <div class="tpRow">
+        <div class="tpLab">問題文 最大（qMax）</div>
+        <input id="tpQMax" type="range" min="38" max="90" step="1">
+        <div class="tpVal"><span id="tpQMaxVal"></span>px</div>
+      </div>
+  
+      <div class="tpRow">
+        <div class="tpLab">選択肢 最大（cMax）</div>
+        <input id="tpCMax" type="range" min="22" max="70" step="1">
+        <div class="tpVal"><span id="tpCMaxVal"></span>px</div>
+      </div>
+  
+      <div class="tpRow">
+        <div class="tpLab">選択肢 枠最小高（cH）</div>
+        <input id="tpCH" type="range" min="56" max="120" step="1">
+        <div class="tpVal"><span id="tpCHVal"></span>px</div>
+      </div>
+  
+      <div class="tpFoot">
+        <button id="tpSave" class="tpBtn">保存（この問題だけ）</button>
+        <button id="tpResetQ" class="tpBtn ghost">この問題を初期化</button>
+        <button id="tpResetAll" class="tpBtn ghost">全部初期化</button>
+      </div>
+  
+      <div class="tpHint" id="tpHint"></div>
+    </div>
+
 </body>
 </html>
