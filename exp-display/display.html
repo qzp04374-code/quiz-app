@@ -211,10 +211,10 @@
     }
     
     /* scrollbar（控えめ） */
-    .choices::-webkit-scrollbar{
+    #choices::-webkit-scrollbar{
       width: 10px;
     }
-    .choices::-webkit-scrollbar-thumb{
+    #choices::-webkit-scrollbar-thumb{
       background: rgba(255,255,255,.25);
       border-radius: 6px;
     }
@@ -1470,7 +1470,9 @@ ttsBtn.onclick = async () => {
     function requestFitQuestion() {
       cancelAnimationFrame(_fitReq);
       _fitReq = requestAnimationFrame(() => fitQuestionToLeftScroll({ minPx: 30 }));
-      fitChoicesHeight();
+        // ✅ 1フレーム後に choices 高さを計算（DOM反映後でズレない）
+        requestAnimationFrame(() => fitChoicesHeight());
+      });
     }
     
     // ===== Timer =====
