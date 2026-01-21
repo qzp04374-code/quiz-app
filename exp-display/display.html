@@ -202,17 +202,23 @@
       grid-template-columns: 1fr;
       gap:8px;
     }
-    .choice{
-      background:rgba(2,6,23,.6);
-      border:1px solid rgba(255,255,255,.08);
-      border-radius:18px;
-      padding:14px 16px;
-      font-size:clamp(28px, 3.0vw, 40px);
-      line-height:1.22;
-      display:flex;
-      gap:14px;
-      align-items:flex-start;
+    /* ===== choices scroll safety ===== */
+    #choices{
+      overflow-y: auto;          /* ✅ 下が切れたらスクロール */
+      overscroll-behavior: contain;
+      padding-right: 10px;       /* スクロールバー分 */
+      max-height: 100%;
     }
+    
+    /* scrollbar（控えめ） */
+    .choices::-webkit-scrollbar{
+      width: 10px;
+    }
+    .choices::-webkit-scrollbar-thumb{
+      background: rgba(255,255,255,.25);
+      border-radius: 6px;
+    }
+
     .badge{
       min-width:64px;   /* ✅拡大 */
       height:46px;      /* ✅拡大 */
@@ -1434,11 +1440,34 @@ ttsBtn.onclick = async () => {
       });
     }
 
+    // ===== Fit choices height (scroll-safe) =====
+    function fitChoicesHeight(){
+      const left = document.getElementById("leftScroll");
+      const q = document.getElementById("question");
+      const choices = document.getElementById("choices");
+      if (!left || !q || !choices) return;
+    
+      const leftRect = left.getBoundingClientRect();
+      const qRect = q.getBoundingClientRect();
+    
+      const padding = 16;
+      const available =
+        leftRect.height -
+        (qRect.bottom - leftRect.top) -
+        padding;
+    
+      if (available > 120){
+        choices.style.maxHeight = `${Math.floor(available)}px`;
+      }
+    }
+
+
     // 連続呼び出しをまとめる（描画のたびに暴れないように）
     let _fitReq = 0;
     function requestFitQuestion() {
       cancelAnimationFrame(_fitReq);
       _fitReq = requestAnimationFrame(() => fitQuestionToLeftScroll({ minPx: 30 }));
+      fitChoicesHeight();
     }
     
     // ===== Timer =====
