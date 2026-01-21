@@ -1445,22 +1445,25 @@ ttsBtn.onclick = async () => {
       const left = document.getElementById("leftScroll");
       const q = document.getElementById("question");
       const choices = document.getElementById("choices");
+      const answerBox = document.getElementById("answerBox");
       if (!left || !q || !choices) return;
     
       const leftRect = left.getBoundingClientRect();
-      const qRect = q.getBoundingClientRect();
+    
+      const baseRect = (answerBox && answerBox.offsetParent !== null)
+        ? answerBox.getBoundingClientRect()
+        : q.getBoundingClientRect();
     
       const padding = 16;
       const available =
         leftRect.height -
-        (qRect.bottom - leftRect.top) -
+        (baseRect.bottom - leftRect.top) -
         padding;
     
       if (available > 120){
         choices.style.maxHeight = `${Math.floor(available)}px`;
       }
     }
-
 
     // 連続呼び出しをまとめる（描画のたびに暴れないように）
     let _fitReq = 0;
