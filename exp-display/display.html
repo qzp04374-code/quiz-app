@@ -2108,20 +2108,25 @@ function applyCurrentQid(){
 
     const norm = normalizeChoicesObj(q.choices || {});
     const choicesForUI = norm.obj;
-
+    
     if (choicesForUI && typeof choicesForUI === "object"){
       const ord = Object.keys(choicesForUI).map(k => String(k).trim().toUpperCase());
       if (ord.length) choiceOrder = ord;
     }
-
+    
     let ck = q.answer ? String(q.answer).trim().toUpperCase() : null;
     if (norm.mapAB && ck) ck = mapABtoOXKey(ck);
-
+    
     renderChoices(choicesForUI || {}, ck, currentStatus === "closed");
     updateAnswerUI();
     maybeAutoSpeak();
     recomputeAndRenderFromAnswers(lastAnswers);
+    
+    // ★追加：新QIDの最初の描画でも tuning を確実に適用
+    applyTuneForCurrentQid();
+    
     requestFitQuestion();
+
   });
 }
     
@@ -2273,8 +2278,8 @@ onValue(activityRef, snap => {
       font-weight:900;
     }
     .tpRow{ margin-top:10px; display:grid; grid-template-columns: 1fr; gap:6px; }
-    .tpLab{ font-size:12px; color: rgba(203,213,225,.9); font-weight:900; letter-spacing:.06em; }
-    .tpVal{ font-size:12px; color: rgba(203,213,225,.9); font-weight:900; text-align:right; }
+    .tpLab{ font-size:12px; color: rgba(203,213,225,.90); font-weight:900; letter-spacing:.06em; }
+    .tpVal{ font-size:12px; color: rgba(203,213,225,.90); font-weight:900; text-align:right; }
     .tpRow input[type="range"]{ width:100%; }
     .tpFoot{ margin-top:12px; display:flex; flex-wrap:wrap; gap:8px; }
     .tpBtn{
