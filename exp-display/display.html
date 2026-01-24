@@ -213,8 +213,14 @@
       padding-right: 10px;       /* スクロールバー分 */
       max-height: 100%;
     }
-    
-    
+
+    /* ✅ choices viewport: keep a stable window; overflow scroll handles overrun */
+    #choices{
+      height: min(52vh, 520px);   /* <- ここで“枠”を固定（好みで調整） */
+      min-height: 260px;
+      max-height: min(52vh, 520px);
+    }
+
     /* ✅ choices typography driven by cMin/cMax (no per-row height slider) */
     #choices{
       font-size: clamp(calc(var(--cMin) * 1px), 2.2vw, calc(var(--cMax) * 1px));
@@ -225,13 +231,12 @@
       gap:10px;
       padding: .50em .70em;
       border-radius: 14px;
-      border: 1px solid rgba(255,255,255,14);
-      background: rgba(2,6,23,22);
+      border: none;
+      background: rgba(2,6,23,.22);
       line-height: 1.18;                 /* 行間：文字サイズに追随 */
       word-break: break-word;
     }
     .choice.correct{
-      border-color: rgba(34,197,94,70);
       box-shadow: 0 0 0 3px rgba(34,197,94,22);
     }
     .choice > div:last-child{
@@ -1519,27 +1524,9 @@ ttsBtn.onclick = async () => {
 
     // ===== Fit choices height (scroll-safe) =====
     function fitChoicesHeight(){
-      const left = document.getElementById("leftScroll");
-      const q = document.getElementById("question");
-      const choices = document.getElementById("choices");
-      const answerBox = document.getElementById("answerBox");
-      if (!left || !q || !choices) return;
-    
-      const leftRect = left.getBoundingClientRect();
-    
-      const baseRect = (answerBox && answerBox.offsetParent !== null)
-        ? answerBox.getBoundingClientRect()
-        : q.getBoundingClientRect();
-    
-      const padding = 16;
-      const available =
-        leftRect.height -
-        (baseRect.bottom - leftRect.top) -
-        padding;
-    
-      if (available > 120){
-        choices.style.maxHeight = `${Math.floor(available)}px`;
-      }
+      // choices window is fixed-height; keep overflow scroll.
+      return;
+    }
     }
 
     // 連続呼び出しをまとめる（描画のたびに暴れないように）
