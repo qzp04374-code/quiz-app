@@ -27,8 +27,7 @@
       --qMax: 64;     /* 問題文の最大 */
       --cMin: 26;     /* 選択肢文字 最小 */
       --cMax: 46;     /* 選択肢文字 最大 */
-      --cH: 76;       /* 選択肢枠 最小高さ */
-    }
+}
 
     body{
       margin:0;
@@ -215,7 +214,32 @@
       max-height: 100%;
     }
     
-    /* scrollbar（控えめ） */
+    
+    /* ✅ choices typography driven by cMin/cMax (no per-row height slider) */
+    #choices{
+      font-size: clamp(calc(var(--cMin) * 1px), 2.2vw, calc(var(--cMax) * 1px));
+    }
+    .choice{
+      display:flex;
+      align-items:flex-start;
+      gap:10px;
+      padding: .50em .70em;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,14);
+      background: rgba(2,6,23,22);
+      line-height: 1.18;                 /* 行間：文字サイズに追随 */
+      word-break: break-word;
+    }
+    .choice.correct{
+      border-color: rgba(34,197,94,70);
+      box-shadow: 0 0 0 3px rgba(34,197,94,22);
+    }
+    .choice > div:last-child{
+      flex:1;
+      white-space: pre-wrap;             /* 改行は保持、ただしバッジ後の強制改行は起こさない */
+      min-width: 0;
+    }
+/* scrollbar（控えめ） */
     #choices::-webkit-scrollbar{
       width: 10px;
     }
@@ -245,31 +269,6 @@
     .badge.E{background:var(--color-e); color:#fff;}
     .badge.O{background:var(--color-o);}
     .badge.X{background:var(--color-x); color:#fff;}
-
-    /* ===== choice row layout & tuning ===== */
-    .choice{
-      display:flex;
-      flex-direction:row;
-      align-items:flex-start;
-      gap:12px;
-      padding:12px 14px;
-      border-radius:16px;
-      background:rgba(15,23,42,.55);
-      border:1px solid rgba(255,255,255,.12);
-      box-sizing:border-box;
-    }
-    /* 2つ目（本文）をターゲットにする */
-    .choiceText{
-      flex:1 1 auto;
-      margin-top:2px;
-      line-height:1.18;
-      font-weight:900;
-      letter-spacing:.01em;
-      /* ✅ 選択肢文字 最大（tune panel 反映） */
-      font-size: clamp(calc(var(--cMin) * 1px), 3.2vw, calc(var(--cMax) * 1px));
-      white-space:normal; /* ✅ A/B/C/D/E の後で改行させない（行は自動折り返し） */
-      word-break:break-word;
-    }
 
     .choice.correct{
       border:2px solid rgba(34,197,94,.85);
@@ -1562,13 +1561,9 @@ ttsBtn.onclick = async () => {
     
     const tpQMax = document.getElementById("tpQMax");
     const tpCMax = document.getElementById("tpCMax");
-    const tpCH   = document.getElementById("tpCH");
-    
-    const tpQMaxVal = document.getElementById("tpQMaxVal");
+const tpQMaxVal = document.getElementById("tpQMaxVal");
     const tpCMaxVal = document.getElementById("tpCMaxVal");
-    const tpCHVal   = document.getElementById("tpCHVal");
-    
-    const tpSave     = document.getElementById("tpSave");
+const tpSave     = document.getElementById("tpSave");
     const tpResetQ   = document.getElementById("tpResetQ");
     const tpResetAll = document.getElementById("tpResetAll");
     const tpHint     = document.getElementById("tpHint");
@@ -1580,8 +1575,7 @@ ttsBtn.onclick = async () => {
       const cs = getComputedStyle(document.documentElement);
       _tuneDefaults = {
         qMax: Number(cs.getPropertyValue("--qMax").trim()) || 64,
-        cMax: Number(cs.getPropertyValue("--cMax").trim()) || 46,
-        cH:   Number(cs.getPropertyValue("--cH").trim())   || 76,
+        cMax: Number(cs.getPropertyValue("--cMax").trim()) || 46
       };
       return _tuneDefaults;
     }
@@ -1591,8 +1585,7 @@ ttsBtn.onclick = async () => {
       const root = document.documentElement.style;
       if (Number.isFinite(t.qMax)) root.setProperty("--qMax", String(Math.round(t.qMax)));
       if (Number.isFinite(t.cMax)) root.setProperty("--cMax", String(Math.round(t.cMax)));
-      if (Number.isFinite(t.cH))   root.setProperty("--cH",   String(Math.round(t.cH)));
-    }
+}
     
     function getTuneKey(room, qid){
       const r = String(room || "room");
@@ -1605,7 +1598,7 @@ ttsBtn.onclick = async () => {
         const raw = localStorage.getItem(getTuneKey(room, qid));
         if (!raw) return null;
         const obj = JSON.parse(raw);
-        return { qMax: Number(obj.qMax), cMax: Number(obj.cMax), cH: Number(obj.cH) };
+        return { qMax: Number(obj.qMax), cMax: Number(obj.cMax) };
       }catch(e){
         console.warn("tune load failed:", e);
         return null;
@@ -1617,7 +1610,6 @@ ttsBtn.onclick = async () => {
         localStorage.setItem(getTuneKey(room, qid), JSON.stringify({
           qMax: Math.round(Number(t.qMax)),
           cMax: Math.round(Number(t.cMax)),
-          cH:   Math.round(Number(t.cH)),
           at: Date.now(),
         }));
         return true;
@@ -1647,22 +1639,16 @@ ttsBtn.onclick = async () => {
       const cs = getComputedStyle(document.documentElement);
       const qMax = Number(cs.getPropertyValue("--qMax").trim()) || 64;
       const cMax = Number(cs.getPropertyValue("--cMax").trim()) || 46;
-      const cH   = Number(cs.getPropertyValue("--cH").trim())   || 76;
-    
-      tpQMax.value = String(qMax);
+tpQMax.value = String(qMax);
       tpCMax.value = String(cMax);
-      tpCH.value   = String(cH);
-    
-      tpQMaxVal.textContent = String(qMax);
+tpQMaxVal.textContent = String(qMax);
       tpCMaxVal.textContent = String(cMax);
-      tpCHVal.textContent   = String(cH);
-    }
+}
     
     function reflectVals(){
       tpQMaxVal.textContent = tpQMax.value;
       tpCMaxVal.textContent = tpCMax.value;
-      tpCHVal.textContent   = tpCH.value;
-    }
+}
     
     function applyTuneForCurrentQid(){
       // room 変数は、このファイルでは `room` が存在します:contentReference[oaicite:8]{index=8}
@@ -1672,7 +1658,7 @@ ttsBtn.onclick = async () => {
       const d = readDefaultsOnce();
       const t = loadTune(roomName, qid);
     
-      if (t && Number.isFinite(t.qMax) && Number.isFinite(t.cMax) && Number.isFinite(t.cH)){
+      if (t && Number.isFinite(t.qMax) && Number.isFinite(t.cMax)){
         setCssVars(t);
         if (tpHint) tpHint.textContent = `適用中：QID=${qid || "-"}（保存済み）`;
       }else{
@@ -1693,15 +1679,13 @@ ttsBtn.onclick = async () => {
       tuneClose.addEventListener("click", () => tunePanel.classList.remove("show"));
     }
     
-    [tpQMax, tpCMax, tpCH].forEach(inp => {
+    [tpQMax, tpCMax].forEach(inp => {
       if (!inp) return;
       inp.addEventListener("input", () => {
         reflectVals();
         setCssVars({
           qMax: Number(tpQMax.value),
-          cMax: Number(tpCMax.value),
-          cH:   Number(tpCH.value),
-        });
+          cMax: Number(tpCMax.value),});
         requestFitQuestion();
       });
     });
@@ -1713,9 +1697,7 @@ ttsBtn.onclick = async () => {
     
         const ok = saveTune(roomName, qid, {
           qMax: Number(tpQMax.value),
-          cMax: Number(tpCMax.value),
-          cH:   Number(tpCH.value),
-        });
+          cMax: Number(tpCMax.value),});
         if (tpHint) tpHint.textContent = ok ? `保存しました：QID=${qid || "-"}（この端末のみ）` : "保存に失敗しました";
         applyTuneForCurrentQid();
       });
@@ -2341,14 +2323,7 @@ onValue(activityRef, snap => {
         <input id="tpCMax" type="range" min="22" max="70" step="1">
         <div class="tpVal"><span id="tpCMaxVal"></span>px</div>
       </div>
-  
-      <div class="tpRow">
-        <div class="tpLab">選択肢 行間（cH）</div>
-        <input id="tpCH" type="range" min="56" max="120" step="1">
-        <div class="tpVal"><span id="tpCHVal"></span>px</div>
-      </div>
-  
-      <div class="tpFoot">
+<div class="tpFoot">
         <button id="tpSave" class="tpBtn">保存（この問題だけ）</button>
         <button id="tpResetQ" class="tpBtn ghost">この問題を初期化</button>
         <button id="tpResetAll" class="tpBtn ghost">全部初期化</button>
