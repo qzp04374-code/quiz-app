@@ -2187,7 +2187,7 @@ onValue(activityRef, snap => {
     choiceOrder = [];
   }
 
-  currentView = a.view || "quiz";
+  currentView = a.view || "qr";
   timerState = a.timer || null;
   if (timerState && timerState.running && timerState.endsAt) ensureTimerTick();
   else stopTimerTick();
