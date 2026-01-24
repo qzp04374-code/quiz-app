@@ -256,7 +256,7 @@
       border-radius:16px;
       background:rgba(15,23,42,.55);
       border:1px solid rgba(255,255,255,.12);
-      min-height: calc(var(--cH) * 1px); /* ✅ 選択肢枠 最小高さ（tune panel 反映） */
+      min-height: 72px;   /* ここは好みで 68〜84px くらい */
       box-sizing:border-box;
     }
     /* 2つ目（本文）をターゲットにする */
@@ -2344,7 +2344,7 @@ onValue(activityRef, snap => {
       </div>
   
       <div class="tpRow">
-        <div class="tpLab">選択肢 枠最小高（cH）</div>
+        <div class="tpLab">選択肢 行間（cH）</div>
         <input id="tpCH" type="range" min="56" max="120" step="1">
         <div class="tpVal"><span id="tpCHVal"></span>px</div>
       </div>
