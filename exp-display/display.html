@@ -246,6 +246,32 @@
     .badge.O{background:var(--color-o);}
     .badge.X{background:var(--color-x); color:#fff;}
 
+    /* ===== choice row layout & tuning ===== */
+    .choice{
+      display:flex;
+      flex-direction:row;
+      align-items:flex-start;
+      gap:12px;
+      padding:12px 14px;
+      border-radius:16px;
+      background:rgba(15,23,42,.55);
+      border:1px solid rgba(255,255,255,.12);
+      min-height: calc(var(--cH) * 1px); /* ✅ 選択肢枠 最小高さ（tune panel 反映） */
+      box-sizing:border-box;
+    }
+    /* 2つ目（本文）をターゲットにする */
+    .choiceText{
+      flex:1 1 auto;
+      margin-top:2px;
+      line-height:1.18;
+      font-weight:900;
+      letter-spacing:.01em;
+      /* ✅ 選択肢文字 最大（tune panel 反映） */
+      font-size: clamp(calc(var(--cMin) * 1px), 3.2vw, calc(var(--cMax) * 1px));
+      white-space:normal; /* ✅ A/B/C/D/E の後で改行させない（行は自動折り返し） */
+      word-break:break-word;
+    }
+
     .choice.correct{
       border:2px solid rgba(34,197,94,.85);
       box-shadow:0 0 0 3px rgba(34,197,94,.15);
@@ -1872,6 +1898,7 @@ ttsBtn.onclick = async () => {
         b.textContent = uiLabel(key);
 
         const t = document.createElement("div");
+        t.className = "choiceText";
         t.textContent = v;
 
         row.appendChild(b);
