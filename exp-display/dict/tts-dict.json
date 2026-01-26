@@ -343,5 +343,55 @@
     "type": "text",
     "from": "CO2",
     "to": "しーおーつー"
+  },
+  {
+    "type": "text",
+    "from": "1L",
+    "to": "いちりっとる"
+  },
+  {
+    "type": "text",
+    "from": "2L",
+    "to": "にりっとる"
+  },
+  {
+    "type": "text",
+    "from": "3L",
+    "to": "さんりっとる"
+  },
+  {
+    "type": "text",
+    "from": "4L",
+    "to": "よんりっとる"
+  },
+  {
+    "type": "text",
+    "from": "5L",
+    "to": "ごりっとる"
+  },
+  {
+    "type": "text",
+    "from": "6L",
+    "to": "ろくりっとる"
+  },
+  {
+    "type": "text",
+    "from": "7L",
+    "to": "ななりっとる"
+  },
+  {
+    "type": "text",
+    "from": "8L",
+    "to": "はちりっとる"
+  },
+  {
+    "type": "text",
+    "from": "9L",
+    "to": "きゅうりっとる"
+  },
+  {
+    "type": "text",
+    "from": "10L",
+    "to": "じゅうりっとる"
   }
 ]
