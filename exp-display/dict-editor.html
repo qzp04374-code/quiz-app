@@ -24,36 +24,501 @@
 <body>
   <h1>🗣 TTS 辞書エディタ（tts-dict.json）</h1>
 
-  <div class="row">
-    <button id="loadBtn">📥 dict/tts-dict.json を読み込む</button>
-    <button id="addBtn">➕ 行を追加</button>
-    <button id="validateBtn">✅ 検証</button>
-    <button id="downloadBtn">⬇️ tts-dict.json をダウンロード</button>
-    <button id="copyBtn">📋 JSONをコピー</button>
-  </div>
-  <div class="row mini">
-    形式：text / word / regex（regex は from を正規表現、flags 例: g, gi）
+  <!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>TTS Dict Editor</title>
+  <style>
+    :root{
+      --bg:#0b1020;
+      --panel:#0f172a;
+      --panel2:#0b1226;
+      --line:#243048;
+      --line2:#374151;
+      --text:#e5e7eb;
+      --muted:#9ca3af;
+      --ok:#34d399;
+      --warn:#fbbf24;
+      --danger:#ef4444;
+      --shadow: 0 18px 50px rgba(0,0,0,.45);
+    }
+    body{
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
+      margin:16px;
+      background:var(--bg);
+      color:var(--text);
+    }
+    h1{font-size:18px; margin:0 0 12px;}
+    .mini{font-size:12px; color:var(--muted);}
+    .ok{color:var(--ok);}
+    .warn{color:var(--warn);}
+    .danger{border-color:var(--danger)!important;}
+    .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;}
+
+    button{
+      background:#111827;
+      color:var(--text);
+      border:1px solid var(--line2);
+      padding:8px 10px;
+      border-radius:10px;
+      cursor:pointer;
+      white-space:nowrap;
+    }
+    button:hover{border-color:#6b7280;}
+    input,select,textarea{
+      background:var(--panel);
+      color:var(--text);
+      border:1px solid var(--line2);
+      border-radius:10px;
+      padding:8px;
+    }
+
+    /* ===== layout: left editor / right json ===== */
+    .app{
+      display:grid;
+      grid-template-columns: 1.25fr .75fr;
+      gap:12px;
+      align-items:start;
+    }
+    @media (max-width: 980px){
+      .app{ grid-template-columns: 1fr; }
+    }
+    .card{
+      background: rgba(15,23,42,.55);
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:16px;
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+    .cardHead{
+      padding:12px;
+      border-bottom:1px solid rgba(255,255,255,.08);
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      align-items:center;
+    }
+    .cardBody{ padding:12px; }
+
+    /* sticky add form */
+    .addBox{
+      position: sticky;
+      top: 12px;
+      z-index: 5;
+      background: rgba(11,16,32,.92);
+      backdrop-filter: blur(8px);
+      border:1px solid rgba(255,255,255,.10);
+      border-radius:14px;
+      padding:10px;
+      margin-bottom:10px;
+    }
+    .addGrid{
+      display:grid;
+      grid-template-columns: 110px 1fr 110px 1fr 140px 120px;
+      gap:8px;
+      align-items:center;
+    }
+    @media (max-width: 980px){
+      .addGrid{ grid-template-columns: 110px 1fr 110px 1fr; }
+      .addGrid .span2{ grid-column: span 2; }
+    }
+    .addActions{
+      display:flex;
+      gap:8px;
+      align-items:center;
+      margin-top:8px;
+      flex-wrap:wrap;
+    }
+    .badge{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      min-width: 20px;
+      height: 20px;
+      padding: 0 8px;
+      border-radius: 999px;
+      font-weight:900;
+      font-size:12px;
+      border:1px solid rgba(255,255,255,.16);
+      background: rgba(2,6,23,.35);
+      color: rgba(226,232,240,.95);
+    }
+
+    /* table / rows */
+    .tableWrap{
+      max-height: calc(100vh - 220px);
+      overflow:auto;
+      border-radius: 14px;
+      border:1px solid rgba(255,255,255,.08);
+      background: rgba(2,6,23,.22);
+    }
+    table{width:100%; border-collapse:collapse;}
+    th,td{border-bottom:1px solid var(--line); padding:8px; vertical-align:top;}
+    th{font-size:12px; color:var(--muted); text-align:left; position: sticky; top: 0; background: rgba(11,16,32,.96); z-index:2;}
+    .ops{display:flex; gap:6px; align-items:center;}
+    .handle{
+      cursor: grab;
+      user-select:none;
+      padding:6px 8px;
+      border-radius:10px;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(2,6,23,.30);
+    }
+    tr.dragging{opacity:.4;}
+    tr.dropTarget{outline:2px solid rgba(52,211,153,.55); outline-offset:-2px;}
+
+    /* right json */
+    .jsonArea{
+      height: calc(100vh - 120px);
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+    #jsonOut{
+      width:100%;
+      flex:1;
+      resize:none;
+    }
+    .rightActions{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+  </style>
+</head>
+<body>
+  <h1>🗣 TTS 辞書エディタ（tts-dict.json）</h1>
+  <div class="mini">形式：text / word / regex（regex は from を正規表現、flags 例: g, gi）</div>
+
+  <div class="app">
+
+    <!-- ===== LEFT: editor ===== -->
+    <div class="card">
+      <div class="cardHead">
+        <button id="loadBtn">📥 dict/tts-dict.json を読み込む</button>
+        <button id="validateBtn">✅ 検証</button>
+        <button id="downloadBtn">⬇️ ダウンロード</button>
+        <span id="msg" class="mini"></span>
+      </div>
+
+      <div class="cardBody">
+
+        <!-- sticky add form -->
+        <div class="addBox">
+          <div class="mini" style="margin-bottom:6px;">
+            <span class="badge">追加</span> ここは常に上に固定（スクロール不要）
+          </div>
+
+          <div class="addGrid">
+            <select id="addType" title="type">
+              <option value="text">text</option>
+              <option value="word">word</option>
+              <option value="regex">regex</option>
+            </select>
+
+            <input id="addFrom" placeholder="from（例：血流）" />
+
+            <input id="addFlags" placeholder="flags（regexのみ）" value="g" />
+
+            <input id="addTo" placeholder="to（例：けつりゅう）" />
+
+            <select id="addPos" class="span2" title="挿入位置">
+              <option value="top">上（先頭）</option>
+              <option value="mid" selected>中（中央）</option>
+              <option value="bottom">下（末尾）</option>
+            </select>
+
+            <button id="addDo" class="span2">➕ 追加する</button>
+          </div>
+
+          <div class="addActions mini">
+            <span>並べ替え：各行の <span class="badge">⠿</span> をドラッグ</span>
+          </div>
+        </div>
+
+        <div class="tableWrap">
+          <table>
+            <thead>
+              <tr>
+                <th style="width:70px;">drag</th>
+                <th style="width:90px;">type</th>
+                <th>from</th>
+                <th style="width:90px;">flags</th>
+                <th>to</th>
+                <th style="width:120px;">操作</th>
+              </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ===== RIGHT: json ===== -->
+    <div class="card">
+      <div class="cardHead">
+        <div style="font-weight:900;">プレビューJSON</div>
+        <div style="flex:1"></div>
+        <button id="copyBtn">📋 JSONをコピー</button>
+      </div>
+      <div class="cardBody">
+        <div class="jsonArea">
+          <textarea id="jsonOut" class="mono" spellcheck="false"></textarea>
+          <div class="rightActions mini">
+            <span>右のJSONは常に最新</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div>
 
-  <table>
-    <thead>
-      <tr>
-        <th style="width:90px;">type</th>
-        <th>from</th>
-        <th style="width:90px;">flags</th>
-        <th>to</th>
-        <th style="width:120px;">操作</th>
-      </tr>
-    </thead>
-    <tbody id="tbody"></tbody>
-  </table>
+<script>
+  const tbody = document.getElementById("tbody");
+  const jsonOut = document.getElementById("jsonOut");
+  const msg = document.getElementById("msg");
 
-  <div class="row">
-    <div id="msg" class="mini"></div>
-  </div>
+  const addType = document.getElementById("addType");
+  const addFrom = document.getElementById("addFrom");
+  const addFlags = document.getElementById("addFlags");
+  const addTo = document.getElementById("addTo");
+  const addPos = document.getElementById("addPos");
+  const addDo = document.getElementById("addDo");
 
-  <h2 style="font-size:14px;margin-top:18px;">プレビューJSON</h2>
-  <textarea id="jsonOut" class="mono" rows="10" style="width:100%;"></textarea>
+  let rows = [];
+  let dragFromIndex = null;
+
+  function defaultRow(){
+    return { type:"text", from:"", flags:"g", to:"" };
+  }
+
+  function render(){
+    tbody.innerHTML = "";
+    rows.forEach((r, i) => {
+      const tr = document.createElement("tr");
+      tr.dataset.index = String(i);
+      tr.draggable = true;
+
+      tr.addEventListener("dragstart", (e)=>{
+        dragFromIndex = i;
+        tr.classList.add("dragging");
+        e.dataTransfer.effectAllowed = "move";
+      });
+      tr.addEventListener("dragend", ()=>{
+        dragFromIndex = null;
+        tr.classList.remove("dragging");
+        [...tbody.querySelectorAll("tr")].forEach(x=>x.classList.remove("dropTarget"));
+      });
+      tr.addEventListener("dragover", (e)=>{
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "move";
+        tr.classList.add("dropTarget");
+      });
+      tr.addEventListener("dragleave", ()=>{
+        tr.classList.remove("dropTarget");
+      });
+      tr.addEventListener("drop", (e)=>{
+        e.preventDefault();
+        tr.classList.remove("dropTarget");
+        const toIndex = Number(tr.dataset.index);
+        if (dragFromIndex === null || dragFromIndex === toIndex) return;
+        moveRow(dragFromIndex, toIndex);
+      });
+
+      const tdDrag = document.createElement("td");
+      const handle = document.createElement("span");
+      handle.className = "handle";
+      handle.textContent = "⠿";
+      tdDrag.appendChild(handle);
+
+      const tdType = document.createElement("td");
+      const sel = document.createElement("select");
+      ["text","word","regex"].forEach(t=>{
+        const o=document.createElement("option"); o.value=t; o.textContent=t;
+        if (r.type===t) o.selected=true;
+        sel.appendChild(o);
+      });
+      sel.onchange = ()=>{ r.type = sel.value; syncJSON(); };
+      tdType.appendChild(sel);
+
+      const tdFrom = document.createElement("td");
+      const inpFrom = document.createElement("input");
+      inpFrom.style.width="100%";
+      inpFrom.value = r.from || "";
+      inpFrom.oninput = ()=>{ r.from = inpFrom.value; syncJSON(); };
+      tdFrom.appendChild(inpFrom);
+
+      const tdFlags = document.createElement("td");
+      const inpFlags = document.createElement("input");
+      inpFlags.style.width="70px";
+      inpFlags.value = r.flags || "";
+      inpFlags.placeholder = "g/gi";
+      inpFlags.oninput = ()=>{ r.flags = inpFlags.value; syncJSON(); };
+      tdFlags.appendChild(inpFlags);
+
+      const tdTo = document.createElement("td");
+      const inpTo = document.createElement("input");
+      inpTo.style.width="100%";
+      inpTo.value = r.to || "";
+      inpTo.oninput = ()=>{ r.to = inpTo.value; syncJSON(); };
+      tdTo.appendChild(inpTo);
+
+      const tdOps = document.createElement("td");
+      const del = document.createElement("button");
+      del.textContent="🗑";
+      del.onclick=()=>{ rows.splice(i,1); render(); syncJSON(); };
+      tdOps.appendChild(del);
+
+      tr.append(tdDrag, tdType, tdFrom, tdFlags, tdTo, tdOps);
+      tbody.appendChild(tr);
+    });
+
+    syncJSON();
+  }
+
+  function moveRow(from, to){
+    const item = rows.splice(from, 1)[0];
+    rows.splice(to, 0, item);
+    render();
+    syncJSON();
+  }
+
+  function compileCheck(entry){
+    const t = entry.type;
+    const from = entry.from ?? "";
+    if (!from) return { ok:false, reason:"from が空です" };
+    if (t === "text") return { ok:true };
+    if (t === "word") {
+      try { new RegExp("\\b" + escapeReg(from) + "\\b", "g"); return { ok:true }; }
+      catch(e){ return { ok:false, reason:e.message }; }
+    }
+    if (t === "regex") {
+      try { new RegExp(from, entry.flags || "g"); return { ok:true }; }
+      catch(e){ return { ok:false, reason:e.message }; }
+    }
+    return { ok:false, reason:"type不正" };
+  }
+
+  function escapeReg(s){
+    return String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  }
+
+  function syncJSON(){
+    const out = rows.map(r => {
+      const e = { type:r.type, from:r.from||"", to:r.to||"" };
+      if (r.type === "regex") e.flags = (r.flags || "g");
+      return e;
+    });
+    jsonOut.value = JSON.stringify(out, null, 2);
+  }
+
+  function validate(){
+    const list = JSON.parse(jsonOut.value || "[]");
+    let ok = true;
+    let bad = 0;
+    for (const e of list){
+      const r = compileCheck(e);
+      if (!r.ok){ ok=false; bad++; }
+    }
+    msg.textContent = ok ? `OK ✅（${list.length}件）` : `NG ⚠️（${bad}件エラー）`;
+    msg.className = ok ? "mini ok" : "mini warn";
+  }
+
+  async function load(){
+    msg.textContent = "読み込み中…";
+    msg.className = "mini";
+    try{
+      const res = await fetch("./dict/tts-dict.json?v=" + Date.now());
+      if (!res.ok) throw new Error("fetch failed: " + res.status);
+      const data = await res.json();
+      rows = (Array.isArray(data) ? data : []).map(e => ({
+        type: e.type || "text",
+        from: e.from || "",
+        flags: e.flags || "g",
+        to: e.to || ""
+      }));
+      render();
+      msg.textContent = `読み込み成功 ✅（${rows.length}件）`;
+      msg.className = "mini ok";
+    }catch(e){
+      console.warn(e);
+      msg.textContent = "読み込み失敗（dict/tts-dict.json が無い or JSON壊れ）";
+      msg.className = "mini warn";
+    }
+  }
+
+  function download(){
+    const blob = new Blob([jsonOut.value], {type:"application/json"});
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "tts-dict.json";
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
+  async function copy(){
+    try{
+      await navigator.clipboard.writeText(jsonOut.value);
+      msg.textContent = "コピーしました ✅";
+      msg.className = "mini ok";
+    }catch(e){
+      msg.textContent = "コピー失敗（ブラウザ制限）";
+      msg.className = "mini warn";
+    }
+  }
+
+  function addRowAt(pos){
+    const type = addType.value;
+    const from = (addFrom.value || "").trim();
+    const to = (addTo.value || "").trim();
+    const flags = (addFlags.value || "g").trim();
+
+    if (!from || !to){
+      msg.textContent = "from / to を入力してください";
+      msg.className = "mini warn";
+      return;
+    }
+
+    const entry = { type, from, to, flags };
+
+    // flagsの扱い（text/wordは不要だが保持しても害はない。書き出し時に消す）
+    let idx = rows.length;
+    if (pos === "top") idx = 0;
+    if (pos === "mid") idx = Math.floor(rows.length / 2);
+    if (pos === "bottom") idx = rows.length;
+
+    rows.splice(idx, 0, entry);
+    render();
+    syncJSON();
+
+    // 入力欄クリア＆次の入力に即移れる
+    addFrom.value = "";
+    addTo.value = "";
+    addFrom.focus();
+
+    msg.textContent = `追加しました ✅（${rows.length}件）`;
+    msg.className = "mini ok";
+  }
+
+  document.getElementById("loadBtn").onclick = load;
+  document.getElementById("validateBtn").onclick = validate;
+  document.getElementById("downloadBtn").onclick = download;
+  document.getElementById("copyBtn").onclick = copy;
+
+  addDo.onclick = ()=> addRowAt(addPos.value);
+  addFrom.addEventListener("keydown", (e)=>{ if(e.key==="Enter"){ addRowAt(addPos.value); } });
+  addTo.addEventListener("keydown", (e)=>{ if(e.key==="Enter"){ addRowAt(addPos.value); } });
+
+  // 初期1行
+  rows = [defaultRow()];
+  render();
+</script>
+</body>
+</html>
 
 <script>
   const tbody = document.getElementById("tbody");
