@@ -1207,36 +1207,57 @@
       if (isQR) return;
       if (currentView !== "quiz") return;
       if (!(currentMode === "ox" || currentMode === "five")) return;
-
+    
       if (!latestQid) return;
       const key = `${latestQid}::closed`;
       if (ttsClosedKey === key) return;
       ttsClosedKey = key;
-
+    
       const ck = getCorrectKeyForSpeak();
       if (!ck) return;
-
+    
       // 解説テキスト（あなたの表示行を読む：無ければ空でOK）
       let ex = "";
       try{
         ex = (explanationLine?.textContent || "").trim();
         ex = ex.replace(/^解説[:：]\s*/, "");
       }catch(_){}
-
+    
+      // ★追加：五択のとき、正解の選択肢本文を拾う（表示DOMから＝ズレ防止）
+      let choiceText = "";
+      try{
+        if (currentMode === "five" && /^[A-E]$/.test(String(ck))){
+          const rows = Array.from(cEl?.querySelectorAll?.(".choice") || []);
+          for (const row of rows){
+            const badge = (row.querySelector(".badge")?.textContent || "").trim().toUpperCase();
+            const text  = (row.children?.[1]?.textContent || "").trim(); // 2つ目が本文（既存設計）
+            if (badge === String(ck) && text){
+              choiceText = text;
+              break;
+            }
+          }
+        }
+      }catch(_){}
+    
       // 混ざり防止：必ず停止→runIdで守る
       stopTTS();
       const myRun = ttsRunId;
       await waitMs(2000);
       if (myRun !== ttsRunId) return;
-
-      await speakOnce(`正解は、${speakLabelJa(ck)}。`, myRun);
+    
+      // ★変更：正解記号のあとに、該当する選択肢文も読む
+      if (choiceText){
+        await speakOnce(`正解は、${speakLabelJa(ck)}。${choiceText}。`, myRun);
+      }else{
+        await speakOnce(`正解は、${speakLabelJa(ck)}。`, myRun);
+      }
       if (myRun !== ttsRunId) return;
-
+    
       if (ex){
         await speakOnce(`解説。${ex}`, myRun);
       }
-    }    
-
+    }
+  
     // 今の問題から「読み上げ用セグメント」を作る
     function buildTtsSegments(isOpen){
       // 画面表示（DOM）から取る：表示＝読み上げを一致させる
