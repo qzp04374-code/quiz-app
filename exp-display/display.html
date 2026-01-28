@@ -24,7 +24,7 @@
 
       --ok:#22c55e;
        /* display側で調整する表示変数（px相当） */
-      --qMax: 64;     /* 問題文の最大 */
+      --qMax: 70;     /* 問題文の最大 */
       --cMin: 26;     /* 選択肢文字 最小 */
       --cMax: 46;     /* 選択肢文字 最大 */
 }
@@ -179,6 +179,12 @@
     /* 左（授業モード用） */
     #leftPanel{ display:flex; flex-direction:column; gap:10px; min-height:0; }
     #leftScroll{ min-height:0; overflow:hidden; }
+
+    /* ✅ 書き問題(textmode)は、入り切らない分をスクロールで読む */
+    body.textmode #leftScroll{
+      overflow:auto;
+      padding-right:8px;
+    }
     /* 解答終了（closed）時は、左側をスクロール可能にして選択肢が切れないようにする */
     body.closed #leftScroll{
       overflow:auto;
@@ -1533,6 +1539,18 @@ ttsBtn.onclick = async () => {
     function requestFitQuestion() {
       cancelAnimationFrame(_fitReq);
       _fitReq = requestAnimationFrame(() => {
+    
+        const isTextMode =
+          (typeof currentMode !== "undefined" && currentMode === "text") ||
+          document.body.classList.contains("textmode");
+    
+        // ✅ 書き問題(textmode)は「自動縮小」をしない（qMaxが素直に効くように）
+        if (isTextMode) {
+          if (typeof qEl !== "undefined" && qEl) qEl.style.fontSize = ""; // 前回の縮小残りを消す
+          return;
+        }
+    
+        // quiz（選択肢あり）のときだけ従来通り
         fitQuestionToLeftScroll({ minPx: 30 });
     
         // ✅ 1フレーム後に choices 高さを計算（DOM反映後でズレない）
