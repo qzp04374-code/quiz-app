@@ -1,6 +1,66 @@
 [
   {
     "type": "text",
+    "from": "脛骨",
+    "to": "けいこつ"
+  },
+  {
+    "type": "text",
+    "from": "顎先",
+    "to": "がくせん"
+  },
+  {
+    "type": "text",
+    "from": "耳介",
+    "to": "じかい"
+  },
+  {
+    "type": "text",
+    "from": "鼻尖",
+    "to": "びせん"
+  },
+  {
+    "type": "text",
+    "from": "足背",
+    "to": "そくはい"
+  },
+  {
+    "type": "text",
+    "from": "手掌",
+    "to": "しゅしょう"
+  },
+  {
+    "type": "text",
+    "from": "前胸",
+    "to": "ぜんきょう"
+  },
+  {
+    "type": "text",
+    "from": "背臥位",
+    "to": "はいがい"
+  },
+  {
+    "type": "text",
+    "from": "腹臥位",
+    "to": "ふくがい"
+  },
+  {
+    "type": "text",
+    "from": "仰臥位",
+    "to": "ぎょうがい"
+  },
+  {
+    "type": "text",
+    "from": "側臥位",
+    "to": "そくがい"
+  },
+  {
+    "type": "text",
+    "from": "体圧",
+    "to": "たいあつ"
+  },
+  {
+    "type": "text",
     "from": "褥瘡",
     "to": "じょくそう"
   },
