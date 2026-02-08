@@ -40,7 +40,7 @@
       background:var(--panel);
       border-radius:24px;
       padding:26px 22px 30px;
-      max-width:1180px;
+      max-width:1500px;
       width:100%;
       box-shadow:0 18px 60px rgba(0,0,0,.65);
       border:1px solid rgba(255,255,255,.04);
@@ -103,42 +103,63 @@
     }
 
     .btnGroup{
-      padding: 14px 12px 12px;
-      border-radius: 22px;
-      background: rgba(2,6,23,.55);
-      border:1px solid rgba(255,255,255,.08);
+      padding: 10px 10px 10px !important;
+      border-radius: 18px !important;
+      background: rgba(255,255,255,.06) !important;
+      border: 1px solid rgba(255,255,255,.10) !important;
+      backdrop-filter: blur(12px);
     }
+
     .btnGroupTitle{
       display:flex;
       justify-content:space-between;
       align-items:center;
       color: var(--muted);
       font-weight: 900;
-      letter-spacing: .10em;
-      font-size: 13px;
-      margin: 0 0 10px 2px;
+      letter-spacing: .08em !important;
+      font-size: 11px !important;
+      margin: 0 0 8px 2px !important;
+      opacity: .85;
     }
+
     .miniState{ opacity:.85; font-weight:900; font-size:12px; }
 
-    .btnRow{
-      display:grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap:10px;
-      margin-bottom:10px;
+    .btnRow, .pollGrid{
+      display: grid !important;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)) !important;
+      gap: 8px !important;
+      margin-bottom: 8px !important;
     }
     .btnRow:last-child{ margin-bottom:0; }
 
-    .dangerWide{ grid-column: 1 / -1; }
+    .controlGroups button{
+      width: 100% !important;
+      max-width: 180px;
+      justify-self: center;
+      min-height: 52px !important;
+      padding: 10px 10px !important;
+
+      border-radius: 18px !important;
+      border: 1px solid rgba(255,255,255,.12) !important;
+      background: rgba(255,255,255,.08) !important;
+
+      font-size: 14px !important;
+      font-weight: 900 !important;
+      letter-spacing: .02em !important;
+
+      box-shadow:
+        0 12px 26px rgba(0,0,0,.28),
+        inset 0 1px 0 rgba(255,255,255,.10);
+      transition: transform .08s ease, filter .12s ease;
+    }
+
+    .controlGroups button:hover{ filter: brightness(1.06); }
+    .controlGroups button:active{ transform: scale(.985); filter: brightness(.98); }
+    .controlGroups button:disabled{ opacity:.45; box-shadow:none; transform:none; }
+
+    .dangerWide{ grid-column: auto !important; }
 
     /* 投票・管理タイル */
-    .pollGrid{
-      display:grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap:10px;
-    }
-    @media (min-width: 980px){
-      .pollGrid{ grid-template-columns: repeat(3, minmax(0, 1fr)); }
-    }
     .tile{
       min-height:56px;
       border-radius:18px;
@@ -146,29 +167,135 @@
     }
     .tile-ox{ background: linear-gradient(135deg, var(--color-o), #06b6d4); }
     .tile-five{ background: linear-gradient(135deg, var(--color-d), #a855f7); }
-    .tile-text{ background: linear-gradient(135deg, var(--color-c), #f59e0b); color:#fff; }
+    .tile-text{ background: linear-gradient(135deg, var(--color-c), #f59e0b); color:#fff !important; }
     .tile-admin{ background: rgba(100,116,139,.18); }
     .tile-admin2{ background: linear-gradient(135deg, #22c55e, #16a34a); }
 
     /* 主要ボタン色 */
-    #prevQuestionBtn { background: var(--gray); }
-    #nextQuestionBtn { background: linear-gradient(135deg, var(--color-o), #06b6d4); }
-    #stopBtn { background: linear-gradient(135deg, #f59e0b, #fb7185); }
-    #endClassBtn { background: linear-gradient(135deg,var(--danger),var(--danger2)); }
-    #qrBtn { background: var(--info); }
-    #projectionBtn { background: linear-gradient(135deg,var(--indigo),#a855f7); }
-    /* ★追加：結果公開方式トグル */
-    #revealBtn{
-      background: rgba(142,142,147,0.28) !important;  /* iOS Gray */
-      border-color: rgba(142,142,147,0.35) !important;
+    #prevQuestionBtn{
+      background: rgba(142,142,147,.28) !important;
+      border-color: rgba(142,142,147,.35) !important;
     }
-    #revealBtn.on{
-      background: rgba(255,159,10,0.92) !important;  /* iOS Orange */
-      border-color: rgba(255,159,10,0.55) !important;
+    #nextQuestionBtn{
+      background: rgba(10,132,255,.92) !important;
+      border-color: rgba(10,132,255,.55) !important;
+    }
+    #stopBtn{
+      background: rgba(255,159,10,.92) !important;
+      border-color: rgba(255,159,10,.55) !important;
+    }
+    #endClassBtn{
+      background: rgba(255,69,58,.92) !important;
+      border-color: rgba(255,69,58,.55) !important;
+    }
+    #qrBtn, #projectionBtn{
+      background: rgba(191,90,242,.90) !important;
+      border-color: rgba(191,90,242,.55) !important;
+    }
+    #t20Btn,#t30Btn,#t60Btn,#tOffBtn{
+      background: rgba(48,209,88,.72) !important;
+      border-color: rgba(48,209,88,.45) !important;
+    }
+    #importBtn{
+      background: rgba(99,102,241,.35) !important;
+      border-color: rgba(99,102,241,.40) !important;
+    }
+    #dictBtn{
+      background: rgba(50,215,75,.80) !important;
+      border-color: rgba(50,215,75,.55) !important;
     }
 
+    /* ★追加：分岐ボタン（iOSっぽい青緑） */
+    #branchSetBtn{
+      background: rgba(0,199,190,.85) !important;
+      border-color: rgba(0,199,190,.55) !important;
+    }
+
+    /* ★追加：結果公開方式トグル */
+    #revealBtn{
+      background: rgba(142,142,147,0.28) !important;
+      border-color: rgba(142,142,147,0.35) !important;
+      position: relative !important;
+      padding-left: 54px !important;
+      text-align:left !important;
+    }
+    #revealBtn.on{
+      background: rgba(255,159,10,0.92) !important;
+      border-color: rgba(255,159,10,0.55) !important;
+    }
+    #revealBtn::before{
+      content:"";
+      position:absolute;
+      left:14px;
+      top:50%;
+      transform:translateY(-50%);
+      width:34px;
+      height:20px;
+      border-radius:999px;
+      background: rgba(255,255,255,0.22);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.18);
+    }
+    #revealBtn::after{
+      content:"";
+      position:absolute;
+      left:16px;
+      top:50%;
+      transform:translateY(-50%);
+      width:16px;
+      height:16px;
+      border-radius:999px;
+      background:#fff;
+      box-shadow:0 6px 14px rgba(0,0,0,0.22);
+      transition:left 120ms ease;
+    }
+    #revealBtn.on::after{ left:30px; }
+
+    .pill{
+      padding:8px 12px;
+      border-radius:999px;
+      background: rgba(255,255,255,0.12);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.10);
+      font-weight:900;
+    }
+    .textList{
+      max-height: 260px;
+      overflow:auto;
+      padding:10px;
+      border-radius:14px;
+      background: rgba(0,0,0,0.18);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
+    }
+    .textItem{
+      padding:10px 12px;
+      border-radius:12px;
+      background: rgba(255,255,255,0.08);
+      margin-bottom:10px;
+      line-height:1.35;
+      word-break: break-word;
+    }
+    .textMeta{ font-size:12px; opacity:.75; margin-top:6px; font-weight:900; }
+
+    .roomMeta{
+      padding:8px 12px;
+      border-radius:999px;
+      background: rgba(255,255,255,0.10);
+      border: 1px solid rgba(255,255,255,0.10);
+      font-size:12px;
+      white-space: nowrap;
+    }
+
+    .timerRow{
+      display:flex !important;
+      justify-content:center;
+      align-items:center;
+      gap:10px;
+    }
     #t20Btn,#t30Btn,#t60Btn,#tOffBtn{
-      background: linear-gradient(135deg, rgba(6,182,212,.95), rgba(14,116,144,.95));
+      width:56px !important;
+      height:56px !important;
+      padding:0 !important;
+      border-radius:999px !important;
+      max-width:none !important;
     }
 
     /* ===== プレビュー（2枚カード） ===== */
@@ -229,237 +356,25 @@
       border-radius:999px;
       backdrop-filter: blur(8px);
     }
-    /* =========================
-       iOS Control Center-ish (compact tiles)
-       追記用：既存CSSを上書きする
-       ========================= */
-    
-    /* グループ：詰める（余白を削る） */
-    .btnGroup{
-      padding: 10px 10px 10px !important;
-      border-radius: 18px !important;
-      background: rgba(255,255,255,.06) !important;
-      border: 1px solid rgba(255,255,255,.10) !important;
-      backdrop-filter: blur(12px);
-    }
-    
-    .btnGroupTitle{
-      font-size: 11px !important;
-      letter-spacing: .08em !important;
-      margin: 0 0 8px 2px !important;
-      opacity: .85;
-    }
-    
-    /* 2×2のまま、グループ間も詰める */
-    .controlGroups{
-      gap: 10px !important;
-      margin: 10px 0 12px !important;
-    }
-    
-    /* 行：固定2列だと横長化しやすいので “自動タイル列” にする
-       画面が広いときは 3〜4個並ぶ、狭いときは 2個並ぶ */
-    .btnRow, .pollGrid{
-      display: grid !important;
-      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)) !important;
-      gap: 8px !important;
-      margin-bottom: 8px !important;
-    }
-    
-    /* タイル：サイズ統一（横長を防ぐ） */
-    .controlGroups button{
-      width: 100% !important;
-      max-width: 180px;              /* 横長すぎ防止：ここが効く */
-      justify-self: center;          /* 行の中で中央寄せ */
-      min-height: 52px !important;   /* iOSの押しやすさ下限 */
-      padding: 10px 10px !important;
-    
-      border-radius: 18px !important;
-      border: 1px solid rgba(255,255,255,.12) !important;
-      background: rgba(255,255,255,.08) !important;
-    
-      font-size: 14px !important;
-      font-weight: 900 !important;
-      letter-spacing: .02em !important;
-    
-      box-shadow:
-        0 12px 26px rgba(0,0,0,.28),
-        inset 0 1px 0 rgba(255,255,255,.10);
-      transition: transform .08s ease, filter .12s ease;
-    }
-    
-    .controlGroups button:hover{ filter: brightness(1.06); }
-    .controlGroups button:active{ transform: scale(.985); filter: brightness(.98); }
-    .controlGroups button:disabled{ opacity:.45; box-shadow:none; transform:none; }
-    
-    /* “横いっぱい強調”はやめてサイズ統一したいので無効化（※必要なら戻せる） */
-    .dangerWide{
-      grid-column: auto !important;
-    }
-    
-    /* ---- 色＝意味（Control Center風） ---- */
-    #nextQuestionBtn{
-      background: rgba(10,132,255,.92) !important;            /* iOS Blue */
-      border-color: rgba(10,132,255,.55) !important;
-    }
-    #prevQuestionBtn{
-      background: rgba(142,142,147,.28) !important;           /* iOS Gray */
-      border-color: rgba(142,142,147,.35) !important;
-    }
-    #stopBtn{
-      background: rgba(255,159,10,.92) !important;            /* iOS Orange */
-      border-color: rgba(255,159,10,.55) !important;
-    }
-    #endClassBtn{
-      background: rgba(255,69,58,.92) !important;             /* iOS Red */
-      border-color: rgba(255,69,58,.55) !important;
-    }
-    #qrBtn, #projectionBtn{
-      background: rgba(191,90,242,.90) !important;            /* iOS Purple */
-      border-color: rgba(191,90,242,.55) !important;
-    }
-    #t20Btn,#t30Btn,#t60Btn,#tOffBtn{
-      background: rgba(48,209,88,.72) !important;             /* iOS Green-ish */
-      border-color: rgba(48,209,88,.45) !important;
-    }
-    #importBtn{
-      background: rgba(99,102,241,.35) !important;            /* Indigo */
-      border-color: rgba(99,102,241,.40) !important;
-    }
-    #dictBtn{
-      background: rgba(50,215,75,.80) !important;             /* iOS Green */
-      border-color: rgba(50,215,75,.55) !important;
-    }
-    
-    /* 投票3つは“タイル感”が出るよう少し高さを上げてもOK（任意） */
-    #quick2Btn,#quick5Btn,#quickTextBtn{
-      min-height: 56px !important;
-    }
 
-    /* ===== Fix: obvious CSS typos ===== */
-    .tile-text{ color:#fff !important; } /* color:##fff; を上書き */
-    
-    /* revealBtn の rgba の alpha が不正だったので上書き（0.xx に） */
-    #revealBtn{
-      background: rgba(142,142,147,0.28) !important;
-      border-color: rgba(142,142,147,0.35) !important;
-    }
-    #revealBtn.on{
-      background: rgba(255,159,10,0.92) !important;
-      border-color: rgba(255,159,10,0.55) !important;
-    }
-    
-    /* ===== ToDo1: widen card ===== */
-    .card{ max-width:1500px !important; }
-    
-    /* ===== ToDo1: ①〜④ を横並び（広い画面のみ） ===== */
+    /* ===== 広い画面：①〜④ を横並び ===== */
     @media (min-width: 1200px){
       .controlGroups{
         grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
       }
     }
-    
-    /* ===== ToDo1: “単独ボタン行” を 2/3 幅に（既存の width:100% !important を打ち消す） ===== */
-    .btnRow > button:only-child{
-      width:66% !important;
-      max-width:none !important;
-      justify-self:center !important;
-    }
-    
-    /* ===== ToDo1: timer buttons round ===== */
-    #t20Btn,#t30Btn,#t60Btn,#tOffBtn{
-      width:56px !important;
-      height:56px !important;
-      padding:0 !important;
-      border-radius:999px !important;
-      max-width:none !important;
-    }
-    
-    /* ===== ToDo1: reveal switch look (knob) ===== */
-    #revealBtn{
-      position: relative !important;
-      padding-left: 54px !important;
-      text-align:left !important;
-    }
-    #revealBtn::before{
-      content:"";
-      position:absolute;
-      left:14px;
-      top:50%;
-      transform:translateY(-50%);
-      width:34px;
-      height:20px;
-      border-radius:999px;
-      background: rgba(255,255,255,0.22);
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.18);
-    }
-    #revealBtn::after{
-      content:"";
-      position:absolute;
-      left:16px;
-      top:50%;
-      transform:translateY(-50%);
-      width:16px;
-      height:16px;
-      border-radius:999px;
-      background:#fff;
-      box-shadow:0 6px 14px rgba(0,0,0,0.22);
-      transition:left 120ms ease;
-    }
-    #revealBtn.on::after{ left:30px; }
-    .pill{
-      padding:8px 12px;
-      border-radius:999px;
-      background: rgba(255,255,255,0.12);
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.10);
-      font-weight:900;
-    }
-    .textList{
-      max-height: 260px;
-      overflow:auto;
-      padding:10px;
-      border-radius:14px;
-      background: rgba(0,0,0,0.18);
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
-    }
-    .textItem{
-      padding:10px 12px;
-      border-radius:12px;
-      background: rgba(255,255,255,0.08);
-      margin-bottom:10px;
-      line-height:1.35;
-      word-break: break-word;
-    }
-    .textMeta{ font-size:12px; opacity:.75; margin-top:6px; font-weight:900; }
 
-    /* ルーム右の状態表示（roomMeta） */
-    .roomMeta{
-      padding:8px 12px;
-      border-radius:999px;
-      background: rgba(255,255,255,0.10);
-      border: 1px solid rgba(255,255,255,0.10);
-      font-size:12px;
-      white-space: nowrap;
-    }
-    
-    /* タイマーを横一列（4つ）に */
-    .timerRow{
-      display:flex !important;
-      justify-content:center;
-      align-items:center;
-      gap:10px;
-    }
     /* Game buttons */
     #gameDisplayBtn{ background: linear-gradient(135deg, #22c55e, #16a34a) !important; }
     #gameStartBtn{ background: linear-gradient(135deg, #0ea5e9, #2563eb) !important; }
     #gameNextRoundBtn{ background: linear-gradient(135deg, #a855f7, #7c3aed) !important; }
     #gameCloseBtn{ background: rgba(255,159,10,.92) !important; border-color: rgba(255,159,10,.55) !important; }
     #gameEndBtn{ background: rgba(255,69,58,.92) !important; border-color: rgba(255,69,58,.55) !important; }
-
   </style>
 </head>
 
 <body>
-  <div id="buildTag">build: 2026-01-11 / teacher-standby-v2-preview2</div>
+  <div id="buildTag">build: 2026-02-08 / teacher-branch-v1</div>
 
   <div class="card">
     <h2>教員画面</h2>
@@ -470,8 +385,6 @@
       <span id="roomMeta" class="miniState roomMeta">—</span>
     </div>
 
-
-    <!-- 操作パネル（2×2） -->
     <div class="controlGroups">
       <!-- ① 出題・回収 -->
       <section class="btnGroup">
@@ -481,14 +394,14 @@
           <button id="nextQuestionBtn">次の問題 ▶</button>
         </div>
         <div class="btnRow">
-          <button id="stopBtn" class="dangerWide">解答終了</button>
+          <button id="stopBtn">解答終了</button>
+          <button id="branchSetBtn">分岐セット</button>
         </div>
       </section>
 
       <!-- ② タイマー -->
       <section class="btnGroup">
         <div class="btnGroupTitle">② タイマー</div>
-      
         <div class="btnRow timerRow">
           <button id="t20Btn">⏱20</button>
           <button id="t30Btn">⏱30</button>
@@ -508,24 +421,20 @@
           <button id="revealBtn">結果：即時公開</button>
         </div>
         <div class="btnRow">
-          <button id="endClassBtn" class="dangerWide">授業終了</button>
+          <button id="endClassBtn">授業終了</button>
         </div>
       </section>
 
       <!-- ④ 投票・管理 -->
       <section class="btnGroup">
-        <div class="btnGroupTitle">
-          ④ 投票・管理
-        </div>
+        <div class="btnGroupTitle">④ 投票・管理</div>
         <div class="pollGrid">
           <button id="quick2Btn" class="tile tile-ox">投票 ○✕</button>
           <button id="quick5Btn" class="tile tile-five">投票 5択</button>
           <button id="quickTextBtn" class="tile tile-text">投票 TEXT</button>
           <button id="importBtn" class="tile tile-admin">CSV投入</button>
           <button id="dictBtn" class="tile tile-admin2">読み方（辞書）</button>
-          <!-- ★追加：母数を今回の投票人数で固定 -->
           <button id="setExpectedFromVotesBtn" class="tile tile-admin">母数=投票人数</button>
-          <!-- ===== Game controls ===== -->
           <button id="gameDisplayBtn" class="tile tile-admin2">ゲーム表示</button>
           <button id="gameStartBtn" class="tile tile-admin2">ゲーム開始</button>
           <button id="gameNextRoundBtn" class="tile tile-admin2">次ラウンド</button>
@@ -540,7 +449,6 @@
       <h3>出題プレビュー（現在＋次の1問）</h3>
 
       <div class="pvGrid">
-        <!-- 現在 -->
         <section class="pvCard">
           <div class="pvHead">
             <div class="pvBadge">現在</div>
@@ -552,7 +460,6 @@
           <div id="pvExplanation" class="pv-explanation"></div>
         </section>
 
-        <!-- 次 -->
         <section class="pvCard">
           <div class="pvHead">
             <div class="pvBadge next">次</div>
@@ -566,10 +473,10 @@
       </div>
     </div>
 
-    <!-- 教師用：リアルタイム結果（ToDo2） -->
+    <!-- 教師用：リアルタイム結果 -->
     <div id="teacherLive" style="margin-top:14px; padding:18px; border-radius:20px; background: var(--panel2); border:1px solid rgba(255,255,255,.08);">
       <h3 style="margin:0 0 10px 0;">教師用：リアルタイム結果</h3>
-    
+
       <div id="liveCounts" style="display:flex; gap:10px; flex-wrap:wrap; margin:10px 0;">
         <div class="pill" id="liveTotal">Total: 0</div>
         <div class="pill" id="liveO">O: 0</div>
@@ -580,7 +487,7 @@
         <div class="pill" id="liveD">D: 0</div>
         <div class="pill" id="liveE">E: 0</div>
       </div>
-    
+
       <div id="liveTextWrap" style="display:none;">
         <div style="opacity:.85; margin:8px 0 6px;">TEXT（最新20件）</div>
         <div id="liveTextList" class="textList"></div>
@@ -639,9 +546,7 @@
     // refs
     function activityRef(room=currentRoom){ return ref(db, `rooms/${room}/activity`); }
     function answersRef(room=currentRoom){ return ref(db, `rooms/${room}/answers`); }
-    function gameRef(room=currentRoom){
-      return ref(db, `rooms/${room}/activity/game`);
-    }
+    function gameRef(room=currentRoom){ return ref(db, `rooms/${room}/activity/game`); }
 
     function qidRef(room=currentRoom){ return ref(db, `rooms/${room}/quiz/current_question_id`); }
     function questionsRef(room=currentRoom){ return ref(db, `rooms/${room}/questions`); }
@@ -662,6 +567,7 @@
     const btnPrev = document.getElementById("prevQuestionBtn");
     const btnNext = document.getElementById("nextQuestionBtn");
     const btnStop = document.getElementById("stopBtn");
+    const btnBranchSet = document.getElementById("branchSetBtn");
     const btnQR   = document.getElementById("qrBtn");
     const btnT20  = document.getElementById("t20Btn");
     const btnT30  = document.getElementById("t30Btn");
@@ -670,7 +576,7 @@
     const btnQ2   = document.getElementById("quick2Btn");
     const btnQ5   = document.getElementById("quick5Btn");
     const btnQT   = document.getElementById("quickTextBtn");
-    const btnReveal = document.getElementById("revealBtn"); 
+    const btnReveal = document.getElementById("revealBtn");
     const btnSetExpectedFromVotes = document.getElementById("setExpectedFromVotesBtn");
     const btnGameDisplay = document.getElementById("gameDisplayBtn");
     const btnGameStart   = document.getElementById("gameStartBtn");
@@ -724,7 +630,7 @@
       if (state.unsubNextQuestion){ state.unsubNextQuestion(); state.unsubNextQuestion = null; }
       state.nextQuestion = null;
       state.nextQid = qid || null;
-      
+
       if (!qid){ renderPreview(); return; }
 
       state.unsubNextQuestion = onValue(questionRef(qid), snap => {
@@ -741,8 +647,18 @@
       const i = order.indexOf(base);
       const next = (i >= 0) ? (order[i+1] || null) : (order[0] || null);
 
-      if (state.latestQid !== base) return; // race対策
+      if (state.latestQid !== base) return;
       subscribeNextQuestion(next);
+    }
+
+    // mode推定（既存の揺れ対策）
+    function guessMode(q){
+      const m = String(q?.mode ?? "").toLowerCase().trim();
+      if (m) return m;
+      const keys = q?.choices ? Object.keys(q.choices).map(x => String(x).toUpperCase()) : [];
+      if (keys.length === 2 && keys.includes("O") && keys.includes("X")) return "ox";
+      if (["A","B","C","D","E"].every(k => keys.includes(k))) return "five";
+      return "text";
     }
 
     // 出題（quiz）
@@ -755,13 +671,7 @@
       const qs = await get(questionRef(qid));
       const q = qs.val() || {};
 
-      let mode = (q.mode || "").toLowerCase().trim();
-      if (!mode){
-        const keys = q.choices ? Object.keys(q.choices).map(k => k.toUpperCase()) : [];
-        if (keys.length === 2 && keys.includes("O") && keys.includes("X")) mode = "ox";
-        else if (["A","B","C","D","E"].every(k => keys.includes(k))) mode = "five";
-        else mode = "text";
-      }
+      let mode = guessMode(q);
 
       let config = null;
       if (mode === "text") config = { type:"text" };
@@ -796,58 +706,19 @@
       });
     }
 
-      async function startHotPotatoGame(){
-        const rosterSnap = await get(ref(db, `rooms/${currentRoom}/activity/roster`));
-        const roster = rosterSnap.val() || {};
-        const ids = Object.keys(roster);
-      
-        if (ids.length < 2){
-          alert("参加者が2人以上必要です");
-          return;
-        }
-      
-        // grid（縦横）は display 側で描画、ここでは順序だけ
-        const order = [...ids]; // 今は単純並び（後でシャッフル可）
-        const holder = order[Math.floor(Math.random() * order.length)];
-      
-        const now = Date.now();
-      
-        await update(activityRef(), {
-          view: "game",
-          status: "open",
-          game: {
-            type: "hotpotato",
-            phase: "running",
-            round: 1,
-            common: {
-              participants: Object.fromEntries(ids.map(id => [id, true])),
-              holder,
-              lastAction: { by: "teacher", at: now }
-            },
-            state: {
-              grid: {
-                order,
-                cols: Math.ceil(Math.sqrt(order.length))
-              }
-            }
-          }
-        });
-      }
-
-      async function setExpectedFromVotes(){
-      // いまのanswers数を母数にする（出席確認用）
+    async function setExpectedFromVotes(){
       const snap = await get(answersRef());
       const ans = snap.val() || {};
       const n = Object.keys(ans).length;
-    
+
       if (n <= 0){
         alert("まだ投票がありません（answers=0）");
         return;
       }
-    
+
       const ok = confirm(`今回の投票人数 ${n} 人を、100%人数（母数）に設定しますか？`);
       if (!ok) return;
-    
+
       await update(activityRef(), { expectedN: n });
       alert(`100%人数（母数）を ${n} 人に設定しました。`);
     }
@@ -868,14 +739,14 @@
       await update(activityRef(), { timer: { running: false } });
     }
 
-    // ★追加：結果公開方式トグル（live <-> closed）
+    // 結果公開方式トグル（live <-> closed）
     async function toggleRevealMode(){
       const cur = (state.activity?.revealMode === "closed") ? "closed" : "live";
       const next = (cur === "live") ? "closed" : "live";
       await update(activityRef(), { revealMode: next });
     }
-    
-    // QRトグル（解除→standby）
+
+    // QRトグル
     async function toggleQR(){
       const isQR = (state.activity?.qr === true);
 
@@ -892,19 +763,97 @@
         config:null
       });
     }
-        
-    async function endGameFlow(){
-      const ok = confirm("ゲームを終了して standy に戻しますか？");
-      if (!ok) return;
-    
-      await update(activityRef(), {
-        qr:false,
-        view:"standby",
-        status:"ready",
-        mode:null,
-        config:null,
-        timer:{ running:false }
-      });
+
+    // ===== 分岐（クラス全体・多数決）=====
+    function extractAnswerValue(v){
+      if (v == null) return "";
+      if (typeof v === "string") return v;
+      if (typeof v === "object" && typeof v.value === "string") return v.value;
+      return "";
+    }
+
+    function pickWinnerFromAnswers(mode, answersObj){
+      const keys = (mode === "five") ? ["A","B","C","D","E"] : ["O","X"];
+      const count = Object.fromEntries(keys.map(k => [k, 0]));
+
+      const answers = answersObj || {};
+      for (const v of Object.values(answers)){
+        const s = String(extractAnswerValue(v)).trim().toUpperCase();
+        if (count.hasOwnProperty(s)) count[s]++;
+      }
+
+      // 同票は keys の先頭が勝つ（安定・再現性優先）
+      let bestK = keys[0];
+      let bestV = -1;
+      for (const k of keys){
+        const v = count[k] ?? 0;
+        if (v > bestV){
+          bestV = v;
+          bestK = k;
+        }
+      }
+      return { winner: bestK, count };
+    }
+
+    async function branchSetNextQuestionId(){
+      // 1) 現在qid
+      const qidSnap = await get(qidRef());
+      const qid = qidSnap.val() || null;
+      if (!qid){
+        alert("current_question_id がありません");
+        return;
+      }
+
+      // 2) 現在問題データ
+      const qSnap = await get(questionRef(qid));
+      const q = qSnap.val() || null;
+      if (!q){
+        alert(`questions/${qid} が見つかりません`);
+        return;
+      }
+
+      // 3) mode（ox / five のみ対応。textは分岐不可）
+      const mode = guessMode(q);
+      if (mode !== "ox" && mode !== "five"){
+        alert(`分岐は ox / five のみ対応です（現在 mode=${mode}）`);
+        return;
+      }
+
+      // 4) answersから多数決
+      const ansSnap = await get(answersRef());
+      const answersObj = ansSnap.val() || {};
+      const n = Object.keys(answersObj).length;
+      if (n <= 0){
+        alert("まだ投票がありません（answers=0）");
+        return;
+      }
+
+      const { winner, count } = pickWinnerFromAnswers(mode, answersObj);
+
+      // 5) branch を読む（問題データに持つのが本命）
+      const branch = (q.branch && typeof q.branch === "object") ? q.branch : null;
+      const nextId = branch ? branch[winner] : null;
+
+      if (!nextId){
+        const msg =
+          `分岐先が未定義です。\n\n` +
+          `qid=${qid}\nmode=${mode}\n多数決=${winner}\n\n` +
+          `questions/${qid}/branch に { "${winner}": "次の問題ID" } を設定してください。\n\n` +
+          `現在の票：${JSON.stringify(count)}`;
+        alert(msg);
+        return;
+      }
+
+      // 6) 次の問題IDだけセット（openはしない）
+      await set(qidRef(), nextId);
+
+      alert(
+        `分岐セット完了\n` +
+        `qid: ${qid} → ${nextId}\n` +
+        `mode: ${mode}\n` +
+        `多数決: ${winner}\n\n` +
+        `※ open はしません。必要なら「次の問題▶」等で開始してください。`
+      );
     }
 
     // プレビュー描画（正解・解説は常時表示）
@@ -920,6 +869,7 @@
       btnPrev.disabled = lock;
       btnNext.disabled = lock;
       btnStop.disabled = lock;
+      btnBranchSet.disabled = lock;          // ★追加：分岐もQR中はロック
       btnQ2.disabled = lock;
       btnQ5.disabled = lock;
       btnQT.disabled = lock;
@@ -927,22 +877,19 @@
       btnT30.disabled  = lock;
       btnT60.disabled  = lock;
       btnTOff.disabled = lock;
-      /* ★ここから追加：revealボタンもQR中は操作不可＋表示反映 */     
-      btnReveal.disabled = lock; // ← QR中は操作不可にする（他のボタンと同じ）
-      
+
+      btnReveal.disabled = lock;
       btnReveal.classList.toggle("on", reveal === "closed");
       btnReveal.textContent = (reveal === "closed")
         ? "結果：解答終了で公開"
         : "結果：即時公開";
-      /* ★ここまで追加 */
 
       const meta =
         `room:${currentRoom} / view:${view} / status:${status} / mode:${mode} / reveal:${reveal}${qr ? " / QR" : ""}`;
-      
+
       const roomMeta = document.getElementById("roomMeta");
       if (roomMeta) roomMeta.textContent = meta;
-      
-       // standby/poll の時も次カードをクリア
+
       if (view === "standby"){
         pvQid.textContent = `ID: ${state.latestQid || "—"}`;
         pvQuestion.textContent = "（スタンバイ中… 次の問題を待っています）";
@@ -972,14 +919,14 @@
         pvExplanationNext.textContent = "";
         return;
       }
-      
+
       if (view === "game"){
         pvQid.textContent = "ID: —";
         pvQuestion.textContent = "（ゲーム中：椅子取り A〜E）";
         pvChoices.innerHTML = "";
         pvAnswer.textContent = "";
         pvExplanation.textContent = "";
-      
+
         pvQidNext.textContent = "ID: —";
         pvQuestionNext.textContent = "—";
         pvChoicesNext.innerHTML = "";
@@ -1021,7 +968,7 @@
         pvExplanation.textContent = q.explanation ? `解説：${q.explanation}` : "";
       }
 
-      // 次
+      // 次（現状は「並び順の次」を表示。分岐先は branchSet で決める運用）
       const q2id = state.nextQid;
       const q2 = state.nextQuestion;
 
@@ -1058,40 +1005,34 @@
       pvExplanationNext.textContent = q2.explanation ? `解説：${q2.explanation}` : "";
     }
 
-    function extractAnswerValue(v){
-      if (v == null) return "";
-      if (typeof v === "string") return v;
-      if (typeof v === "object" && typeof v.value === "string") return v.value;
-      return "";
-    }
     function extractTimestamp(v){
       if (v && typeof v === "object" && typeof v.timestamp === "number") return v.timestamp;
       return 0;
     }
-    
+
     function renderTeacherLive(mode, answersObj){
       const answers = answersObj || {};
       const vals = Object.values(answers).map(extractAnswerValue).filter(Boolean);
-    
+
       const total = vals.length;
       const count = { O:0, X:0, A:0, B:0, C:0, D:0, E:0 };
       for (const s of vals){
         const up = String(s).trim().toUpperCase();
         if (count.hasOwnProperty(up)) count[up]++;
       }
-    
+
       const setText = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
       const show = (id, ok) => { const el = document.getElementById(id); if (el) el.style.display = ok ? "" : "none"; };
-    
+
       setText("liveTotal", `Total: ${total}`);
-    
+
       const isOX = (mode === "ox");
       const isFive = (mode === "five");
       const isText = (mode === "text");
-    
+
       show("liveO", isOX); show("liveX", isOX);
       show("liveA", isFive); show("liveB", isFive); show("liveC", isFive); show("liveD", isFive); show("liveE", isFive);
-    
+
       if (isOX){
         setText("liveO", `O: ${count.O}`);
         setText("liveX", `X: ${count.X}`);
@@ -1103,27 +1044,27 @@
         setText("liveD", `D: ${count.D}`);
         setText("liveE", `E: ${count.E}`);
       }
-    
+
       const wrap = document.getElementById("liveTextWrap");
       if (wrap) wrap.style.display = isText ? "" : "none";
-    
+
       if (isText) renderTeacherTextList(answersObj);
     }
-    
+
     function renderTeacherTextList(answersObj){
       const list = document.getElementById("liveTextList");
       if (!list) return;
-    
+
       const answers = answersObj || {};
       const items = Object.entries(answers).map(([uid, v]) => ({
         uid,
         text: extractAnswerValue(v),
         ts: extractTimestamp(v),
       })).filter(x => x.text);
-    
+
       items.sort((a,b) => (b.ts||0) - (a.ts||0));
       const top = items.slice(0, 20);
-    
+
       const esc = (s) => String(s).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;");
       list.innerHTML = top.map(x => {
         const when = x.ts ? new Date(x.ts).toLocaleString() : "";
@@ -1144,7 +1085,7 @@
       if (state.unsubQid){ state.unsubQid(); state.unsubQid = null; }
       if (state.unsubQuestion){ state.unsubQuestion(); state.unsubQuestion = null; }
       if (state.unsubNextQuestion){ state.unsubNextQuestion(); state.unsubNextQuestion = null; }
-      if (state.unsubAnswers){ state.unsubAnswers(); state.unsubAnswers = null; } 
+      if (state.unsubAnswers){ state.unsubAnswers(); state.unsubAnswers = null; }
 
       state.activity = {};
       state.latestQid = null;
@@ -1171,11 +1112,11 @@
           renderPreview();
         }
       });
-      
+
       state.unsubAnswers = onValue(answersRef(room), (snap) => {
         const answersObj = snap.val() || {};
         const mode = (state.activity?.mode || "ox").toLowerCase();
-        renderTeacherLive(mode, answersObj);  // ← ToDo2 の描画関数
+        renderTeacherLive(mode, answersObj);
       });
 
       renderPreview();
@@ -1205,22 +1146,38 @@
     };
 
     btnStop.onclick = async () => { await update(activityRef(), { status:"closed" }); };
+
+    // ★追加：分岐セット（次IDだけ更新。openしない）
+    btnBranchSet.onclick = async () => {
+      try{
+        await branchSetNextQuestionId();
+      }catch(e){
+        console.error(e);
+        alert("分岐セットでエラーが出ました（console を確認してください）");
+      }
+    };
+
     btnQR.onclick = async () => { await toggleQR(); };
     btnReveal.onclick = async () => { await toggleRevealMode(); };
     btnSetExpectedFromVotes.onclick = async () => { await setExpectedFromVotes(); };
+
     btnGameDisplay.onclick = () => {
       window.open(`https://qzp04374-code.github.io/quiz-app/exp-display/display_game.html?room=${encodeURIComponent(currentRoom)}`, "_blank");
     };
-       
-    async function stopMusicAndOpenFlow(){
+
+    btnGameEnd.onclick = async () => {
+      const ok = confirm("ゲームを終了して standy に戻しますか？");
+      if (!ok) return;
+
       await update(activityRef(), {
-        status:"open", // ★ここで学生受付開始
-        view:"game",
-        game: { ...(state.activity.game || {}), phase:"open", openedAt: Date.now() }
+        qr:false,
+        view:"standby",
+        status:"ready",
+        mode:null,
+        config:null,
+        timer:{ running:false }
       });
-    }
-    
-       btnGameEnd.onclick   = async () => { await endGameFlow(); };
+    };
 
     btnQ2.onclick = async () => { await startQuickPoll("ox"); };
     btnQ5.onclick = async () => { await startQuickPoll("five"); };
