@@ -234,12 +234,18 @@
     .choice{
       display:flex;
       align-items:flex-start;
-      gap:10px;
-      padding: .50em .70em;
+    
+      /* px固定をやめて “文字サイズ連動” にする */
+      gap: 0.55em;
+      padding: 0.52em 0.72em;
+    
       border-radius: 14px;
       border: none;
       background: rgba(2,6,23,.22);
-      line-height: 1.18;                 /* 行間：文字サイズに追随 */
+    
+      /* 行間も連動（好みで 1.12〜1.30） */
+      line-height: 1.18;
+    
       word-break: break-word;
     }
     .choice.correct{
@@ -260,18 +266,25 @@
     }
 
     .badge{
-      min-width:64px;   /* ✅拡大 */
-      height:46px;      /* ✅拡大 */
-      border-radius:999px;
+      /* 文字サイズに対して比率で決める（= cMax を動かすと全部動く） */
+      height: 1.65em;         /* 行間（縦）が広がる/狭まる */
+      min-width: 2.35em;      /* 横幅も追随 */
+      padding: 0 0.55em;      /* 余白も追随 */
+    
+      border-radius: 999px;
       display:inline-flex;
       align-items:center;
       justify-content:center;
-      font-weight:1000;
+    
+      font-weight: 1000;
+      letter-spacing: .06em;
+    
+      /* バッジ文字も本文に連動（少し小さめにしたければ 0.90〜0.98） */
+      font-size: 0.98em;
+    
       color:#0b1220;
-      margin-top:2px;
-      flex:0 0 auto;
-      letter-spacing:.06em;
-      font-size:22px;   /* ✅バッジ文字も大きく */
+      margin-top: 0.05em;     /* ちょいだけ下げる（任意） */
+      flex: 0 0 auto;
     }
     .badge.A{background:var(--color-a);}
     .badge.B{background:var(--color-b);}
