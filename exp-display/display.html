@@ -1628,8 +1628,36 @@ ttsBtn.onclick = async () => {
           fitChoicesHeight();
           updateChoiceSpacing(); // ★追加：選択肢の行間/隙間を文字サイズ連動で更新
         });
-
       });
+      // ===== 最強セット：ディスプレイ移動/倍率変更/復帰で確実に再フィット =====
+      function refitNow(){
+        requestFitQuestion();
+        if (typeof updateChoiceSpacing === "function") updateChoiceSpacing();
+      
+        // モニタ移動直後の「遅れてサイズ確定」対策（保険）
+        setTimeout(() => {
+          requestFitQuestion();
+          if (typeof updateChoiceSpacing === "function") updateChoiceSpacing();
+        }, 120);
+      }
+      
+      // 1) ふつうのサイズ変更
+      window.addEventListener("resize", refitNow);
+      
+      // 2) ズーム / DPI / 表示領域変化（モニタ移動で効くことがある）
+      if (window.visualViewport){
+        window.visualViewport.addEventListener("resize", refitNow);
+      }
+      
+      // 3) 別画面へ移動→戻った、など
+      window.addEventListener("focus", refitNow);
+      
+      // 4) フルスクリーン切替
+      document.addEventListener("fullscreenchange", refitNow);
+      
+      // 5) 復帰・再表示（環境によるが保険）
+      window.addEventListener("pageshow", refitNow);
+
     }
 
     // ===== Display tuning (per QID, localStorage) =====
@@ -1747,12 +1775,6 @@ tpQMaxVal.textContent = String(qMax);
       reflectUiFromCss();
       requestFitQuestion();
       
-      // 画面サイズ変更でも行間/隙間を再計算（choices側も追随）
-      window.addEventListener("resize", () => {
-        requestFitQuestion();     // 既存：レイアウト再フィット
-        updateChoiceSpacing();    // 追加した関数：行間/隙間の再反映
-      });
-
     }
     
     // UI events
