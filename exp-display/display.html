@@ -22,6 +22,13 @@
       --color-d:#bf5af2;
       --color-e:#ff375f;
 
+      /* 追加：選択肢の詰まり具合（JSが em / 数値で更新） */
+      --choicesGap: 0.34em; /* 行と行の隙間 */
+      --cLH: 1.12;          /* 行間（小さい字ほど JS で 1.06 付近まで下がる） */
+      --cGap: 0.50em;       /* バッジと本文の間 */
+      --cPadY: 0.44em;      /* 行の上下パディング */
+      --cPadX: 0.70em;      /* 行の左右パディング */
+
       --ok:#22c55e;
        /* display側で調整する表示変数（px相当） */
       --qMax: 68;     /* 問題文の最大 */
@@ -210,7 +217,7 @@
       margin-top:10px;
       display:grid;
       grid-template-columns: 1fr;
-      gap:8px;
+      gap: var(--choicesGap);
     }
     /* ===== choices scroll safety ===== */
     #choices{
@@ -236,15 +243,15 @@
       align-items:flex-start;
     
       /* px固定をやめて “文字サイズ連動” にする */
-      gap: 0.55em;
-      padding: 0.52em 0.72em;
+      gap: var(--cGap);
+      padding: var(--cPadY) var(--cPadX);
     
       border-radius: 14px;
       border: none;
       background: rgba(2,6,23,.22);
     
       /* 行間も連動（好みで 1.12〜1.30） */
-      line-height: 1.18;
+      line-height: var(--cLH);
     
       word-break: break-word;
     }
@@ -1568,6 +1575,35 @@ ttsBtn.onclick = async () => {
       return;
     }
 
+    function clamp01(x){ return Math.max(0, Math.min(1, x)); }
+
+    function updateChoiceSpacing(){
+      // textmodeは選択肢なし（触らない）
+      if (currentMode === "text" || document.body.classList.contains("textmode")) return;
+      if (!cEl) return;
+    
+      const fs = parseFloat(getComputedStyle(cEl).fontSize) || 32; // #choicesの実フォントサイズ(px)
+      const min = 22, max = 70; // tpCMaxの範囲に合わせる
+      const t = clamp01((fs - min) / (max - min)); // 0=小さい字 / 1=大きい字
+    
+      // 小さい字ほど “詰める”
+      // line-height: 1.06 ～ 1.16（標準も少し狭め）
+      const lh = 1.06 + t * 0.10;
+    
+      // 行間だけじゃなく、行間隔・パディングも少し連動
+      const choicesGap = 0.26 + t * 0.16; // em
+      const cGap  = 0.46 + t * 0.10;      // em
+      const padY  = 0.38 + t * 0.12;      // em
+      const padX  = 0.62 + t * 0.14;      // em
+    
+      const root = document.documentElement.style;
+      root.setProperty("--cLH", String(lh.toFixed(3)));
+      root.setProperty("--choicesGap", `${choicesGap.toFixed(3)}em`);
+      root.setProperty("--cGap", `${cGap.toFixed(3)}em`);
+      root.setProperty("--cPadY", `${padY.toFixed(3)}em`);
+      root.setProperty("--cPadX", `${padX.toFixed(3)}em`);
+    }
+
     // 連続呼び出しをまとめる（描画のたびに暴れないように）
     let _fitReq = 0;
     function requestFitQuestion() {
@@ -1588,7 +1624,11 @@ ttsBtn.onclick = async () => {
         fitQuestionToLeftScroll({ minPx: 30 });
     
         // ✅ 1フレーム後に choices 高さを計算（DOM反映後でズレない）
-        requestAnimationFrame(() => fitChoicesHeight());
+        requestAnimationFrame(() => {
+          fitChoicesHeight();
+          updateChoiceSpacing(); // ★追加：選択肢の行間/隙間を文字サイズ連動で更新
+        });
+
       });
     }
 
@@ -1706,6 +1746,13 @@ tpQMaxVal.textContent = String(qMax);
     
       reflectUiFromCss();
       requestFitQuestion();
+      
+      // 画面サイズ変更でも行間/隙間を再計算（choices側も追随）
+      window.addEventListener("resize", () => {
+        requestFitQuestion();     // 既存：レイアウト再フィット
+        updateChoiceSpacing();    // 追加した関数：行間/隙間の再反映
+      });
+
     }
     
     // UI events
