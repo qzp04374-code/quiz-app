@@ -1497,9 +1497,11 @@ ttsBtn.onclick = async () => {
     // display起動で強制QR
     update(activityRef, { qr: true }).catch(()=>{});
 
-    const studentUrl =
-      `https://qzp04374-code.github.io/quiz-app/exp-display/student.html?room=${encodeURIComponent(room)}`;
-    
+      function buildStudentUrl(session){
+      const base = `https://qzp04374-code.github.io/quiz-app/exp-display/student.html?room=${encodeURIComponent(room)}`;
+      return session ? `${base}&s=${encodeURIComponent(session)}` : base;
+    }
+       
     function safeDrawQR(){
       try{
         if (!qrDiv) return;
