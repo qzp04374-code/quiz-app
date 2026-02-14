@@ -1629,21 +1629,7 @@ ttsBtn.onclick = async () => {
           updateChoiceSpacing(); // ★追加：選択肢の行間/隙間を文字サイズ連動で更新
         });
       });
-      // ===== 最強セット：ディスプレイ移動/倍率変更/復帰で確実に再フィット =====
-      function refitNow(){
-        requestFitQuestion();
-        if (typeof updateChoiceSpacing === "function") updateChoiceSpacing();
-      
-        // モニタ移動直後の「遅れてサイズ確定」対策（保険）
-        setTimeout(() => {
-          requestFitQuestion();
-          if (typeof updateChoiceSpacing === "function") updateChoiceSpacing();
-        }, 120);
-      }
-      
-      // 1) ふつうのサイズ変更
-      window.addEventListener("resize", refitNow);
-      
+            
       // 2) ズーム / DPI / 表示領域変化（モニタ移動で効くことがある）
       if (window.visualViewport){
         window.visualViewport.addEventListener("resize", refitNow);
@@ -1659,6 +1645,38 @@ ttsBtn.onclick = async () => {
       window.addEventListener("pageshow", refitNow);
 
     }
+
+    // ===== 最強セット（安全版）：1回だけイベント登録して再フィット =====
+    let _refitBound = false;
+    
+    function refitNow(){
+      requestFitQuestion();
+      if (typeof updateChoiceSpacing === "function") updateChoiceSpacing();
+    
+      // モニタ移動直後の「遅れてサイズ確定」対策（保険）
+      setTimeout(() => {
+        requestFitQuestion();
+        if (typeof updateChoiceSpacing === "function") updateChoiceSpacing();
+      }, 120);
+    }
+    
+    function bindRefitEventsOnce(){
+      if (_refitBound) return;
+      _refitBound = true;
+    
+      window.addEventListener("resize", refitNow);
+    
+      if (window.visualViewport){
+        window.visualViewport.addEventListener("resize", refitNow);
+      }
+    
+      window.addEventListener("focus", refitNow);
+      document.addEventListener("fullscreenchange", refitNow);
+      window.addEventListener("pageshow", refitNow);
+    }
+    
+    // ★起動時に1回だけ登録
+    bindRefitEventsOnce();
 
     // ===== Display tuning (per QID, localStorage) =====
     const tuneBtn   = document.getElementById("tuneBtn");
