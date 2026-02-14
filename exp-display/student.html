@@ -597,6 +597,7 @@
   
     const url  = new URL(window.location.href);
     const room = url.searchParams.get("room") || "kyoto-01";
+    const urlSession = url.searchParams.get("s") || "";
     const urlSession = url.searchParams.get("s"); // ★追加：session
 
     const padShell    = document.getElementById("padShell");
@@ -1213,6 +1214,17 @@
     const activityRef = ref(db, `rooms/${room}/activity`);
     onValue(activityRef, snap => {
       const data = snap.val() || {};
+
+      const session = String(data.session || "");
+      const okSession = (session !== "" && urlSession !== "" && session === urlSession);
+    
+      if (!okSession){
+        isOpen = false; // 入力不可にする
+        lockUI();
+        setOverlay(true, "本日のQRから参加してください。");
+        return; // ★重要：この下の通常処理へ進ませない
+      }
+
       const status = data.status || "-";
       const mode = data.mode || null;
       const view = data.view || "quiz";
