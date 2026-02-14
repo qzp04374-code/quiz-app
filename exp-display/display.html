@@ -1516,7 +1516,7 @@ ttsBtn.onclick = async () => {
         }
 
         // eslint-disable-next-line no-undef
-        new QRCode(qrDiv, { text: studentUrl, width: 520, height: 520 });
+        new window.QRCode(qrDiv, { text: buildStudentUrl(currentSession), width: 520, height: 520 });
       }catch(e){
         console.error("QR draw failed:", e);
         try{
@@ -1534,6 +1534,7 @@ ttsBtn.onclick = async () => {
     let isQR = true;
     let currentStatus = "-";
     let lastStatus = null;
+    let currentSession = ""; // ★追加：activity.session を保持
     let currentMode = null;
     let currentView = "quiz";
     let choiceOrder = ["A","B","C","D","E"];
@@ -2319,6 +2320,7 @@ onValue(activityRef, snap => {
   currentMode = a.mode || null;
   currentRevealMode = (a.revealMode === "closed") ? "closed" : "live";
   // ★ここに追加
+  currentSession = String(a.session || "");
   expectedN = Math.max(0, Math.floor(Number(a.expectedN || 0)));
 
   // ★安全弁：cElが存在するときだけ消す（存在しないと全停止→QRが出ない）
@@ -2347,7 +2349,12 @@ onValue(activityRef, snap => {
     (a.qr === "true") ||
     (a.view === "qr");
   
-  if (qrOn) showQR();
+  if (qrOn) {
+    safeDrawQR(); // ★追加：session反映して描き直す
+    showQR();
+  } else {
+    hideQRWithFade();
+  }
   else hideQRWithFade();
 
   const cfgChoices = (a.config && Array.isArray(a.config.choices)) ? a.config.choices : null;
