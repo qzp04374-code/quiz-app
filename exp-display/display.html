@@ -1497,9 +1497,11 @@ ttsBtn.onclick = async () => {
     // display起動で強制QR
     update(activityRef, { qr: true }).catch(()=>{});
 
-      function buildStudentUrl(session){
-      const base = `https://qzp04374-code.github.io/quiz-app/exp-display/student.html?room=${encodeURIComponent(room)}`;
-      return session ? `${base}&s=${encodeURIComponent(session)}` : base;
+    let currentSession = ""; // ★追加：activity.session を保持
+
+    function buildStudentUrl(session){
+    const base = `https://qzp04374-code.github.io/quiz-app/exp-display/student.html?room=${encodeURIComponent(room)}`;
+    return session ? `${base}&s=${encodeURIComponent(session)}` : base;
     }
        
     function safeDrawQR(){
@@ -1534,7 +1536,7 @@ ttsBtn.onclick = async () => {
     let isQR = true;
     let currentStatus = "-";
     let lastStatus = null;
-    let currentSession = ""; // ★追加：activity.session を保持
+
     let currentMode = null;
     let currentView = "quiz";
     let choiceOrder = ["A","B","C","D","E"];
@@ -1631,22 +1633,7 @@ ttsBtn.onclick = async () => {
           fitChoicesHeight();
           updateChoiceSpacing(); // ★追加：選択肢の行間/隙間を文字サイズ連動で更新
         });
-      });
-            
-      // 2) ズーム / DPI / 表示領域変化（モニタ移動で効くことがある）
-      if (window.visualViewport){
-        window.visualViewport.addEventListener("resize", refitNow);
-      }
-      
-      // 3) 別画面へ移動→戻った、など
-      window.addEventListener("focus", refitNow);
-      
-      // 4) フルスクリーン切替
-      document.addEventListener("fullscreenchange", refitNow);
-      
-      // 5) 復帰・再表示（環境によるが保険）
-      window.addEventListener("pageshow", refitNow);
-
+      });          
     }
 
     // ===== 最強セット（安全版）：1回だけイベント登録して再フィット =====
