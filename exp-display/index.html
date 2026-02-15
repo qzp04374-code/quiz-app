@@ -683,6 +683,7 @@
       }
       
       const session = newSessionId();
+      const session = Date.now().toString(36);
       
       await update(activityRef(), {
         status:"open",
