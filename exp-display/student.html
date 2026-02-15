@@ -1215,13 +1215,12 @@
       const data = snap.val() || {};
 
       const session = String(data.session || "");
-      const okSession = (session !== "" && urlSession !== "" && session === urlSession);
-    
-      if (!okSession){
-        isOpen = false; // 入力不可にする
+      // ★不一致のときだけ弾く（session未設定時は待機OK）
+      if (session !== "" && urlSession !== "" && session !== urlSession){
+        isOpen = false;
         lockUI();
         setOverlay(true, "本日のQRから参加してください。");
-        return; // ★重要：この下の通常処理へ進ませない
+        return;
       }
 
       const status = data.status || "-";
