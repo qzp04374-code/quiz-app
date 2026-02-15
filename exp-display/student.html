@@ -597,7 +597,6 @@
   
     const url  = new URL(window.location.href);
     const room = url.searchParams.get("room") || "kyoto-01";
-    const urlSession = url.searchParams.get("s") || "";
     const urlSession = url.searchParams.get("s"); // ★追加：session
 
     const padShell    = document.getElementById("padShell");
