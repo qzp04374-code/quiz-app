@@ -1678,14 +1678,54 @@ ttsBtn.onclick = async () => {
 const tpQMaxVal = document.getElementById("tpQMaxVal");
     const tpCMaxVal = document.getElementById("tpCMaxVal");
 const tpSave     = document.getElementById("tpSave");
+    const tpSetDefault = document.getElementById("tpSetDefault"); // ★追加
     const tpResetQ   = document.getElementById("tpResetQ");
     const tpResetAll = document.getElementById("tpResetAll");
     const tpHint     = document.getElementById("tpHint");
     
     let _tuneDefaults = null;
     
+    function getDefaultKey(room){
+      return `cls:disp:default:${String(room || "room")}`;
+    }
+    
+    function loadRoomDefault(room){
+      try{
+        const raw = localStorage.getItem(getDefaultKey(room));
+        if (!raw) return null;
+        const obj = JSON.parse(raw);
+        return { qMax: Number(obj.qMax), cMax: Number(obj.cMax) };
+      }catch(e){
+        return null;
+      }
+    }
+    
+    function saveRoomDefault(room, t){
+      try{
+        localStorage.setItem(getDefaultKey(room), JSON.stringify({
+          qMax: Math.round(Number(t.qMax)),
+          cMax: Math.round(Number(t.cMax)),
+          at: Date.now()
+        }));
+        return true;
+      }catch(e){
+        return false;
+      }
+    }
+    
     function readDefaultsOnce(){
       if (_tuneDefaults) return _tuneDefaults;
+    
+      const roomName = (typeof room !== "undefined") ? room : "room";
+    
+      // ★優先：この端末で固定したデフォルト
+      const saved = loadRoomDefault(roomName);
+      if (saved && Number.isFinite(saved.qMax) && Number.isFinite(saved.cMax)){
+        _tuneDefaults = saved;
+        return _tuneDefaults;
+      }
+    
+      // ★なければCSSの初期値
       const cs = getComputedStyle(document.documentElement);
       _tuneDefaults = {
         qMax: Number(cs.getPropertyValue("--qMax").trim()) || 64,
@@ -1817,7 +1857,26 @@ tpQMaxVal.textContent = String(qMax);
         applyTuneForCurrentQid();
       });
     }
+    if (tpSetDefault){
+      tpSetDefault.addEventListener("click", () => {
+        const roomName = (typeof room !== "undefined") ? room : "room";
     
+        const ok = saveRoomDefault(roomName, {
+          qMax: Number(tpQMax.value),
+          cMax: Number(tpCMax.value)
+        });
+    
+        // ★readDefaultsOnce のキャッシュを更新
+        _tuneDefaults = { qMax: Number(tpQMax.value), cMax: Number(tpCMax.value) };
+    
+        if (tpHint) tpHint.textContent = ok
+          ? "デフォルト固定しました（この端末のみ）"
+          : "デフォルト固定に失敗しました";
+    
+        applyTuneForCurrentQid();
+      });
+    }
+
     if (tpResetQ){
       tpResetQ.addEventListener("click", () => {
         const roomName = (typeof room !== "undefined") ? room : "room";
@@ -2447,6 +2506,7 @@ onValue(activityRef, snap => {
         <button id="tpSave" class="tpBtn">保存（この問題だけ）</button>
         <button id="tpResetQ" class="tpBtn ghost">この問題を初期化</button>
         <button id="tpResetAll" class="tpBtn ghost">全部初期化</button>
+        <button id="tpSetDefault" class="tpBtn">デフォルト固定</button>
       </div>
   
       <div class="tpHint" id="tpHint"></div>
