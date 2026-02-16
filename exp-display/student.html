@@ -1251,12 +1251,6 @@
       dot.classList.toggle("open", isOpen);
       dot.classList.toggle("closed", !isOpen);
   
-      // game state（毎回追随：ここは座席表示の更新に使う）
-      isGame = (view === "game");
-      gameRound = (game && game.round != null) ? Number(game.round) : null;
-      gamePhase = (game && game.phase != null) ? String(game.phase) : null;
-      gameSeatsRemain = getRemainMap(game);
-
       // ★補足：DB側で seat が確定していたら、押下処理を経由しなくても反映＆FX
       if (isGame && game && game.players && game.players[userId]){
         const p = game.players[userId];
