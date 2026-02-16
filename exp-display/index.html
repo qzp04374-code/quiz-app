@@ -678,12 +678,11 @@
       else if (mode === "ox") config = { choices:["O","X"] };
       else if (mode === "five") config = { choices:["A","B","C","D","E"] };
 
-      function newSessionId(){
-        return Date.now().toString(36); // シンプルで十分
-      }
+      // ★既存 session を維持（なければ作る）
+      const aSnap = await get(activityRef());
+      const aNow = aSnap.val() || {};
+      const session = String(aNow.session || "") || Date.now().toString(36);
       
-      const session = newSessionId();
-     
       await update(activityRef(), {
         status:"open",
         qr:false,
@@ -691,7 +690,7 @@
         mode,
         config,
         timer:{ running:false },
-        session: session   // ★追加
+        session
       });
 
     }
@@ -704,7 +703,10 @@
       else if (mode === "ox") config = { choices:["O","X"] };
       else if (mode === "five") config = { choices:["A","B","C","D","E"] };
 
-      const session = Date.now().toString(36);
+      // ★既存 session を維持（なければ作る）
+      const aSnap = await get(activityRef());
+      const aNow = aSnap.val() || {};
+      const session = String(aNow.session || "") || Date.now().toString(36);
       
       await update(activityRef(), {
         status:"open",
@@ -712,9 +714,9 @@
         view:"poll",
         mode,
         config,
-        timer:{ running:false }
+        timer:{ running:false },
+        session
       });
-    }
 
     async function setExpectedFromVotes(){
       const snap = await get(answersRef());
