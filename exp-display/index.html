@@ -692,7 +692,6 @@
         timer:{ running:false },
         session
       });
-
     }
 
     // クイック投票（poll）
@@ -717,7 +716,8 @@
         timer:{ running:false },
         session
       });
-
+      }
+      
     async function setExpectedFromVotes(){
       const snap = await get(answersRef());
       const ans = snap.val() || {};
