@@ -683,8 +683,7 @@
       }
       
       const session = newSessionId();
-      const session = Date.now().toString(36);
-      
+     
       await update(activityRef(), {
         status:"open",
         qr:false,
@@ -705,6 +704,8 @@
       else if (mode === "ox") config = { choices:["O","X"] };
       else if (mode === "five") config = { choices:["A","B","C","D","E"] };
 
+      const session = Date.now().toString(36);
+      
       await update(activityRef(), {
         status:"open",
         qr:false,
