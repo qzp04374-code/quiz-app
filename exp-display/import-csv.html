@@ -102,6 +102,10 @@
 
 <button id="importBtn">Firebase に投入</button>
 
+<!-- 追加：CSV書き出し -->
+<button id="exportRawBtn">貼り付け欄のCSVを保存</button>
+<button id="exportNormalizedBtn">正規化してCSV保存（推奨）</button>
+
 <div id="log"></div>
 
 <script type="module">
@@ -167,6 +171,71 @@ function parseCSVLine(line){
   return out;
 }
 
+// 追加：直近の parse 結果を保持
+let lastParsedOut = null;
+
+// 追加：CSVエスケープ（カンマ/改行/" 対応）
+function csvEscape(v){
+  const s = String(v ?? "");
+  if (/[",\r\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+  return s;
+}
+
+// 追加：out(questions) → ClassSync標準17列CSVに変換
+function buildCanonicalCSVFromOut(out){
+  const header = [
+    "question_id","mode","question",
+    "choiceA","choiceB","choiceC","choiceD","choiceE",
+    "answer","explanation",
+    "branch_o","branch_x","branch_a","branch_b","branch_c","branch_d","branch_e"
+  ];
+
+  const qids = Object.keys(out || {}).sort((a,b)=>a.localeCompare(b, "ja"));
+  const lines = [header.join(",")];
+
+  for (const qid of qids){
+    const q = out[qid] || {};
+    const choices = q.choices || {};
+    const branch  = q.branch  || {};
+
+    const row = [
+      qid,
+      q.mode ?? "",
+      q.question ?? "",
+      choices.A ?? "",
+      choices.B ?? "",
+      choices.C ?? "",
+      choices.D ?? "",
+      choices.E ?? "",
+      q.answer ?? "",
+      q.explanation ?? "",
+      branch.O ?? "",
+      branch.X ?? "",
+      branch.A ?? "",
+      branch.B ?? "",
+      branch.C ?? "",
+      branch.D ?? "",
+      branch.E ?? ""
+    ];
+
+    lines.push(row.map(csvEscape).join(","));
+  }
+
+  return lines.join("\r\n");
+}
+
+// 追加：CSVをダウンロード保存
+function downloadText(filename, text){
+  const blob = new Blob([text], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
 function stripBOM(s){
   return s.charCodeAt(0) === 0xFEFF ? s.slice(1) : s;
 }
@@ -196,6 +265,8 @@ function pickChoiceValue(headers, cols, key){
 }
 
 function parseCSV(text){
+  const { out, count, branchCount } = parseCSV(text);
+  lastParsedOut = out; // ← 追加
   const rawLines = text.split(/\r?\n/);
   const lines = rawLines.map(l => l.trimEnd()).filter(l => l.trim() !== "");
   if (lines.length < 2) throw new Error("CSVの行数が足りません（ヘッダ+1行以上必要）");
@@ -304,6 +375,38 @@ document.getElementById("importBtn").onclick = async () => {
     log(`✅ branch付き：${branchCount}問`);
     log(`room: ${room}`);
     log("対応：text / ox / five / choiceA..E / branch_*");
+  }catch(err){
+    console.error(err);
+    log("❌ エラー");
+    log(err?.message || String(err));
+  }
+};
+// A) 貼り付け欄の内容をそのままCSV保存
+document.getElementById("exportRawBtn").onclick = () => {
+  logEl.textContent = "";
+  const text = document.getElementById("csvInput").value.trim();
+  if (!text){
+    log("❌ 貼り付け欄が空です");
+    return;
+  }
+  downloadText(`raw_${room}.csv`, text.endsWith("\n") ? text : (text + "\r\n"));
+  log("✅ 貼り付け欄のCSVを保存しました");
+};
+
+// B) 正規化してCSV保存（17列固定・推奨）
+document.getElementById("exportNormalizedBtn").onclick = () => {
+  logEl.textContent = "";
+  try{
+    if (!lastParsedOut){
+      const text = document.getElementById("csvInput").value.trim();
+      if (!text) throw new Error("貼り付け欄が空です");
+      const { out } = parseCSV(text);
+      lastParsedOut = out;
+    }
+
+    const csv = buildCanonicalCSVFromOut(lastParsedOut);
+    downloadText(`questions_${room}_canonical.csv`, csv + "\r\n");
+    log("✅ 正規化CSV（17列固定）を保存しました");
   }catch(err){
     console.error(err);
     log("❌ エラー");
