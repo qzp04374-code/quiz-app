@@ -265,8 +265,6 @@ function pickChoiceValue(headers, cols, key){
 }
 
 function parseCSV(text){
-  const { out, count, branchCount } = parseCSV(text);
-  lastParsedOut = out; // ← 追加
   const rawLines = text.split(/\r?\n/);
   const lines = rawLines.map(l => l.trimEnd()).filter(l => l.trim() !== "");
   if (lines.length < 2) throw new Error("CSVの行数が足りません（ヘッダ+1行以上必要）");
@@ -343,6 +341,7 @@ function parseCSV(text){
     count++;
   }
 
+  lastParsedOut = out;
   return { out, count, branchCount };
 }
 
