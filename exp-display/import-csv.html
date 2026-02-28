@@ -314,15 +314,15 @@ function parseCSV(text){
     };
     if (mode) q.mode = mode;
 
-    // choices（text 以外で、入っているものだけ）
-    if (mode !== "five"){
-      const choices = {};
-      for (const k of ["A","B","C","D","E"]){
-        const v = pickChoiceValue(headers, cols, k);
-        if (v) choices[k] = v;
-      }
-      if (Object.keys(choices).length) q.choices = choices;
-    }
+    // choices（five のときだけ作る）
+if (mode === "five"){
+  const choices = {};
+  for (const k of ["A","B","C","D","E"]){
+    const v = pickChoiceValue(headers, cols, k);
+    if (v) choices[k] = v;
+  }
+  if (Object.keys(choices).length) q.choices = choices;
+}
 
     // branch（入っているものだけ作る）
     const branch = {};
