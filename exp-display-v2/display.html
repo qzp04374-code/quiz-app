@@ -396,26 +396,31 @@
     window.addEventListener("load", safeDrawQR);
 
     function showLayer(layerEl, on){
-      layerEl.classList.toggle("show", !!on);
+      if (!layerEl) return;
+    
+      // classが残っても関係ないように、displayを直指定で強制する
+      layerEl.classList.toggle("show", !!on); // 残してもOK（デバッグしやすい）
+      layerEl.style.display = on ? "flex" : "none";
+      layerEl.style.pointerEvents = on ? "auto" : "none";
+      layerEl.setAttribute("aria-hidden", on ? "false" : "true");
     }
-
+    
     function setPhaseUI(p){
       currentPhase = p || "qr";
       phaseLabel.textContent = `phase: ${currentPhase}`;
     
-      // 🔥 まず全レイヤーを必ず閉じる（重要）
+      // ✅ まず“必ず”全部消す（ここが最重要）
       showLayer(qrLayer, false);
       showLayer(mediaLayer, false);
     
-      // 🔥 phaseで完全制御
-      if (currentPhase === "qr"){
+      // ✅ phaseで必要なものだけ出す
+      if (currentPhase === "qr") {
         showLayer(qrLayer, true);
-      }
-      else if (currentPhase === "media"){
+      } else if (currentPhase === "media") {
         showLayer(mediaLayer, true);
       }
     
-      // explain表示
+      // explain表示（これはメイン領域なので従来通り）
       expEl.style.display = (currentPhase === "explain") ? "" : "none";
     }
 
