@@ -1,84 +1,603 @@
 <!DOCTYPE html>
-<html>
+<html lang="ja">
 <head>
-<meta charset="UTF-8">
-<title>ClassSync v2 - Display</title>
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>ClassSync v2 Display</title>
+  <link rel="icon" href="data:,">
 
-const firebaseConfig = { /* 既存設定 */ };
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
+  <style>
+    :root{
+      --bg:#050608;
+      --panel:#111827;
+      --panel2:#020617;
+      --ink:#f9fafb;
+      --muted:rgba(203,213,225,.85);
 
-const url = new URL(location.href);
-const room = url.searchParams.get("room") || "kyoto-01";
+      --o:#34c759;
+      --x:#ff3b30;
+      --a:#0a84ff;
+      --b:#30d158;
+      --c:#ff9f0a;
+      --d:#bf5af2;
 
-let phase="qr";
-let qid="";
-let question=null;
+      --shadow: 0 1.2rem 4rem rgba(0,0,0,.65);
+    }
+    *{box-sizing:border-box;}
+    html,body{height:100%;}
+    body{
+      margin:0;
+      background:
+        radial-gradient(1100px 760px at 20% 20%, rgba(96,165,250,.10), transparent 55%),
+        radial-gradient(900px 760px at 80% 30%, rgba(34,197,94,.08), transparent 55%),
+        radial-gradient(820px 820px at 50% 90%, rgba(191,90,242,.10), transparent 60%),
+        var(--bg);
+      color:var(--ink);
+      font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",sans-serif;
+      overflow:hidden;
+    }
 
-onValue(ref(db, `rooms/${room}/quiz/present/phase`), snap=>{
-  phase=snap.val()||"qr";
-  render();
-});
+    #buildTag{
+      position:fixed; right:.7rem; bottom:.7rem;
+      opacity:.60; font-size:.75rem; z-index:60;
+      background:rgba(0,0,0,.35);
+      border:1px solid rgba(255,255,255,.08);
+      padding:.4rem .65rem;
+      border-radius:999px;
+      backdrop-filter: blur(8px);
+    }
 
-onValue(ref(db, `rooms/${room}/quiz/current_question_id`), snap=>{
-  qid=snap.val();
-  if(qid){
-    onValue(ref(db, `rooms/${room}/questions/${qid}`), qs=>{
-      question=qs.val();
-      render();
-    });
-  }
-});
+    .wrap{
+      height:100%;
+      display:flex;
+      flex-direction:column;
+    }
+    .topbar{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:1rem;
+      padding:1rem 1rem;
+      border-bottom:1px solid rgba(255,255,255,.10);
+      background:rgba(2,6,23,.50);
+      backdrop-filter: blur(10px);
+    }
+    .room{
+      font-weight:1000;
+      letter-spacing:.10em;
+      font-size:1.05rem;
+      white-space:nowrap;
+    }
+    .meta{
+      display:flex;
+      gap:.8rem;
+      align-items:center;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+      font-weight:900;
+      color:var(--muted);
+      letter-spacing:.06em;
+      font-size:.9rem;
+    }
+    .pill{
+      padding:.35rem .7rem;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(17,24,39,.55);
+    }
 
-function render(){
-  const root=document.getElementById("root");
-  root.innerHTML="";
+    .stage{
+      flex:1;
+      min-height:0;
+      display:grid;
+      grid-template-columns: 1.15fr .85fr;
+      gap:1rem;
+      padding:1rem;
+    }
+    @media (max-width: 62rem){
+      .stage{ grid-template-columns: 1fr; }
+    }
 
-  if(phase==="media") return showMedia(root);
-  if(phase==="game") return location.href="game.html?room="+room;
+    .panel{
+      background:rgba(17,24,39,.72);
+      border:1px solid rgba(255,255,255,.10);
+      border-radius:1.4rem;
+      box-shadow:var(--shadow);
+      overflow:hidden;
+      min-height:0;
+    }
 
-  if(question){
-    const h=document.createElement("h2");
-    h.textContent=question.question;
-    root.appendChild(h);
-  }
-}
+    /* left */
+    .left{
+      padding:1rem 1.1rem;
+      display:flex;
+      flex-direction:column;
+      gap:1rem;
+      min-height:0;
+    }
+    .q{
+      font-weight:1100;
+      letter-spacing:.02em;
+      font-size:clamp(1.6rem, 2.8vw, 3.0rem);
+      line-height:1.18;
+      white-space:pre-wrap;
+    }
+    .exp{
+      margin-top:.5rem;
+      padding:.8rem 1rem;
+      border-radius:1.1rem;
+      background:rgba(0,0,0,.20);
+      border:1px solid rgba(255,255,255,.10);
+      white-space:pre-wrap;
+      font-size:clamp(1.1rem, 1.6vw, 1.6rem);
+      line-height:1.45;
+    }
+    .exp strong{ color:var(--o); }
 
-function showMedia(root){
-  if(!question?.media) return;
+    /* right counts */
+    .right{
+      padding:1rem;
+      display:flex;
+      flex-direction:column;
+      gap:1rem;
+      min-height:0;
+    }
+    .rtitle{
+      font-weight:1000;
+      letter-spacing:.08em;
+      color:rgba(203,213,225,.92);
+      font-size:.9rem;
+    }
+    .bars{
+      flex:1;
+      min-height:0;
+      display:flex;
+      flex-direction:column;
+      gap:.65rem;
+      overflow:auto;
+      padding-right:.2rem;
+    }
+    .barRow{
+      display:grid;
+      grid-template-columns: 4.2rem 1fr 4.5rem;
+      gap:.7rem;
+      align-items:center;
+      font-weight:1000;
+    }
+    .k{ opacity:.9; }
+    .v{ text-align:right; opacity:.95; }
+    .track{
+      height:1.3rem;
+      border-radius:999px;
+      background:rgba(255,255,255,.10);
+      border:1px solid rgba(255,255,255,.10);
+      overflow:hidden;
+    }
+    .fill{
+      height:100%;
+      width:0%;
+      border-radius:999px;
+      background:linear-gradient(90deg, rgba(10,132,255,.95), rgba(168,85,247,.92));
+      transition:width .18s ease;
+    }
 
-  if(question.media.type==="image"){
-    const img=document.createElement("img");
-    img.src=question.media.url;
-    img.style.width="100%";
-    img.style.height="80vh";
-    img.style.objectFit="contain";
-    root.appendChild(img);
-  }
+    /* phase layers */
+    .layer{
+      position:fixed;
+      inset:0;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:1.2rem;
+      z-index:999;
+      background:rgba(0,0,0,.72);
+      backdrop-filter: blur(10px);
+    }
+    .layer.show{ display:flex; }
+    .box{
+      width:min(58rem, 94vw);
+      border-radius:1.6rem;
+      padding:1.2rem 1.2rem 1rem;
+      background:rgba(17,24,39,.92);
+      border:1px solid rgba(255,255,255,.12);
+      box-shadow:0 1.4rem 5rem rgba(0,0,0,.72);
+      text-align:center;
+    }
+    .title{
+      margin:0 0 .5rem 0;
+      font-size:1.35rem;
+      letter-spacing:.10em;
+      font-weight:1000;
+    }
+    .hint{
+      margin:0 0 .9rem 0;
+      color:var(--muted);
+      font-size:1rem;
+      font-weight:900;
+      letter-spacing:.06em;
+    }
 
-  if(question.media.type==="video"){
-    const v=document.createElement("video");
-    v.src=question.media.url;
-    v.autoplay=true;
-    v.muted=true;
-    v.playsInline=true;
-    v.style.width="100%";
-    v.style.height="80vh";
-    v.style.objectFit="contain";
-    root.appendChild(v);
-  }
-}
-</script>
+    /* QR */
+    #qrcode{ display:flex; justify-content:center; align-items:center; margin:.6rem 0 .4rem; }
+    #qrcode canvas{
+      width:min(32rem, 82vw) !important;
+      height:min(32rem, 82vw) !important;
+      border-radius:1.1rem;
+      background:#fff;
+      padding:.7rem;
+      box-sizing:border-box;
+      image-rendering: pixelated;
+    }
 
-<style>
-body{margin:0;text-align:center;font-family:sans-serif}
-h2{font-size:clamp(2rem,4vw,4rem)}
-</style>
+    /* media */
+    .mediaWrap{
+      width:min(68rem, 96vw);
+      border-radius:1.6rem;
+      padding:1.2rem;
+      background:rgba(17,24,39,.92);
+      border:1px solid rgba(255,255,255,.12);
+      box-shadow:0 1.4rem 5rem rgba(0,0,0,.72);
+      text-align:center;
+    }
+    .cap{
+      margin-top:.8rem;
+      color:rgba(203,213,225,.92);
+      font-weight:1000;
+      letter-spacing:.04em;
+      font-size:clamp(1.0rem, 1.6vw, 1.3rem);
+      white-space:pre-wrap;
+    }
+    video, img{
+      width:100%;
+      max-height:72vh;
+      border-radius:1.2rem;
+      background:#000;
+      border:1px solid rgba(255,255,255,.10);
+      box-shadow:0 1.2rem 3.5rem rgba(0,0,0,.55);
+    }
+  </style>
+
+  <!-- QRCode.js（現行同様：module環境で不安定になりやすいのでwindow.QRCode前提） -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 </head>
+
 <body>
-<div id="root"></div>
+  <div id="buildTag">build: 2026-03-01 / exp-display-v2</div>
+
+  <!-- QR layer -->
+  <div id="qrLayer" class="layer">
+    <div class="box">
+      <div class="title">参加用QRコード</div>
+      <div class="hint">スマホで読み取って参加（v2）</div>
+      <div id="qrcode"></div>
+      <div id="qrCount" class="hint">参加中 0人</div>
+    </div>
+  </div>
+
+  <!-- media layer -->
+  <div id="mediaLayer" class="layer">
+    <div class="mediaWrap">
+      <div class="title">MEDIA</div>
+      <div id="mediaSlot"></div>
+      <div id="mediaCaption" class="cap"></div>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div class="topbar">
+      <div class="room" id="roomLabel">ROOM</div>
+      <div class="meta">
+        <span class="pill" id="phaseLabel">phase: —</span>
+        <span class="pill" id="statusLabel">status: —</span>
+        <span class="pill" id="countLabel">参加中 0人</span>
+      </div>
+    </div>
+
+    <div class="stage">
+      <section class="panel left">
+        <div id="qEl" class="q">起動中…</div>
+        <div id="expEl" class="exp" style="display:none;"></div>
+      </section>
+
+      <section class="panel right">
+        <div class="rtitle" id="rightTitle">集計</div>
+        <div class="bars" id="bars"></div>
+      </section>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+    // ★ここをあなたの現行display.htmlの設定に差し替え
+    const firebaseConfig = {
+      // apiKey: "...",
+      // ...
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    const url = new URL(location.href);
+    const room = url.searchParams.get("room") || "kyoto-01";
+
+    // DOM
+    const roomLabel = document.getElementById("roomLabel");
+    const phaseLabel = document.getElementById("phaseLabel");
+    const statusLabel = document.getElementById("statusLabel");
+    const countLabel = document.getElementById("countLabel");
+
+    const qrLayer = document.getElementById("qrLayer");
+    const qrDiv = document.getElementById("qrcode");
+    const qrCount = document.getElementById("qrCount");
+
+    const mediaLayer = document.getElementById("mediaLayer");
+    const mediaSlot = document.getElementById("mediaSlot");
+    const mediaCaption = document.getElementById("mediaCaption");
+
+    const qEl = document.getElementById("qEl");
+    const expEl = document.getElementById("expEl");
+    const bars = document.getElementById("bars");
+    const rightTitle = document.getElementById("rightTitle");
+
+    roomLabel.textContent = `ROOM ${room}`;
+
+    // refs
+    const activityRef = ref(db, `rooms/${room}/activity`);
+    const answersRef = ref(db, `rooms/${room}/answers`);
+    const qidRef = ref(db, `rooms/${room}/quiz/current_question_id`);
+    const phaseRef = ref(db, `rooms/${room}/quiz/present/phase`);
+
+    // state
+    let currentSession = "";
+    let currentStatus = "-";
+    let currentMode = "ox";
+    let currentPhase = "qr";
+    let currentQid = null;
+    let currentQuestion = null;
+    let lastAnswers = {};
+
+    // question subscription
+    let unsubQ = null;
+    function qRef(qid){ return ref(db, `rooms/${room}/questions/${qid}`); }
+
+    // v2 student URL（現行は exp-display/student.html 固定だったので v2へ）:contentReference[oaicite:8]{index=8}
+    function buildStudentUrl(session){
+      const base = `https://qzp04374-code.github.io/quiz-app/exp-display-v2/student.html?room=${encodeURIComponent(room)}`;
+      return session ? `${base}&s=${encodeURIComponent(session)}` : base;
+    }
+
+    function safeDrawQR(){
+      try{
+        if (!qrDiv) return;
+        qrDiv.innerHTML = "";
+
+        if (!window.QRCode){
+          qrDiv.innerHTML = `<div style="color:#fca5a5;font-weight:900;">
+            QRライブラリ未読込（qrcode.min.js）<br>Consoleを確認
+          </div>`;
+          return;
+        }
+        // eslint-disable-next-line no-undef
+        new window.QRCode(qrDiv, {
+          text: buildStudentUrl(currentSession),
+          width: 520,
+          height: 520
+        });
+      }catch(e){
+        console.error("QR draw failed:", e);
+        qrDiv.innerHTML = `<div style="color:#fca5a5;font-weight:900;">QR生成に失敗（Console参照）</div>`;
+      }
+    }
+    safeDrawQR();
+    window.addEventListener("load", safeDrawQR);
+
+    function showLayer(layerEl, on){
+      layerEl.classList.toggle("show", !!on);
+    }
+
+    function setPhaseUI(p){
+      currentPhase = p || "qr";
+      phaseLabel.textContent = `phase: ${currentPhase}`;
+
+      // phaseに応じてレイヤ制御（A方式）:contentReference[oaicite:9]{index=9}
+      showLayer(qrLayer, currentPhase === "qr");
+      showLayer(mediaLayer, currentPhase === "media");
+
+      // explain表示
+      expEl.style.display = (currentPhase === "explain") ? "" : "none";
+    }
+
+    function normalizeAnswers(ans){
+      const out = {};
+      Object.entries(ans || {}).forEach(([uid, v])=>{
+        if (v == null) return;
+        if (typeof v === "string"){ out[uid] = String(v).trim().toUpperCase(); return; }
+        if (typeof v === "object" && v.value != null){
+          out[uid] = String(v.value).trim().toUpperCase();
+          return;
+        }
+      });
+      return out;
+    }
+
+    function defaultChoiceOrder(mode){
+      if (mode === "five") return ["A","B","C","D","E"];
+      if (mode === "text") return [];
+      return ["O","X"];
+    }
+
+    function computeCounts(choiceOrder, ans){
+      const count = {};
+      choiceOrder.forEach(k=>count[k]=0);
+      Object.values(ans).forEach(v=>{
+        if (count[v] != null) count[v]++;
+      });
+      return count;
+    }
+
+    function renderBars(){
+      const mode = (currentMode || "ox").toLowerCase();
+      if (mode === "text"){
+        rightTitle.textContent = "TEXT（件数のみ）";
+        bars.innerHTML = `<div style="opacity:.85;font-weight:1000;">回答数: ${Object.keys(lastAnswers||{}).length}</div>`;
+        return;
+      }
+
+      rightTitle.textContent = "集計（縦棒）";
+      const order = defaultChoiceOrder(mode);
+      const ans = normalizeAnswers(lastAnswers);
+      const count = computeCounts(order, ans);
+      const total = Object.keys(ans).length || 0;
+
+      bars.innerHTML = "";
+      order.forEach(k=>{
+        const n = count[k] || 0;
+        const pct = total ? (n / total) * 100 : 0;
+
+        const row = document.createElement("div");
+        row.className = "barRow";
+
+        const kEl = document.createElement("div");
+        kEl.className = "k";
+        kEl.textContent = k;
+
+        const track = document.createElement("div");
+        track.className = "track";
+        const fill = document.createElement("div");
+        fill.className = "fill";
+        fill.style.width = `${pct.toFixed(1)}%`;
+        // 色味
+        if (k==="O") fill.style.background = `linear-gradient(90deg, rgba(52,199,89,.95), rgba(6,182,212,.90))`;
+        if (k==="X") fill.style.background = `linear-gradient(90deg, rgba(255,59,48,.95), rgba(251,113,133,.88))`;
+        track.appendChild(fill);
+
+        const vEl = document.createElement("div");
+        vEl.className = "v";
+        vEl.textContent = `${n} (${pct.toFixed(0)}%)`;
+
+        row.appendChild(kEl);
+        row.appendChild(track);
+        row.appendChild(vEl);
+
+        bars.appendChild(row);
+      });
+    }
+
+    function renderQuestion(){
+      if (!currentQuestion){
+        qEl.textContent = "（問題データがありません）";
+        expEl.textContent = "";
+        return;
+      }
+      qEl.textContent = currentQuestion.question || "";
+
+      if (currentPhase === "explain"){
+        const ans = currentQuestion.answer ? String(currentQuestion.answer) : "";
+        const exp = currentQuestion.explanation ? String(currentQuestion.explanation) : "";
+        expEl.innerHTML = `<strong>答え:</strong> ${ans}<br><br>${exp}`;
+      }else{
+        expEl.textContent = "";
+      }
+    }
+
+    function renderMedia(){
+      mediaSlot.innerHTML = "";
+      mediaCaption.textContent = "";
+
+      const m = currentQuestion?.media;
+      if (!m || !m.url){
+        mediaSlot.innerHTML = `<div style="opacity:.85;font-weight:1000;">mediaがありません（questions/{qid}/media）</div>`;
+        return;
+      }
+
+      const type = String(m.type || "").toLowerCase();
+      const fit = (m.objectFit === "cover") ? "cover" : "contain";
+
+      if (type === "video"){
+        const v = document.createElement("video");
+        v.src = m.url;
+        v.controls = true;
+        v.playsInline = true;
+        v.style.objectFit = fit;
+        v.muted = !!m.muted;
+        v.loop = !!m.loop;
+        if (m.autoplay) v.autoplay = true;
+        mediaSlot.appendChild(v);
+        if (m.autoplay){
+          // 自動再生はブラウザ制限があるので、失敗しても落ちない
+          v.play().catch(()=>{});
+        }
+      }else{
+        const img = document.createElement("img");
+        img.src = m.url;
+        img.alt = "";
+        img.style.objectFit = fit;
+        mediaSlot.appendChild(img);
+      }
+
+      if (m.caption) mediaCaption.textContent = String(m.caption);
+    }
+
+    // phase
+    onValue(phaseRef, snap=>{
+      setPhaseUI(snap.val() || "qr");
+      // media phaseならmediaを描く
+      if (currentPhase === "media") renderMedia();
+      // explain phaseなら解説を出す
+      renderQuestion();
+    });
+
+    // activity
+    onValue(activityRef, snap=>{
+      const a = snap.val() || {};
+      currentStatus = a.status || "-";
+      currentMode = (a.mode || "ox").toLowerCase();
+      currentSession = String(a.session || "");
+      statusLabel.textContent = `status: ${currentStatus}`;
+      safeDrawQR(); // session更新に追随して描き直す（現行と同じ考え方）:contentReference[oaicite:10]{index=10}
+
+      // 参加人数
+      // ※ rosterがある場合はroster数にしても良いが、ここはanswers数を簡易表示
+      const n = Object.keys(lastAnswers || {}).length;
+      countLabel.textContent = `参加中 ${n}人`;
+      qrCount.textContent = `参加中 ${n}人`;
+    });
+
+    // qid
+    onValue(qidRef, snap=>{
+      const qid = snap.val() || null;
+      if (qid === currentQid) return;
+      currentQid = qid;
+
+      if (unsubQ){ unsubQ(); unsubQ = null; }
+      if (!qid){
+        currentQuestion = null;
+        renderQuestion();
+        renderBars();
+        renderMedia();
+        return;
+      }
+      unsubQ = onValue(qRef(qid), s=>{
+        currentQuestion = s.val() || null;
+        renderQuestion();
+        if (currentPhase === "media") renderMedia();
+      });
+    });
+
+    // answers
+    onValue(answersRef, snap=>{
+      lastAnswers = snap.val() || {};
+      const n = Object.keys(lastAnswers || {}).length;
+      countLabel.textContent = `参加中 ${n}人`;
+      qrCount.textContent = `参加中 ${n}人`;
+      renderBars();
+    });
+
+    // init
+    setPhaseUI("qr");
+    renderBars();
+  </script>
 </body>
 </html>
