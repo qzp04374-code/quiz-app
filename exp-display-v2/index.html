@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>ClassSync v2 - Index</title>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getDatabase, ref, set, update, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+const firebaseConfig = { /* 既存設定 */ };
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+const url = new URL(location.href);
+const room = url.searchParams.get("room") || "kyoto-01";
+
+const phaseRef = ref(db, `rooms/${room}/quiz/present/phase`);
+const statusRef = ref(db, `rooms/${room}/activity/status`);
+
+async function setPhase(p){
+  await set(phaseRef, p);
+}
+
+async function openAnswer(){
+  await update(ref(db, `rooms/${room}/activity`), { status:"open" });
+  await setPhase("question");
+}
+
+async function closeAnswer(){
+  await update(ref(db, `rooms/${room}/activity`), { status:"closed" });
+  await setPhase("explain");
+}
+
+window.showQR = ()=>setPhase("qr");
+window.showMedia = ()=>setPhase("media");
+window.showQuestion = ()=>setPhase("question");
+window.showGame = ()=>setPhase("game");
+window.openAnswer = openAnswer;
+window.closeAnswer = closeAnswer;
+</script>
+
+<style>
+:root{
+  --pad:clamp(1rem,2vw,2rem);
+  --btn:clamp(1.2rem,2vw,2rem);
+}
+body{font-family:sans-serif;padding:var(--pad)}
+button{
+  font-size:var(--btn);
+  padding:0.8em 1.2em;
+  margin:0.5em;
+  border-radius:1rem;
+}
+</style>
+</head>
+<body>
+
+<h1>ClassSync v2</h1>
+
+<button onclick="showQR()">QR</button>
+<button onclick="showMedia()">Media</button>
+<button onclick="showQuestion()">Question</button>
+<button onclick="openAnswer()">Open</button>
+<button onclick="closeAnswer()">Close</button>
+<button onclick="showGame()">Game</button>
+
+</body>
+</html>
