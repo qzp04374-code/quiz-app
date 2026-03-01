@@ -1,11 +1,276 @@
 <!DOCTYPE html>
-<html>
+<html lang="ja">
 <head>
-<meta charset="UTF-8">
-<title>Student</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>ClassSync v2 Game</title>
+  <link rel="icon" href="data:,">
+  <style>
+    :root{
+      --bg:#050608;
+      --ink:#f9fafb;
+      --muted:rgba(203,213,225,.85);
+      --panel:rgba(17,24,39,.80);
+      --line:rgba(255,255,255,.10);
+      --shadow: 0 1.2rem 4rem rgba(0,0,0,.65);
+      --a:#0a84ff; --b:#30d158; --c:#ff9f0a; --d:#bf5af2; --e:#ff375f;
+    }
+    *{box-sizing:border-box;}
+    html,body{height:100%;}
+    body{
+      margin:0;
+      background:
+        radial-gradient(1100px 760px at 20% 20%, rgba(96,165,250,.10), transparent 55%),
+        radial-gradient(900px 760px at 80% 30%, rgba(34,197,94,.08), transparent 55%),
+        radial-gradient(820px 820px at 50% 90%, rgba(191,90,242,.10), transparent 60%),
+        var(--bg);
+      color:var(--ink);
+      font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",sans-serif;
+      overflow:hidden;
+    }
+    .topbar{
+      display:flex; justify-content:space-between; align-items:center; gap:1rem;
+      padding:1rem 1rem;
+      border-bottom:1px solid var(--line);
+      background:rgba(2,6,23,.50);
+      backdrop-filter: blur(10px);
+    }
+    .room{font-weight:1000; letter-spacing:.10em; font-size:1.05rem; white-space:nowrap;}
+    .meta{display:flex; gap:.8rem; flex-wrap:wrap; justify-content:flex-end; color:var(--muted); font-weight:900;}
+    .pill{padding:.35rem .7rem; border-radius:999px; border:1px solid var(--line); background:rgba(17,24,39,.55);}
+    .wrap{height:100%; display:flex; flex-direction:column;}
+    .stage{
+      flex:1; min-height:0;
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:1rem;
+      padding:1rem;
+    }
+    @media (max-width: 62rem){ .stage{ grid-template-columns:1fr; } }
+    .panel{
+      background:var(--panel);
+      border:1px solid var(--line);
+      border-radius:1.4rem;
+      box-shadow:var(--shadow);
+      padding:1rem;
+      min-height:0;
+      overflow:hidden;
+    }
+    h2{margin:0 0 .7rem 0; letter-spacing:.08em;}
+    .big{
+      font-size:clamp(1.4rem, 2.2vw, 2.2rem);
+      font-weight:1100;
+      line-height:1.2;
+      white-space:pre-wrap;
+    }
+    .grid{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:.8rem;
+      margin-top:1rem;
+    }
+    .seat{
+      border:1px solid var(--line);
+      border-radius:1.2rem;
+      padding:1rem;
+      background:rgba(0,0,0,.18);
+    }
+    .seat .k{
+      font-weight:1200;
+      font-size:clamp(1.3rem, 2.2vw, 2.1rem);
+      letter-spacing:.10em;
+    }
+    .seat .n{ margin-top:.4rem; color:var(--muted); font-weight:1000; }
+    .seat .bar{
+      margin-top:.6rem;
+      height:1.1rem;
+      border-radius:999px;
+      background:rgba(255,255,255,.10);
+      border:1px solid var(--line);
+      overflow:hidden;
+    }
+    .seat .fill{ height:100%; width:0%; border-radius:999px; transition:width .2s ease; }
+    .fill.a{ background:linear-gradient(90deg, rgba(10,132,255,.95), rgba(56,189,248,.88)); }
+    .fill.b{ background:linear-gradient(90deg, rgba(48,209,88,.95), rgba(34,197,94,.88)); }
+    .fill.c{ background:linear-gradient(90deg, rgba(255,159,10,.95), rgba(245,158,11,.88)); }
+    .fill.d{ background:linear-gradient(90deg, rgba(191,90,242,.95), rgba(168,85,247,.88)); }
+    .fill.e{ background:linear-gradient(90deg, rgba(255,55,95,.95), rgba(251,113,133,.88)); }
+    .list{
+      margin-top:1rem;
+      overflow:auto;
+      max-height:60vh;
+      padding-right:.2rem;
+    }
+    .item{
+      padding:.8rem .9rem;
+      border-radius:1rem;
+      border:1px solid var(--line);
+      background:rgba(0,0,0,.18);
+      margin-bottom:.7rem;
+      display:flex;
+      justify-content:space-between;
+      gap:1rem;
+      font-weight:1000;
+    }
+    .muted{ color:var(--muted); font-weight:900; }
+  </style>
 </head>
 <body>
-<h2>学生画面（v2）</h2>
-<p>既存student.htmlをそのまま流用してください。</p>
+  <div class="wrap">
+    <div class="topbar">
+      <div class="room" id="roomLabel">ROOM</div>
+      <div class="meta">
+        <span class="pill" id="gStatus">game: —</span>
+        <span class="pill" id="gRound">round: —</span>
+        <span class="pill" id="gPhase">phase: —</span>
+      </div>
+    </div>
+
+    <div class="stage">
+      <section class="panel">
+        <h2>ゲーム概要</h2>
+        <div class="big" id="title">—</div>
+        <div class="big" style="margin-top:.8rem;" id="winner">—</div>
+
+        <div class="grid">
+          <div class="seat">
+            <div class="k">A</div>
+            <div class="n" id="nA">残席: 0</div>
+            <div class="bar"><div class="fill a" id="fA"></div></div>
+          </div>
+          <div class="seat">
+            <div class="k">B</div>
+            <div class="n" id="nB">残席: 0</div>
+            <div class="bar"><div class="fill b" id="fB"></div></div>
+          </div>
+          <div class="seat">
+            <div class="k">C</div>
+            <div class="n" id="nC">残席: 0</div>
+            <div class="bar"><div class="fill c" id="fC"></div></div>
+          </div>
+          <div class="seat">
+            <div class="k">D</div>
+            <div class="n" id="nD">残席: 0</div>
+            <div class="bar"><div class="fill d" id="fD"></div></div>
+          </div>
+          <div class="seat">
+            <div class="k">E</div>
+            <div class="n" id="nE">残席: 0</div>
+            <div class="bar"><div class="fill e" id="fE"></div></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>プレイヤー一覧</h2>
+        <div class="muted">※ displayは原則書き込まない / activity.game.players を読むだけ</div>
+        <div class="list" id="list"></div>
+      </section>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+    // ★ここをあなたの現行設定に差し替え
+    const firebaseConfig = {
+      // apiKey: "...",
+      // ...
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    const url = new URL(location.href);
+    const room = url.searchParams.get("room") || "kyoto-01";
+
+    const roomLabel = document.getElementById("roomLabel");
+    roomLabel.textContent = `ROOM ${room}`;
+
+    const gStatus = document.getElementById("gStatus");
+    const gRound = document.getElementById("gRound");
+    const gPhase = document.getElementById("gPhase");
+
+    const title = document.getElementById("title");
+    const winner = document.getElementById("winner");
+
+    const nA = document.getElementById("nA"); const fA = document.getElementById("fA");
+    const nB = document.getElementById("nB"); const fB = document.getElementById("fB");
+    const nC = document.getElementById("nC"); const fC = document.getElementById("fC");
+    const nD = document.getElementById("nD"); const fD = document.getElementById("fD");
+    const nE = document.getElementById("nE"); const fE = document.getElementById("fE");
+
+    const list = document.getElementById("list");
+
+    const gameRef = ref(db, `rooms/${room}/activity/game`);
+    const rootGameRef = ref(db, `rooms/${room}/game`); // v2設計上の将来拡張も読めるように（あれば）
+
+    const seatEls = {
+      A:{n:nA,f:fA}, B:{n:nB,f:fB}, C:{n:nC,f:fC}, D:{n:nD,f:fD}, E:{n:nE,f:fE}
+    };
+
+    function renderGame(g){
+      const game = g || {};
+      const round = (game.round != null) ? Number(game.round) : null;
+      const phase = (game.phase != null) ? String(game.phase) : "-";
+
+      gStatus.textContent = `game: ${(game.enabled === false) ? "off" : "on"}`;
+      gRound.textContent = `round: ${round != null ? round : "-"}`;
+      gPhase.textContent = `phase: ${phase}`;
+
+      // seatsRemain優先、無ければseats
+      const seats = (game.seatsRemain && typeof game.seatsRemain === "object") ? game.seatsRemain :
+                    (game.seats && typeof game.seats === "object") ? game.seats : {A:0,B:0,C:0,D:0,E:0};
+
+      // 最大値（バー用）
+      const max = Math.max(1, ...Object.values(seats).map(x=>Math.max(0, Math.floor(Number(x||0)))));
+
+      ["A","B","C","D","E"].forEach(k=>{
+        const remain = Math.max(0, Math.floor(Number(seats[k] || 0)));
+        seatEls[k].n.textContent = `残席: ${remain}`;
+        const pct = Math.max(0, Math.min(100, (remain / max) * 100));
+        seatEls[k].f.style.width = `${pct.toFixed(1)}%`;
+      });
+
+      // title/winner（v2将来拡張と互換）
+      title.textContent = game.title ? String(game.title) : "（タイトル未設定）";
+      winner.textContent = game.winner ? `WINNER: ${String(game.winner)}` : "WINNER: —";
+
+      const players = (game.players && typeof game.players === "object") ? game.players : {};
+      const items = Object.entries(players).map(([uid, p])=>{
+        const seat = String(p?.seat || "-");
+        const pr = (p?.round != null) ? Number(p.round) : "-";
+        const at = p?.at ? new Date(Number(p.at)).toLocaleTimeString() : "";
+        return { uid, seat, pr, at };
+      });
+
+      items.sort((a,b)=>{
+        if (a.pr !== b.pr) return (Number(b.pr||0) - Number(a.pr||0));
+        return a.uid.localeCompare(b.uid);
+      });
+
+      list.innerHTML = items.map(x=>`
+        <div class="item">
+          <div>${x.seat} <span class="muted">R${x.pr}</span></div>
+          <div class="muted">${x.at}</div>
+        </div>
+      `).join("") || `<div class="muted" style="margin-top:1rem;">まだプレイヤーがいません</div>`;
+    }
+
+    // activity/game を優先購読（現行studentがここを使っているため）
+    onValue(gameRef, snap=>{
+      const g = snap.val() || {};
+      renderGame(g);
+    });
+
+    // rooms/{room}/game もあれば読める（将来拡張用）:contentReference[oaicite:12]{index=12}
+    onValue(rootGameRef, snap=>{
+      const g = snap.val() || null;
+      if (!g) return;
+      // もしactivity側に無い情報が来たらマージして見せたい場合の保険
+      // 今回は“読むだけ”なので触らない
+    });
+  </script>
 </body>
 </html>
