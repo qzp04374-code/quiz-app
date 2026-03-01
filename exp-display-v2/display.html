@@ -402,11 +402,19 @@
     function setPhaseUI(p){
       currentPhase = p || "qr";
       phaseLabel.textContent = `phase: ${currentPhase}`;
-
-      // phaseに応じてレイヤ制御（A方式）:contentReference[oaicite:9]{index=9}
-      showLayer(qrLayer, currentPhase === "qr");
-      showLayer(mediaLayer, currentPhase === "media");
-
+    
+      // 🔥 まず全レイヤーを必ず閉じる（重要）
+      showLayer(qrLayer, false);
+      showLayer(mediaLayer, false);
+    
+      // 🔥 phaseで完全制御
+      if (currentPhase === "qr"){
+        showLayer(qrLayer, true);
+      }
+      else if (currentPhase === "media"){
+        showLayer(mediaLayer, true);
+      }
+    
       // explain表示
       expEl.style.display = (currentPhase === "explain") ? "" : "none";
     }
