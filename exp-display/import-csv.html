@@ -69,6 +69,131 @@
     padding: 2px 6px;
     border-radius: 8px;
   }
+
+  /* ===== バリデーション ===== */
+  #validationBox{
+    display:none;
+    margin-top:14px;
+    background:#1a0a0a;
+    border:1px solid rgba(239,68,68,.40);
+    border-radius:18px;
+    padding:16px 18px;
+  }
+  #validationBox h3{
+    margin:0 0 10px 0;
+    font-size:15px;
+    color:#f87171;
+    letter-spacing:.04em;
+  }
+  .err-row{
+    padding:9px 12px;
+    border-radius:12px;
+    background:rgba(239,68,68,.10);
+    border:1px solid rgba(239,68,68,.22);
+    margin-bottom:7px;
+    font-size:13px;
+    line-height:1.55;
+  }
+  .err-row .err-line{ font-weight:900; color:#fca5a5; margin-bottom:2px; }
+  .err-row .err-detail{ color:#fecaca; opacity:.9; }
+  .warn-row{
+    padding:9px 12px;
+    border-radius:12px;
+    background:rgba(251,191,36,.08);
+    border:1px solid rgba(251,191,36,.22);
+    margin-bottom:7px;
+    font-size:13px;
+    line-height:1.55;
+  }
+  .warn-row .err-line{ font-weight:900; color:#fde68a; margin-bottom:2px; }
+  .warn-row .err-detail{ color:#fef3c7; opacity:.9; }
+
+  /* ===== プレビュー ===== */
+  #previewSection{
+    display:none;
+    margin-top:18px;
+  }
+  #previewSection h3{
+    margin:0 0 12px 0;
+    font-size:16px;
+    letter-spacing:.05em;
+  }
+  .pv-nav{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:12px;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+  .pv-nav span{
+    font-size:13px;
+    color:#94a3b8;
+    font-weight:900;
+  }
+  .pv-nav button{
+    padding:8px 18px;
+    font-size:13px;
+    margin-top:0;
+  }
+  .pv-cards{
+    display:grid;
+    gap:10px;
+  }
+  .pv-card{
+    background:rgba(255,255,255,.04);
+    border:1px solid rgba(255,255,255,.09);
+    border-radius:16px;
+    padding:14px 16px;
+  }
+  .pv-card-head{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin-bottom:8px;
+  }
+  .pv-badge{
+    font-size:11px;
+    font-weight:900;
+    letter-spacing:.08em;
+    padding:4px 9px;
+    border-radius:999px;
+  }
+  .badge-ox  { background:rgba(52,199,89,.22); border:1px solid rgba(52,199,89,.35); color:#6ee7b7; }
+  .badge-five{ background:rgba(99,102,241,.22); border:1px solid rgba(99,102,241,.35); color:#a5b4fc; }
+  .badge-text{ background:rgba(255,159,10,.22); border:1px solid rgba(255,159,10,.35); color:#fcd34d; }
+  .pv-qid{ font-size:12px; color:#64748b; font-weight:900; }
+  .pv-question{ font-size:15px; font-weight:700; margin-bottom:8px; line-height:1.5; }
+  .pv-choices{ margin:6px 0 8px 4px; display:grid; gap:4px; }
+  .pv-choice{ font-size:13px; color:#cbd5e1; padding:4px 8px; border-radius:8px; background:rgba(255,255,255,.05); }
+  .pv-answer{ font-size:13px; font-weight:900; color:#34d399; margin-top:6px; }
+  .pv-explanation{ font-size:13px; color:#94a3b8; margin-top:4px; white-space:pre-wrap; }
+  .pv-error{
+    font-size:12px;
+    color:#f87171;
+    margin-top:6px;
+    font-weight:900;
+  }
+
+  .btn-upload{
+    background: linear-gradient(135deg, #22c55e, #16a34a) !important;
+    font-size:15px !important;
+    padding:14px 28px !important;
+  }
+  .btn-secondary{
+    background:#374151 !important;
+    font-size:13px !important;
+  }
+  .pv-summary{
+    font-size:13px;
+    color:#94a3b8;
+    margin-bottom:12px;
+    padding:10px 14px;
+    background:rgba(255,255,255,.04);
+    border-radius:12px;
+    border:1px solid rgba(255,255,255,.07);
+  }
+  .pv-summary b{ color:#e2e8f0; }
 </style>
 </head>
 
@@ -100,11 +225,28 @@
   </div>
 </div>
 
-<button id="importBtn">Firebase に投入</button>
+<!-- ボタン行 -->
+<div style="display:flex; flex-wrap:wrap; gap:10px; margin-top:12px; align-items:center;">
+  <button id="validateBtn" style="background:#6366f1;">① バリデーション＋プレビュー</button>
+  <button id="exportNormalizedBtn" style="background:#374151;">CSVを保存（正規化）</button>
+</div>
 
-<!-- 追加：CSV書き出し -->
-<button id="exportRawBtn">貼り付け欄のCSVを保存</button>
-<button id="exportNormalizedBtn">正規化してCSV保存（推奨）</button>
+<!-- バリデーション結果 -->
+<div id="validationBox" style="display:none;">
+  <h3>⚠️ バリデーション結果</h3>
+  <div id="validationList"></div>
+</div>
+
+<!-- プレビューセクション -->
+<div id="previewSection" class="box" style="display:none;">
+  <h3 style="margin:0 0 12px 0; font-size:16px;">📋 プレビュー確認（全問一覧）</h3>
+  <div class="pv-summary" id="pvSummary"></div>
+  <div class="pv-cards" id="pvCards" style="max-height:70vh; overflow-y:auto; padding-right:4px;"></div>
+  <div style="margin-top:16px; display:flex; gap:10px; flex-wrap:wrap;">
+    <button id="importBtn" style="background:linear-gradient(135deg,#22c55e,#16a34a); font-size:15px; padding:14px 28px;">✅ Firebase に投入する</button>
+    <button id="cancelPreviewBtn" style="background:#374151;">← 戻って修正</button>
+  </div>
+</div>
 
 <div id="log"></div>
 
@@ -351,7 +493,123 @@ if (mode === "five"){
   return { out, count, branchCount };
 }
 
-// ファイル読み込み
+// ===== バリデーション関数 =====
+function validateOut(out, rawLines, headers, qidIdx, modeIdx, ansIdx){
+  const errors = [];
+  const warns  = [];
+  const VALID_MODES = ["ox","five","text"];
+  const VALID_OX    = ["O","X","o","x"];
+  const VALID_FIVE  = ["A","B","C","D","E","a","b","c","d","e"];
+
+  // 期待列数：ヘッダ行の列数
+  const expectedCols = headers.length;
+
+  for (let i=1; i<rawLines.length; i++){
+    const line = rawLines[i];
+    if (!line.trim()) continue;
+    const cols = parseCSVLine(line);
+    const lineNum = i + 1;
+    const qid = getCell(cols, qidIdx) || `行${lineNum}`;
+
+    // (1) 列数チェック
+    if (cols.length !== expectedCols){
+      errors.push({
+        line: lineNum,
+        qid,
+        msg: `列数が違います（ヘッダ: ${expectedCols}列 / この行: ${cols.length}列）`,
+        type:"error"
+      });
+    }
+
+    // (2) question_id・question が空
+    const qidVal  = getCell(cols, qidIdx);
+    const qVal    = getCell(cols, firstIndex(headers,["question","q"]));
+    if (!qidVal) errors.push({ line:lineNum, qid, msg:"question_id が空です", type:"error" });
+    if (!qVal)   errors.push({ line:lineNum, qid, msg:"question（問題文）が空です", type:"error" });
+
+    // (3) mode チェック
+    const mode = getCell(cols, modeIdx).toLowerCase();
+    if (!mode){
+      warns.push({ line:lineNum, qid, msg:`mode が未入力です（ox / five / text のいずれかを推奨）`, type:"warn" });
+    } else if (!VALID_MODES.includes(mode)){
+      errors.push({ line:lineNum, qid, msg:`mode が不正です：「${mode}」（有効値: ox / five / text）`, type:"error" });
+    }
+
+    // (4) answer チェック
+    const ans = getCell(cols, ansIdx).toUpperCase();
+    if (!ans){
+      warns.push({ line:lineNum, qid, msg:`answer が空です`, type:"warn" });
+    } else if (mode === "ox" && !VALID_OX.map(x=>x.toUpperCase()).includes(ans)){
+      errors.push({ line:lineNum, qid, msg:`answer が不正です：「${ans}」（ox の場合は O または X）`, type:"error" });
+    } else if (mode === "five" && !VALID_FIVE.map(x=>x.toUpperCase()).includes(ans)){
+      errors.push({ line:lineNum, qid, msg:`answer が不正です：「${ans}」（five の場合は A〜E）`, type:"error" });
+    }
+
+    // (5) five なのに選択肢が空
+    if (mode === "five"){
+      const missing = [];
+      for (const k of ["A","B","C","D","E"]){
+        const v = pickChoiceValue(headers, cols, k);
+        if (!v) missing.push(k);
+      }
+      if (missing.length > 0){
+        warns.push({ line:lineNum, qid, msg:`5択の選択肢が不足しています（空: ${missing.join(", ")}）`, type:"warn" });
+      }
+    }
+  }
+  return { errors, warns };
+}
+
+// ===== プレビュー状態 =====
+let previewData = null; // { qids, out }
+
+function renderPreviewAll(){
+  if (!previewData) return;
+  const { qids, out } = previewData;
+  const cards = document.getElementById("pvCards");
+  cards.innerHTML = "";
+
+  for (const qid of qids){
+    const q = out[qid] || {};
+    const mode = (q.mode || "").toLowerCase();
+
+    const badgeClass = mode === "ox" ? "badge-ox" : mode === "five" ? "badge-five" : "badge-text";
+    const badgeLabel = mode === "ox" ? "○✕" : mode === "five" ? "5択" : mode === "text" ? "TEXT" : mode || "?";
+
+    const choices = q.choices || {};
+    const choiceHtml = Object.entries(choices).map(([k,v]) =>
+      `<div class="pv-choice"><b>${k}.</b> ${esc(v)}</div>`
+    ).join("");
+
+    const ansLabel = q.answer
+      ? `<div class="pv-answer">✅ 正解：${esc(q.answer)}</div>`
+      : `<div class="pv-error">⚠️ answer が空</div>`;
+
+    const expHtml = q.explanation
+      ? `<div class="pv-explanation">💬 ${esc(q.explanation)}</div>` : "";
+
+    const card = document.createElement("div");
+    card.className = "pv-card";
+    card.innerHTML = `
+      <div class="pv-card-head">
+        <span class="pv-badge ${badgeClass}">${badgeLabel}</span>
+        <span class="pv-qid">${esc(qid)}</span>
+      </div>
+      <div class="pv-question">${esc(q.question || "（問題文なし）")}</div>
+      ${choiceHtml ? `<div class="pv-choices">${choiceHtml}</div>` : ""}
+      ${ansLabel}
+      ${expHtml}
+    `;
+    cards.appendChild(card);
+  }
+}
+
+function esc(s){
+  return String(s ?? "")
+    .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+// ===== ファイル読み込み =====
 document.getElementById("fileInput").addEventListener("change", e=>{
   const file = e.target.files[0];
   if (!file) return;
@@ -364,41 +622,118 @@ document.getElementById("fileInput").addEventListener("change", e=>{
   reader.readAsText(file);
 });
 
-// 投入（questions を丸ごと置き換え）
-document.getElementById("importBtn").onclick = async () => {
+// ===== ① バリデーション＋プレビュー =====
+document.getElementById("validateBtn").onclick = () => {
   logEl.textContent = "";
+  document.getElementById("validationBox").style.display = "none";
+  document.getElementById("previewSection").style.display = "none";
+
   try{
     const text = document.getElementById("csvInput").value.trim();
     if (!text) throw new Error("CSVが空です");
 
+    // parse
     const { out, count, branchCount } = parseCSV(text);
     if (count <= 0) throw new Error("有効な行がありません（question_id が空など）");
 
-    await set(ref(db, `rooms/${room}/questions`), out);
+    // バリデーション用にrawLinesとheadersを再取得
+    const rawLines = text.split(/\r?\n/).map(l=>l.trimEnd()).filter(l=>l.trim()!=="");
+    const headerLine = stripBOM(rawLines[0]);
+    const headers = parseCSVLine(headerLine).map(normalizeHeader);
+    const qidIdx  = firstIndex(headers, ["question_id","question-id","qid","id"]);
+    const modeIdx = firstIndex(headers, ["mode","type"]);
+    const ansIdx  = firstIndex(headers, ["answer","ans"]);
 
-    log(`✅ 投入完了：${count}問`);
-    log(`✅ branch付き：${branchCount}問`);
-    log(`room: ${room}`);
-    log("対応：text / ox / five / choiceA..E / branch_*");
+    const { errors, warns } = validateOut(out, rawLines, headers, qidIdx, modeIdx, ansIdx);
+
+    // バリデーション結果表示
+    const vBox  = document.getElementById("validationBox");
+    const vList = document.getElementById("validationList");
+    vList.innerHTML = "";
+
+    if (errors.length === 0 && warns.length === 0){
+      vBox.style.display = "block";
+      vBox.style.background = "#0a1a0a";
+      vBox.style.borderColor = "rgba(34,197,94,.35)";
+      vList.innerHTML = `<div style="color:#86efac;font-weight:900;">✅ エラー・警告なし（${count}問すべて正常）</div>`;
+    } else {
+      vBox.style.display = "block";
+      vBox.style.background = "";
+      vBox.style.borderColor = "";
+
+      const title = document.querySelector("#validationBox h3");
+      title.textContent = `⚠️ バリデーション結果（エラー: ${errors.length}件 / 警告: ${warns.length}件）`;
+
+      [...errors, ...warns].sort((a,b)=>a.line-b.line).forEach(item => {
+        const div = document.createElement("div");
+        div.className = item.type === "error" ? "err-row" : "warn-row";
+        div.innerHTML = `<div class="err-line">${item.type === "error" ? "❌" : "⚠️"} 行 ${item.line}（${esc(item.qid)}）</div>
+          <div class="err-detail">${esc(item.msg)}</div>`;
+        vList.appendChild(div);
+      });
+    }
+
+    // プレビュー表示（エラーがあっても表示する）
+    const qids = Object.keys(out).sort((a,b)=>{
+      const na = parseInt(String(a).match(/^Q(\d+)/i)?.[1]||"999999",10);
+      const nb = parseInt(String(b).match(/^Q(\d+)/i)?.[1]||"999999",10);
+      if (na!==nb) return na-nb;
+      return String(a).localeCompare(String(b),"ja");
+    });
+
+    previewData = { qids, out };
+
+    const pvSection = document.getElementById("previewSection");
+    pvSection.style.display = "block";
+
+    const errNote = errors.length > 0
+      ? `<span style="color:#f87171;"> ／ ❌ エラー ${errors.length} 件あり（投入前に要確認）</span>` : "";
+    const warnNote = warns.length > 0
+      ? `<span style="color:#fde68a;"> ／ ⚠️ 警告 ${warns.length} 件</span>` : "";
+
+    document.getElementById("pvSummary").innerHTML =
+      `<b>${count}</b> 問 ／ branch付き <b>${branchCount}</b> 問 ／ room: <b>${room}</b>${errNote}${warnNote}`;
+
+    renderPreviewAll();
+
   }catch(err){
     console.error(err);
     log("❌ エラー");
     log(err?.message || String(err));
   }
 };
-// A) 貼り付け欄の内容をそのままCSV保存
-document.getElementById("exportRawBtn").onclick = () => {
+
+// プレビュー → 戻る
+document.getElementById("cancelPreviewBtn").onclick = () => {
+  document.getElementById("previewSection").style.display = "none";
+  document.getElementById("validationBox").style.display = "none";
   logEl.textContent = "";
-  const text = document.getElementById("csvInput").value.trim();
-  if (!text){
-    log("❌ 貼り付け欄が空です");
-    return;
-  }
-  downloadText(`raw_${room}.csv`, text.endsWith("\n") ? text : (text + "\r\n"));
-  log("✅ 貼り付け欄のCSVを保存しました");
 };
 
-// B) 正規化してCSV保存（17列固定・推奨）
+// ===== Firebase 投入（プレビュー後） =====
+document.getElementById("importBtn").onclick = async () => {
+  logEl.textContent = "";
+  if (!lastParsedOut || Object.keys(lastParsedOut).length === 0){
+    log("❌ 先に「バリデーション＋プレビュー」ボタンで確認してください");
+    return;
+  }
+  const count = Object.keys(lastParsedOut).length;
+  const ok = confirm(`${count} 問を room「${room}」に投入します。よろしいですか？\n（既存の questions は上書きされます）`);
+  if (!ok) return;
+
+  try{
+    await set(ref(db, `rooms/${room}/questions`), lastParsedOut);
+    log(`✅ 投入完了：${count}問`);
+    log(`room: ${room}`);
+    document.getElementById("previewSection").style.display = "none";
+  }catch(err){
+    console.error(err);
+    log("❌ 投入エラー");
+    log(err?.message || String(err));
+  }
+};
+
+// ===== CSV書き出し =====
 document.getElementById("exportNormalizedBtn").onclick = () => {
   logEl.textContent = "";
   try{
@@ -408,7 +743,6 @@ document.getElementById("exportNormalizedBtn").onclick = () => {
       const { out } = parseCSV(text);
       lastParsedOut = out;
     }
-
     const csv = buildCanonicalCSVFromOut(lastParsedOut);
     downloadText(`questions_${room}_canonical.csv`, csv + "\r\n");
     log("✅ 正規化CSV（17列固定）を保存しました");
