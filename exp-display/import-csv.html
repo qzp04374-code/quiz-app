@@ -138,7 +138,11 @@
   }
   .pv-cards{
     display:grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap:10px;
+  }
+  @media (max-width: 700px){
+    .pv-cards{ grid-template-columns: 1fr; }
   }
   .pv-card{
     background:rgba(255,255,255,.04);
@@ -241,7 +245,7 @@
 <div id="previewSection" class="box" style="display:none;">
   <h3 style="margin:0 0 12px 0; font-size:16px;">📋 プレビュー確認（全問一覧）</h3>
   <div class="pv-summary" id="pvSummary"></div>
-  <div class="pv-cards" id="pvCards" style="max-height:70vh; overflow-y:auto; padding-right:4px;"></div>
+  <div class="pv-cards" id="pvCards" style="padding-right:4px;"></div>
   <div style="margin-top:16px; display:flex; gap:10px; flex-wrap:wrap;">
     <button id="importBtn" style="background:linear-gradient(135deg,#22c55e,#16a34a); font-size:15px; padding:14px 28px;">✅ Firebase に投入する</button>
     <button id="cancelPreviewBtn" style="background:#374151;">← 戻って修正</button>
