@@ -364,17 +364,12 @@
       }
     }
 
-    /* Game buttons */
-    #gameDisplayBtn{ background: linear-gradient(135deg, #22c55e, #16a34a) !important; }
-    #gameStartBtn{ background: linear-gradient(135deg, #0ea5e9, #2563eb) !important; }
-    #gameNextRoundBtn{ background: linear-gradient(135deg, #a855f7, #7c3aed) !important; }
-    #gameCloseBtn{ background: rgba(255,159,10,.92) !important; border-color: rgba(255,159,10,.55) !important; }
-    #gameEndBtn{ background: rgba(255,69,58,.92) !important; border-color: rgba(255,69,58,.55) !important; }
+
   </style>
 </head>
 
 <body>
-  <div id="buildTag">build: 2026-02-08 / teacher-branch-v1</div>
+  <div id="buildTag">build: 2026-03-15 / no-game-v2</div>
 
   <div class="card">
     <h2>教員画面</h2>
@@ -435,11 +430,7 @@
           <button id="importBtn" class="tile tile-admin">CSV投入</button>
           <button id="dictBtn" class="tile tile-admin2">読み方（辞書）</button>
           <button id="setExpectedFromVotesBtn" class="tile tile-admin">母数=投票人数</button>
-          <button id="gameDisplayBtn" class="tile tile-admin2">ゲーム表示</button>
-          <button id="gameStartBtn" class="tile tile-admin2">ゲーム開始</button>
-          <button id="gameNextRoundBtn" class="tile tile-admin2">次ラウンド</button>
-          <button id="gameCloseBtn" class="tile tile-admin">締切（公開）</button>
-          <button id="gameEndBtn" class="tile tile-admin">ゲーム終了</button>
+
         </div>
       </section>
     </div>
@@ -546,7 +537,6 @@
     // refs
     function activityRef(room=currentRoom){ return ref(db, `rooms/${room}/activity`); }
     function answersRef(room=currentRoom){ return ref(db, `rooms/${room}/answers`); }
-    function gameRef(room=currentRoom){ return ref(db, `rooms/${room}/activity/game`); }
 
     function qidRef(room=currentRoom){ return ref(db, `rooms/${room}/quiz/current_question_id`); }
     function questionsRef(room=currentRoom){ return ref(db, `rooms/${room}/questions`); }
@@ -578,11 +568,6 @@
     const btnQT   = document.getElementById("quickTextBtn");
     const btnReveal = document.getElementById("revealBtn");
     const btnSetExpectedFromVotes = document.getElementById("setExpectedFromVotesBtn");
-    const btnGameDisplay = document.getElementById("gameDisplayBtn");
-    const btnGameStart   = document.getElementById("gameStartBtn");
-    const btnGameNext    = document.getElementById("gameNextRoundBtn");
-    const btnGameClose   = document.getElementById("gameCloseBtn");
-    const btnGameEnd     = document.getElementById("gameEndBtn");
 
     async function clearAnswers(){ await set(answersRef(), {}); }
 
@@ -938,21 +923,6 @@
         return;
       }
 
-      if (view === "game"){
-        pvQid.textContent = "ID: —";
-        pvQuestion.textContent = "（ゲーム中：椅子取り A〜E）";
-        pvChoices.innerHTML = "";
-        pvAnswer.textContent = "";
-        pvExplanation.textContent = "";
-
-        pvQidNext.textContent = "ID: —";
-        pvQuestionNext.textContent = "—";
-        pvChoicesNext.innerHTML = "";
-        pvAnswerNext.textContent = "";
-        pvExplanationNext.textContent = "";
-        return;
-      }
-
       // 現在
       const q = state.question;
       if (!state.latestQid){
@@ -1178,24 +1148,6 @@
     btnQR.onclick = async () => { await toggleQR(); };
     btnReveal.onclick = async () => { await toggleRevealMode(); };
     btnSetExpectedFromVotes.onclick = async () => { await setExpectedFromVotes(); };
-
-    btnGameDisplay.onclick = () => {
-      window.open(`https://qzp04374-code.github.io/quiz-app/exp-display/display_game.html?room=${encodeURIComponent(currentRoom)}`, "_blank");
-    };
-
-    btnGameEnd.onclick = async () => {
-      const ok = confirm("ゲームを終了して standy に戻しますか？");
-      if (!ok) return;
-
-      await update(activityRef(), {
-        qr:false,
-        view:"standby",
-        status:"ready",
-        mode:null,
-        config:null,
-        timer:{ running:false }
-      });
-    };
 
     btnQ2.onclick = async () => { await startQuickPoll("ox"); };
     btnQ5.onclick = async () => { await startQuickPoll("five"); };
