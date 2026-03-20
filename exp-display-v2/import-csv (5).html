@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ClassSync v2 CSV Import</title>
+<link rel="icon" href="data:,">
+<style>
+  :root{
+    --bg:#050608; --panel:#111827; --panel2:#020617;
+    --ink:#f9fafb; --muted:#cbd5e1; --line:rgba(255,255,255,.10);
+    --cyan:#00c7be;
+  }
+  *{ box-sizing:border-box; }
+  body{
+    background:var(--bg); color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",sans-serif;
+    margin:0; padding:1.5rem 1rem 5rem;
+    max-width:74rem; margin-left:auto; margin-right:auto;
+  }
+  h2{ text-align:center; margin:0 0 1.4rem; letter-spacing:.08em; font-weight:900; }
+  .box{
+    background:var(--panel); border-radius:1.2rem;
+    padding:1.1rem 1.2rem; margin-bottom:1rem; border:1px solid var(--line);
+  }
+  .boxTitle{ font-weight:900; font-size:.88rem; letter-spacing:.06em; color:var(--muted); margin-bottom:.7rem; }
+  textarea{
+    width:100%; height:210px; background:var(--panel2); color:#e5e7eb;
+    border-radius:.9rem; border:1px solid rgba(255,255,255,.12);
+    padding:.85rem; font-family:ui-monospace,monospace; font-size:13px;
+    resize:vertical; outline:none; transition:border-color .15s;
+  }
+  textarea:focus{ border-color:rgba(10,132,255,.55); }
+  input[type=file]{ color:var(--muted); font-size:.9rem; margin-top:.4rem; }
+  input[type=text],input[type=url]{
+    background:var(--panel2); color:#e5e7eb;
+    border:1px solid rgba(255,255,255,.14); border-radius:.6rem;
+    padding:.48rem .7rem; font-size:.83rem; outline:none; width:100%;
+    transition:border-color .15s;
+  }
+  input[type=text]:focus,input[type=url]:focus{ border-color:rgba(0,199,190,.55); }
+  button{
+    padding:.7rem 1.2rem; border-radius:999px; border:none; color:#fff;
+    font-size:.88rem; cursor:pointer; font-weight:900; letter-spacing:.04em;
+    transition:transform .12s,filter .12s,opacity .12s;
+    box-shadow:0 .4rem 1.2rem rgba(0,0,0,.4);
+  }
+  button:active{ transform:scale(.98); filter:brightness(.92); }
+  button:disabled{ opacity:.45; cursor:not-allowed; }
+  .btn-primary{ background:linear-gradient(135deg,#6366f1,#8b5cf6); }
+  .btn-green  { background:linear-gradient(135deg,#22c55e,#16a34a); padding:.85rem 1.7rem; font-size:.92rem; }
+  .btn-gray   { background:#374151; }
+  .btn-cyan   { background:linear-gradient(135deg,rgba(0,199,190,.85),rgba(0,155,150,.85)); }
+  .btnRow{ display:flex; flex-wrap:wrap; gap:.6rem; align-items:center; margin-top:.8rem; }
+  code{ background:rgba(255,255,255,.08); padding:2px 6px; border-radius:.45rem; font-family:ui-monospace,monospace; font-size:.83em; }
+  .hint{ margin-top:.6rem; font-size:.8rem; color:var(--muted); line-height:1.7; }
+  .roomPill{
+    display:inline-flex; align-items:center; gap:.5rem;
+    padding:.38rem .85rem; border-radius:999px;
+    background:rgba(10,132,255,.18); border:1px solid rgba(10,132,255,.35);
+    font-weight:900; font-size:.85rem; letter-spacing:.06em; color:#60c0ff;
+  }
+
+  /* ===== VALIDATION ===== */
+  #validationBox{ display:none; margin-top:.9rem; border-radius:1.1rem; padding:1rem 1.1rem; }
+  #validationBox.hasError{ background:#1a0a0a; border:1px solid rgba(239,68,68,.40); }
+  #validationBox.allOk   { background:#0a1a0a; border:1px solid rgba(34,197,94,.35); }
+  #validationBox h3{ margin:0 0 .7rem; font-size:.88rem; }
+  .err-row,.warn-row{ padding:.55rem .8rem; border-radius:.7rem; margin-bottom:.4rem; font-size:.8rem; line-height:1.55; }
+  .err-row { background:rgba(239,68,68,.10); border:1px solid rgba(239,68,68,.22); }
+  .warn-row{ background:rgba(251,191,36,.08); border:1px solid rgba(251,191,36,.22); }
+  .err-line{ font-weight:900; margin-bottom:.12rem; }
+  .err-row  .err-line{ color:#fca5a5; } .warn-row .err-line{ color:#fde68a; }
+  .err-row  .err-detail{ color:#fecaca; opacity:.9; } .warn-row .err-detail{ color:#fef3c7; opacity:.9; }
+
+  /* ===== PREVIEW ===== */
+  #previewSection{ display:none; margin-top:1rem; }
+  #previewSection > h3{ margin:0 0 .85rem; font-size:1rem; letter-spacing:.05em; }
+  .pv-summary{
+    font-size:.8rem; color:#94a3b8; margin-bottom:.85rem;
+    padding:.65rem 1rem; background:rgba(255,255,255,.04);
+    border-radius:.75rem; border:1px solid rgba(255,255,255,.07); line-height:1.7;
+  }
+  .pv-summary b{ color:#e2e8f0; }
+  .pv-cards{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:.8rem; }
+  @media(max-width:660px){ .pv-cards{ grid-template-columns:1fr; } }
+
+  /* ===== QUESTION CARD ===== */
+  .pv-card{
+    background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.09);
+    border-radius:1rem; overflow:hidden; transition:border-color .2s;
+  }
+  .pv-card.has-media{ border-color:rgba(0,199,190,.38); }
+  .pv-card-body{ padding:.85rem 1rem; }
+  .pv-card-head{ display:flex; align-items:center; gap:.45rem; margin-bottom:.5rem; flex-wrap:wrap; }
+  .pv-badge{ font-size:.68rem; font-weight:900; letter-spacing:.08em; padding:.26rem .58rem; border-radius:999px; }
+  .badge-ox  { background:rgba(52,199,89,.22);  border:1px solid rgba(52,199,89,.35);  color:#6ee7b7; }
+  .badge-five{ background:rgba(99,102,241,.22); border:1px solid rgba(99,102,241,.35); color:#a5b4fc; }
+  .badge-text{ background:rgba(255,159,10,.22); border:1px solid rgba(255,159,10,.35); color:#fcd34d; }
+  .badge-media-on { background:rgba(0,199,190,.20); border:1px solid rgba(0,199,190,.42); color:#5ee8e0; }
+  .badge-media-off{ background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12); color:#475569; }
+  .pv-qid{ font-size:.7rem; color:#475569; font-weight:900; margin-left:auto; }
+  .pv-question{ font-size:.88rem; font-weight:700; margin-bottom:.48rem; line-height:1.5; }
+  .pv-choices{ margin:.3rem 0 .42rem .1rem; display:grid; gap:.18rem; }
+  .pv-choice{ font-size:.77rem; color:var(--muted); padding:.2rem .48rem; border-radius:.4rem; background:rgba(255,255,255,.04); }
+  .pv-answer{ font-size:.77rem; font-weight:900; color:#34d399; margin-top:.32rem; }
+  .pv-exp   { font-size:.77rem; color:#94a3b8; margin-top:.26rem; white-space:pre-wrap; }
+
+  /* ===== MEDIA EDITOR PANEL ===== */
+  .media-panel{
+    border-top:1px solid rgba(255,255,255,.08);
+    background:rgba(0,199,190,.04);
+    padding:.85rem 1rem 1rem;
+  }
+  .media-panel-title{
+    font-size:.74rem; font-weight:900; letter-spacing:.08em;
+    color:var(--cyan); margin-bottom:.65rem;
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  .media-clear-btn{
+    font-size:.68rem; font-weight:900; padding:.2rem .58rem;
+    border-radius:999px; border:1px solid rgba(239,68,68,.35);
+    background:rgba(239,68,68,.10); color:#f87171;
+    cursor:pointer; transition:filter .12s;
+  }
+  .media-clear-btn:hover{ filter:brightness(1.2); }
+
+  .media-url-row{ display:flex; gap:.5rem; align-items:center; margin-bottom:.6rem; }
+  .media-url-row input{ flex:1; }
+  .media-apply-btn{
+    flex-shrink:0; padding:.45rem .85rem; border-radius:999px; border:none;
+    background:rgba(0,199,190,.75); color:#fff;
+    font-size:.78rem; font-weight:900; cursor:pointer; transition:filter .12s; white-space:nowrap;
+  }
+  .media-apply-btn:hover{ filter:brightness(1.15); }
+
+  .media-opts{
+    display:grid; grid-template-columns:auto 1fr; gap:.38rem .75rem;
+    align-items:center; font-size:.78rem; margin-bottom:.62rem;
+  }
+  .media-opts label{ color:var(--muted); font-weight:900; white-space:nowrap; }
+  .opt-row{ display:flex; gap:.42rem; flex-wrap:wrap; }
+  .toggle-btn{
+    padding:.25rem .6rem; border-radius:999px;
+    border:1px solid rgba(255,255,255,.14); background:rgba(255,255,255,.06);
+    color:var(--muted); font-size:.72rem; font-weight:900; cursor:pointer; transition:all .14s;
+  }
+  .toggle-btn.on{ background:rgba(0,199,190,.22); border-color:rgba(0,199,190,.45); color:#5ee8e0; }
+  .type-btn{
+    padding:.25rem .7rem; border-radius:999px;
+    border:1px solid rgba(255,255,255,.14); background:rgba(255,255,255,.06);
+    color:var(--muted); font-size:.72rem; font-weight:900; cursor:pointer; transition:all .14s;
+  }
+  .type-btn.on.video{ background:rgba(99,102,241,.22); border-color:rgba(99,102,241,.45); color:#a5b4fc; }
+  .type-btn.on.image{ background:rgba(52,199,89,.18);  border-color:rgba(52,199,89,.40);  color:#6ee7b7; }
+
+  .media-thumb{
+    width:100%; border-radius:.65rem; overflow:hidden; background:#000;
+    max-height:14rem; display:flex; align-items:center; justify-content:center;
+    border:1px solid rgba(255,255,255,.10); margin-top:.6rem;
+  }
+  .media-thumb img,.media-thumb video{ max-width:100%; max-height:14rem; display:block; border-radius:.5rem; }
+  .thumb-empty{ padding:1.4rem; text-align:center; font-size:.78rem; color:#334155; font-weight:900; letter-spacing:.06em; }
+
+  .media-caption-row{ margin-top:.5rem; }
+
+  /* ===== LOG ===== */
+  #log{
+    margin-top:1rem; font-size:.8rem; color:var(--muted);
+    white-space:pre-wrap; line-height:1.7;
+    padding:.7rem 1rem; border-radius:.9rem;
+    background:rgba(255,255,255,.03); border:1px solid var(--line); display:none;
+  }
+  #log.show{ display:block; }
+
+  /* ===== COL TABLE ===== */
+  .colTable{ width:100%; border-collapse:collapse; font-size:.78rem; margin-top:.7rem; }
+  .colTable th,.colTable td{ padding:.38rem .65rem; text-align:left; border-bottom:1px solid rgba(255,255,255,.07); }
+  .colTable th{ color:var(--muted); font-weight:900; letter-spacing:.05em; font-size:.72rem; }
+  .colTable td:first-child{ color:#60c0ff; font-family:ui-monospace,monospace; }
+  .colTable tr:last-child td{ border-bottom:none; }
+  .tag-req{ color:#f87171; font-size:.7rem; font-weight:900; }
+  .tag-opt{ color:#475569; font-size:.7rem; }
+
+  #buildTag{
+    position:fixed; right:.7rem; bottom:.7rem; opacity:.44; font-size:.66rem; z-index:60;
+    background:rgba(0,0,0,.40); border:1px solid rgba(255,255,255,.07);
+    padding:.3rem .55rem; border-radius:999px; backdrop-filter:blur(8px); pointer-events:none;
+  }
+</style>
+</head>
+<body>
+  <div id="buildTag">build: 2026-03-01 / exp-display-v2 / import-csv</div>
+  <h2>📥 CSV → questions 投入</h2>
+
+  <div class="box">
+    <div class="boxTitle">対象ルーム</div>
+    <span class="roomPill">🏫 <span id="roomLabel">—</span></span>
+    <div class="hint">URLに <code>?room=kyoto-01</code> のように指定できます。</div>
+  </div>
+
+  <div class="box">
+    <div class="boxTitle">① CSVファイルから読み込む</div>
+    <input type="file" id="fileInput" accept=".csv">
+  </div>
+
+  <div class="box">
+    <div class="boxTitle">② CSVを直接貼り付ける</div>
+    <textarea id="csvInput" placeholder="CSVをここに貼り付けてください&#10;（media列なしでも、プレビュー画面で各問題にmediaを設定できます）"></textarea>
+    <div class="hint">
+      <b>必須：</b><code>question_id</code>・<code>question</code>　
+      <b>推奨：</b><code>mode</code>（ox/five/text）・<code>answer</code>・<code>explanation</code><br>
+      <b>5択：</b><code>choiceA〜E</code>　<b>分岐：</b><code>branch_o/x/a〜e</code><br>
+      🆕 <b>media列（任意）：</b><code>media_url</code>・<code>media_type</code>・<code>media_caption</code>・<code>media_autoplay</code>・<code>media_muted</code>・<code>media_loop</code>・<code>media_fit</code><br>
+      ✅ media列がなくても、<b>プレビュー画面で各問題に動画・静止画を設定できます。</b>
+    </div>
+  </div>
+
+  <details class="box" style="cursor:pointer;">
+    <summary style="font-weight:900;font-size:.86rem;letter-spacing:.06em;color:var(--muted);">📋 列名一覧（クリックで展開）</summary>
+    <table class="colTable">
+      <tr><th>列名</th><th>内容</th><th></th></tr>
+      <tr><td>question_id</td><td>問題ID（例: Q01, Q02）</td><td class="tag-req">必須</td></tr>
+      <tr><td>question</td><td>問題文</td><td class="tag-req">必須</td></tr>
+      <tr><td>mode</td><td>ox / five / text</td><td class="tag-opt">推奨</td></tr>
+      <tr><td>answer</td><td>正解（O/X または A〜E）</td><td class="tag-opt">推奨</td></tr>
+      <tr><td>explanation</td><td>解説文</td><td class="tag-opt">任意</td></tr>
+      <tr><td>choiceA〜E</td><td>5択の選択肢テキスト</td><td class="tag-opt">fiveのとき</td></tr>
+      <tr><td>branch_o〜e</td><td>分岐先QID</td><td class="tag-opt">任意</td></tr>
+      <tr><td>media_url</td><td>動画・画像URL ※プレビュー画面でも設定可</td><td class="tag-opt">v2・任意</td></tr>
+      <tr><td>media_type</td><td>video / image</td><td class="tag-opt">v2・任意</td></tr>
+      <tr><td>media_caption</td><td>キャプション文字列</td><td class="tag-opt">v2・任意</td></tr>
+      <tr><td>media_autoplay</td><td>true / false</td><td class="tag-opt">v2・任意</td></tr>
+      <tr><td>media_muted</td><td>true / false</td><td class="tag-opt">v2・任意</td></tr>
+      <tr><td>media_loop</td><td>true / false</td><td class="tag-opt">v2・任意</td></tr>
+      <tr><td>media_fit</td><td>contain / cover</td><td class="tag-opt">v2・任意</td></tr>
+    </table>
+  </details>
+
+  <div class="btnRow">
+    <button id="validateBtn" class="btn-primary">① バリデーション＋プレビュー</button>
+    <button id="exportNormalizedBtn" class="btn-gray">CSVを保存（正規化）</button>
+  </div>
+
+  <div id="validationBox">
+    <h3 id="validationTitle"></h3>
+    <div id="validationList"></div>
+  </div>
+
+  <div id="previewSection" class="box">
+    <h3>📋 プレビュー ＋ 🎬 メディア設定</h3>
+    <div class="pv-summary" id="pvSummary"></div>
+    <div class="pv-cards" id="pvCards"></div>
+    <div class="btnRow" style="margin-top:1.2rem;">
+      <button id="importBtn" class="btn-green">✅ Firebase に投入する</button>
+      <button id="exportBtn2" class="btn-cyan">💾 CSVを保存（media込み）</button>
+      <button id="cancelPreviewBtn" class="btn-gray">← 戻って修正</button>
+    </div>
+  </div>
+
+  <div id="log"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBke-wTU16skpbK8z80ddK04tE154dHERQ",
+  databaseURL: "https://satosan-41eac-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "satosan-41eac"
+};
+const app = initializeApp(firebaseConfig);
+const db  = getDatabase(app);
+
+const room = new URLSearchParams(location.search).get("room") || "kyoto-01";
+document.getElementById("roomLabel").textContent = room;
+
+const logEl = document.getElementById("log");
+function log(msg){ logEl.classList.add("show"); logEl.textContent += msg+"\n"; }
+function clearLog(){ logEl.classList.remove("show"); logEl.textContent=""; }
+
+// ===== UTILS =====
+function nh(h){ return String(h??"").trim().toLowerCase().replace(/\s+/g,"").replace(/-/g,"_"); }
+function stripBOM(s){ return s.charCodeAt(0)===0xFEFF?s.slice(1):s; }
+function fi(hdrs,cands){ for(const c of cands){ const i=hdrs.indexOf(nh(c)); if(i>=0)return i; } return -1; }
+function gc(cols,idx){ return idx<0?"":String(cols[idx]??"").trim(); }
+function parseBool(s){ return s.toLowerCase()==="true"||s==="1"; }
+function esc(s){ return String(s??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+function csvEsc(v){ const s=String(v??""); return /[",\r\n]/.test(s)?`"${s.replace(/"/g,'""')}"`  :s; }
+function pickChoice(hdrs,cols,key){
+  const k=key.toUpperCase();
+  return gc(cols,fi(hdrs,[`choice${k}`,`choice_${k}`,`choice-${k}`,k,k.toLowerCase()]));
+}
+function downloadText(fn,txt){
+  const blob=new Blob(["\uFEFF"+txt],{type:"text/csv;charset=utf-8"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a"); a.href=url; a.download=fn;
+  document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+}
+function parseCSVLine(line){
+  const out=[]; let cur=""; let inQ=false;
+  for(let i=0;i<line.length;i++){
+    const ch=line[i];
+    if(inQ){ if(ch==='"'){ if(line[i+1]==='"'){cur+='"';i++;}else inQ=false; }else cur+=ch; continue; }
+    if(ch==='"'){inQ=true;continue;}
+    if(ch===','){out.push(cur);cur="";continue;}
+    cur+=ch;
+  }
+  out.push(cur); return out;
+}
+
+// ===== parsedOut: live object（media編集はここを直接書き換える） =====
+let parsedOut = null;
+
+function parseCSV(text){
+  const rawLines=text.split(/\r?\n/).map(l=>l.trimEnd()).filter(l=>l.trim()!=="");
+  if(rawLines.length<2) throw new Error("CSVの行数が足りません（ヘッダ+1行以上必要）");
+  const hdrs=parseCSVLine(stripBOM(rawLines[0])).map(nh);
+  const qidIdx=fi(hdrs,["question_id","question-id","qid","id"]);
+  const qIdx  =fi(hdrs,["question","q"]);
+  const ansIdx=fi(hdrs,["answer","ans"]);
+  const expIdx=fi(hdrs,["explanation","exp","comment"]);
+  const modeIdx=fi(hdrs,["mode","type"]);
+  if(qidIdx<0||qIdx<0) throw new Error("question_id / question 列が見つかりません");
+  const bO=fi(hdrs,["branch_o","branch-o"]);
+  const bX=fi(hdrs,["branch_x","branch-x"]);
+  const bA=fi(hdrs,["branch_a","branch-a"]);
+  const bB=fi(hdrs,["branch_b","branch-b"]);
+  const bC=fi(hdrs,["branch_c","branch-c"]);
+  const bD=fi(hdrs,["branch_d","branch-d"]);
+  const bE=fi(hdrs,["branch_e","branch-e"]);
+  const mTypeIdx =fi(hdrs,["media_type","mediatype"]);
+  const mUrlIdx  =fi(hdrs,["media_url","mediaurl","media"]);
+  const mCapIdx  =fi(hdrs,["media_caption","mediacaption","caption"]);
+  const mAutoIdx =fi(hdrs,["media_autoplay","autoplay"]);
+  const mMutedIdx=fi(hdrs,["media_muted","muted"]);
+  const mLoopIdx =fi(hdrs,["media_loop","loop"]);
+  const mFitIdx  =fi(hdrs,["media_fit","mediafit","objectfit"]);
+
+  const out={}; let count=0,branchCount=0,mediaCount=0;
+  for(let i=1;i<rawLines.length;i++){
+    const cols=parseCSVLine(rawLines[i]);
+    const qid=gc(cols,qidIdx); if(!qid) continue;
+    const mode=gc(cols,modeIdx).toLowerCase();
+    const q={ question:gc(cols,qIdx), answer:gc(cols,ansIdx), explanation:gc(cols,expIdx) };
+    if(mode) q.mode=mode;
+    if(mode==="five"){
+      const ch={}; for(const k of ["A","B","C","D","E"]){ const v=pickChoice(hdrs,cols,k); if(v)ch[k]=v; }
+      if(Object.keys(ch).length) q.choices=ch;
+    }
+    const br={}; const put=(k,idx)=>{ const v=gc(cols,idx); if(v)br[k]=v; };
+    put("O",bO);put("X",bX);put("A",bA);put("B",bB);put("C",bC);put("D",bD);put("E",bE);
+    if(Object.keys(br).length){q.branch=br;branchCount++;}
+    const mUrl=gc(cols,mUrlIdx);
+    if(mUrl){
+      const mt=gc(cols,mTypeIdx).toLowerCase();
+      const m={ url:mUrl, type:(mt==="video"||mt==="image")?mt:"image" };
+      const cap=gc(cols,mCapIdx); if(cap) m.caption=cap;
+      const ap=gc(cols,mAutoIdx); if(ap) m.autoplay=parseBool(ap);
+      const mu=gc(cols,mMutedIdx); if(mu) m.muted=parseBool(mu);
+      const lo=gc(cols,mLoopIdx); if(lo) m.loop=parseBool(lo);
+      const fit=gc(cols,mFitIdx).toLowerCase();
+      if(fit==="cover"||fit==="contain") m.objectFit=fit;
+      q.media=m; mediaCount++;
+    }
+    out[qid]=q; count++;
+  }
+  parsedOut=out;
+  return {out,count,branchCount,mediaCount,rawLines,hdrs,qidIdx,modeIdx,ansIdx};
+}
+
+// ===== VALIDATE =====
+function validateOut(out,rawLines,hdrs,qidIdx,modeIdx,ansIdx){
+  const errors=[],warns=[];
+  const VMODES=["ox","five","text"];
+  const ecols=hdrs.length;
+  for(let i=1;i<rawLines.length;i++){
+    const line=rawLines[i]; if(!line.trim()) continue;
+    const cols=parseCSVLine(line); const ln=i+1;
+    const qid=gc(cols,qidIdx)||`行${ln}`;
+    if(cols.length!==ecols) errors.push({line:ln,qid,msg:`列数違い（ヘッダ:${ecols} / この行:${cols.length}）`,type:"error"});
+    if(!gc(cols,qidIdx)) errors.push({line:ln,qid,msg:"question_id が空です",type:"error"});
+    if(!gc(cols,fi(hdrs,["question","q"]))) errors.push({line:ln,qid,msg:"question が空です",type:"error"});
+    const mode=gc(cols,modeIdx).toLowerCase();
+    if(!mode) warns.push({line:ln,qid,msg:"mode が未入力です（ox/five/text を推奨）",type:"warn"});
+    else if(!VMODES.includes(mode)) errors.push({line:ln,qid,msg:`mode が不正：「${mode}」`,type:"error"});
+    const ans=gc(cols,ansIdx).toUpperCase();
+    if(!ans) warns.push({line:ln,qid,msg:"answer が空です",type:"warn"});
+    else if(mode==="ox"&&!["O","X"].includes(ans)) errors.push({line:ln,qid,msg:`answer 不正：「${ans}」（O or X）`,type:"error"});
+    else if(mode==="five"&&!["A","B","C","D","E"].includes(ans)) errors.push({line:ln,qid,msg:`answer 不正：「${ans}」（A〜E）`,type:"error"});
+    if(mode==="five"){
+      const miss=["A","B","C","D","E"].filter(k=>!pickChoice(hdrs,cols,k));
+      if(miss.length) warns.push({line:ln,qid,msg:`5択の選択肢が不足（空: ${miss.join(",")}）`,type:"warn"});
+    }
+  }
+  return {errors,warns};
+}
+
+// ===== MEDIA SUMMARY COUNT =====
+function updateMediaCount(){
+  if(!parsedOut) return;
+  const total=Object.keys(parsedOut).length;
+  const mc=Object.values(parsedOut).filter(q=>q.media?.url).length;
+  const el=document.getElementById("pvSummary");
+  if(!el) return;
+  const base=el.dataset.base||"";
+  el.innerHTML=base+` ／ 🎬 メディア設定済み: <b>${mc}</b> / <b>${total}</b> 問`;
+}
+
+// ===== MEDIA EDITOR PANEL =====
+function buildMediaPanel(qid){
+  const q=parsedOut[qid];
+  const m0=q.media||{};
+  let mUrl    =m0.url||"";
+  let mType   =m0.type||"image";
+  let mCaption=m0.caption||"";
+  let mAuto   =m0.autoplay!==false&&!!m0.url;
+  let mMuted  =m0.muted  !==false&&!!m0.url;
+  let mLoop   =m0.loop===true;
+  let mFit    =m0.objectFit||"contain";
+
+  function commit(){
+    if(!mUrl.trim()){
+      delete q.media;
+    }else{
+      const mm={url:mUrl.trim(),type:mType};
+      if(mCaption.trim()) mm.caption=mCaption.trim();
+      if(mType==="video"){ mm.autoplay=mAuto; mm.muted=mMuted; mm.loop=mLoop; }
+      mm.objectFit=mFit;
+      q.media=mm;
+    }
+    const card=document.getElementById(`card_${qid}`);
+    if(card) card.classList.toggle("has-media",!!mUrl.trim());
+    const badge=document.getElementById(`mbadge_${qid}`);
+    if(badge){
+      badge.textContent=mUrl.trim()?(mType==="video"?"🎬 VIDEO":"🖼️ IMAGE"):"📷 MEDIA";
+      badge.className="pv-badge "+(mUrl.trim()?"badge-media-on":"badge-media-off");
+    }
+    updateMediaCount();
+  }
+
+  const panel=document.createElement("div");
+  panel.className="media-panel";
+
+  panel.innerHTML=`
+    <div class="media-panel-title">
+      🎬 メディア設定（この問題）
+      <button class="media-clear-btn" id="clr_${qid}">✕ クリア</button>
+    </div>
+    <div class="media-url-row">
+      <input type="url" id="url_${qid}" placeholder="https://... （動画 or 画像のURL）" value="${esc(mUrl)}">
+      <button class="media-apply-btn" id="apl_${qid}">適用 ↵</button>
+    </div>
+    <div class="media-opts">
+      <label>種類</label>
+      <div class="opt-row">
+        <button class="type-btn video ${mType==="video"?"on":""}" id="tv_${qid}">🎬 動画</button>
+        <button class="type-btn image ${mType==="image"?"on":""}" id="ti_${qid}">🖼️ 画像</button>
+      </div>
+      <label>表示</label>
+      <div class="opt-row">
+        <button class="toggle-btn ${mFit==="contain"?"on":""}" id="fc_${qid}">contain</button>
+        <button class="toggle-btn ${mFit==="cover"?"on":""}"   id="fv_${qid}">cover</button>
+      </div>
+      <label id="vl_${qid}" style="${mType!=="video"?"opacity:.32":""}">動画設定</label>
+      <div class="opt-row" id="vo_${qid}" style="${mType!=="video"?"opacity:.32":""}">
+        <button class="toggle-btn ${mAuto?"on":""}"  id="ap_${qid}">autoplay</button>
+        <button class="toggle-btn ${mMuted?"on":""}" id="mu_${qid}">muted</button>
+        <button class="toggle-btn ${mLoop?"on":""}"  id="lp_${qid}">loop</button>
+      </div>
+    </div>
+    <div class="media-caption-row">
+      <input type="text" id="cap_${qid}" placeholder="キャプション（任意）" value="${esc(mCaption)}">
+    </div>
+    <div class="media-thumb" id="th_${qid}">
+      <div class="thumb-empty">${mUrl?"読み込み中…":"URL を入力して「適用」を押してください"}</div>
+    </div>`;
+
+  requestAnimationFrame(()=>{
+    const urlI =document.getElementById(`url_${qid}`);
+    const aplB =document.getElementById(`apl_${qid}`);
+    const clrB =document.getElementById(`clr_${qid}`);
+    const tvB  =document.getElementById(`tv_${qid}`);
+    const tiB  =document.getElementById(`ti_${qid}`);
+    const fcB  =document.getElementById(`fc_${qid}`);
+    const fvB  =document.getElementById(`fv_${qid}`);
+    const apB  =document.getElementById(`ap_${qid}`);
+    const muB  =document.getElementById(`mu_${qid}`);
+    const lpB  =document.getElementById(`lp_${qid}`);
+    const capI =document.getElementById(`cap_${qid}`);
+    const thumb=document.getElementById(`th_${qid}`);
+    const voDv =document.getElementById(`vo_${qid}`);
+    const vlLb =document.getElementById(`vl_${qid}`);
+
+    function setVopts(){ const on=mType==="video"; voDv.style.opacity=on?"1":".32"; vlLb.style.opacity=on?"1":".32"; }
+    function renderThumb(){
+      thumb.innerHTML="";
+      if(!mUrl.trim()){thumb.innerHTML=`<div class="thumb-empty">URL を入力して「適用」を押してください</div>`;return;}
+      if(mType==="video"){
+        const v=document.createElement("video");
+        v.src=mUrl; v.muted=true; v.controls=true;
+        Object.assign(v.style,{maxWidth:"100%",maxHeight:"14rem",borderRadius:".5rem"});
+        thumb.appendChild(v);
+      }else{
+        const img=document.createElement("img");
+        img.src=mUrl; img.alt="preview";
+        Object.assign(img.style,{maxWidth:"100%",maxHeight:"14rem",borderRadius:".5rem"});
+        img.onerror=()=>{ thumb.innerHTML=`<div class="thumb-empty" style="color:#f87171;">⚠️ 画像を読み込めません</div>`; };
+        thumb.appendChild(img);
+      }
+    }
+    if(mUrl) renderThumb();
+
+    aplB.onclick=()=>{ mUrl=urlI.value.trim(); mCaption=capI.value.trim(); commit(); renderThumb(); };
+    clrB.onclick=()=>{ mUrl=""; urlI.value=""; mCaption=""; capI.value=""; commit(); renderThumb(); };
+    urlI.addEventListener("keydown",e=>{ if(e.key==="Enter"){e.preventDefault();aplB.click();} });
+
+    tvB.onclick=()=>{ mType="video"; tvB.classList.add("on"); tiB.classList.remove("on"); setVopts(); commit(); };
+    tiB.onclick=()=>{ mType="image"; tiB.classList.add("on"); tvB.classList.remove("on"); setVopts(); commit(); };
+    fcB.onclick=()=>{ mFit="contain"; fcB.classList.add("on"); fvB.classList.remove("on"); commit(); };
+    fvB.onclick=()=>{ mFit="cover";   fvB.classList.add("on"); fcB.classList.remove("on"); commit(); };
+
+    function tog(btn,get,set){ btn.onclick=()=>{ set(!get()); btn.classList.toggle("on",get()); commit(); }; }
+    tog(apB,()=>mAuto, v=>{ mAuto=v; });
+    tog(muB,()=>mMuted,v=>{ mMuted=v; });
+    tog(lpB,()=>mLoop, v=>{ mLoop=v; });
+
+    capI.oninput=()=>{ mCaption=capI.value.trim(); commit(); };
+    setVopts();
+  });
+
+  return panel;
+}
+
+// ===== SORT QIDS =====
+function sortQids(qids){
+  return qids.sort((a,b)=>{
+    const na=parseInt(String(a).match(/^Q(\d+)/i)?.[1]||"999999",10);
+    const nb=parseInt(String(b).match(/^Q(\d+)/i)?.[1]||"999999",10);
+    if(na!==nb) return na-nb;
+    return String(a).localeCompare(String(b),"ja");
+  });
+}
+
+// ===== RENDER PREVIEW =====
+function renderPreviewAll(qids){
+  const cards=document.getElementById("pvCards");
+  cards.innerHTML="";
+  for(const qid of qids){
+    const q=parsedOut[qid]||{};
+    const mode=(q.mode||"").toLowerCase();
+    const bCls=mode==="ox"?"badge-ox":mode==="five"?"badge-five":"badge-text";
+    const bLbl=mode==="ox"?"○✕":mode==="five"?"5択":mode==="text"?"TEXT":mode||"?";
+    const media=q.media||{};
+    const hasM=!!media.url;
+    const mBCls=hasM?"badge-media-on":"badge-media-off";
+    const mBLbl=hasM?(media.type==="video"?"🎬 VIDEO":"🖼️ IMAGE"):"📷 MEDIA";
+    const ch=q.choices||{};
+    const chHtml=Object.entries(ch).map(([k,v])=>`<div class="pv-choice"><b>${k}.</b> ${esc(v)}</div>`).join("");
+    const ansHtml=q.answer
+      ?`<div class="pv-answer">✅ 正解：${esc(q.answer)}</div>`
+      :`<div style="font-size:.74rem;color:#f87171;margin-top:.28rem;">⚠️ answer が空</div>`;
+    const expHtml=q.explanation?`<div class="pv-exp">💬 ${esc(q.explanation)}</div>`:"";
+
+    const card=document.createElement("div");
+    card.className="pv-card"+(hasM?" has-media":"");
+    card.id=`card_${qid}`;
+    card.innerHTML=`
+      <div class="pv-card-body">
+        <div class="pv-card-head">
+          <span class="pv-badge ${bCls}">${bLbl}</span>
+          <span class="pv-badge ${mBCls}" id="mbadge_${qid}">${mBLbl}</span>
+          <span class="pv-qid">${esc(qid)}</span>
+        </div>
+        <div class="pv-question">${esc(q.question||"（問題文なし）")}</div>
+        ${chHtml?`<div class="pv-choices">${chHtml}</div>`:""}
+        ${ansHtml}${expHtml}
+      </div>`;
+    card.appendChild(buildMediaPanel(qid));
+    cards.appendChild(card);
+  }
+}
+
+// ===== CANONICAL CSV =====
+function buildCanonicalCSV(out){
+  const hdr=[
+    "question_id","mode","question",
+    "choiceA","choiceB","choiceC","choiceD","choiceE",
+    "answer","explanation",
+    "branch_o","branch_x","branch_a","branch_b","branch_c","branch_d","branch_e",
+    "media_type","media_url","media_caption","media_autoplay","media_muted","media_loop","media_fit"
+  ];
+  const qids=sortQids(Object.keys(out||{}));
+  const lines=[hdr.join(",")];
+  for(const qid of qids){
+    const q=out[qid]||{}; const ch=q.choices||{}; const br=q.branch||{}; const m=q.media||{};
+    lines.push([
+      qid,q.mode??"",q.question??"",
+      ch.A??"",ch.B??"",ch.C??"",ch.D??"",ch.E??"",
+      q.answer??"",q.explanation??"",
+      br.O??"",br.X??"",br.A??"",br.B??"",br.C??"",br.D??"",br.E??"",
+      m.type??"",m.url??"",m.caption??"",
+      m.autoplay!=null?String(m.autoplay):"",
+      m.muted!=null?String(m.muted):"",
+      m.loop!=null?String(m.loop):"",
+      m.objectFit??""
+    ].map(csvEsc).join(","));
+  }
+  return lines.join("\r\n");
+}
+
+// ===== FILE INPUT =====
+document.getElementById("fileInput").addEventListener("change",e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=()=>{ document.getElementById("csvInput").value=r.result; clearLog(); log("📄 "+f.name+" を読み込みました"); };
+  r.readAsText(f,"UTF-8");
+});
+
+// ===== VALIDATE + PREVIEW =====
+document.getElementById("validateBtn").onclick=()=>{
+  clearLog();
+  document.getElementById("validationBox").style.display="none";
+  document.getElementById("previewSection").style.display="none";
+  try{
+    const text=document.getElementById("csvInput").value.trim();
+    if(!text) throw new Error("CSVが空です");
+    const {out,count,branchCount,mediaCount,rawLines,hdrs,qidIdx,modeIdx,ansIdx}=parseCSV(text);
+    if(count<=0) throw new Error("有効な行がありません（question_id が空など）");
+
+    const {errors,warns}=validateOut(out,rawLines,hdrs,qidIdx,modeIdx,ansIdx);
+    const vBox=document.getElementById("validationBox");
+    const vList=document.getElementById("validationList");
+    const vTitle=document.getElementById("validationTitle");
+    vList.innerHTML="";
+    if(!errors.length&&!warns.length){
+      vBox.className="allOk"; vTitle.style.color="#86efac";
+      vTitle.textContent=`✅ バリデーション OK（${count}問すべて正常）`;
+    }else{
+      vBox.className="hasError"; vTitle.style.color="#f87171";
+      vTitle.textContent=`⚠️ バリデーション結果（エラー: ${errors.length}件 / 警告: ${warns.length}件）`;
+      [...errors,...warns].sort((a,b)=>a.line-b.line).forEach(item=>{
+        const div=document.createElement("div");
+        div.className=item.type==="error"?"err-row":"warn-row";
+        div.innerHTML=`<div class="err-line">${item.type==="error"?"❌":"⚠️"} 行${item.line}（${esc(item.qid)}）</div><div class="err-detail">${esc(item.msg)}</div>`;
+        vList.appendChild(div);
+      });
+    }
+    vBox.style.display="block";
+
+    const qids=sortQids(Object.keys(out));
+    const errNote =errors.length?`<span style="color:#f87171;"> ／ ❌ エラー ${errors.length}件</span>`:"";
+    const warnNote=warns.length ?`<span style="color:#fde68a;"> ／ ⚠️ 警告 ${warns.length}件</span>`:"";
+    const pvS=document.getElementById("pvSummary");
+    const base=`<b>${count}</b> 問 ／ branch付き <b>${branchCount}</b> 問 ／ room: <b>${room}</b>${errNote}${warnNote}`;
+    pvS.dataset.base=base;
+    pvS.innerHTML=base+` ／ 🎬 メディア設定済み: <b>${mediaCount}</b> / <b>${count}</b> 問`;
+    document.getElementById("previewSection").style.display="block";
+    renderPreviewAll(qids);
+  }catch(err){ console.error(err); log("❌ "+(err?.message||String(err))); }
+};
+
+document.getElementById("cancelPreviewBtn").onclick=()=>{
+  document.getElementById("previewSection").style.display="none";
+  document.getElementById("validationBox").style.display="none";
+  clearLog();
+};
+
+// ===== FIREBASE =====
+document.getElementById("importBtn").onclick=async()=>{
+  clearLog();
+  if(!parsedOut||!Object.keys(parsedOut).length){ log("❌ 先にバリデーション＋プレビューを実行してください"); return; }
+  const total=Object.keys(parsedOut).length;
+  const mc=Object.values(parsedOut).filter(q=>q.media?.url).length;
+  if(!confirm(`${total}問（メディア付き: ${mc}問）を room「${room}」に投入します。\n既存の questions は上書きされます。\nよろしいですか？`)) return;
+  log("⏳ 投入中…");
+  try{
+    await set(ref(db,`rooms/${room}/questions`),parsedOut);
+    log(`✅ 投入完了：${total}問（メディア付き ${mc}問）`);
+    log(`room: ${room}`);
+    document.getElementById("previewSection").style.display="none";
+  }catch(err){ console.error(err); log("❌ 投入エラー："+(err?.message||String(err))); }
+};
+
+// ===== EXPORT =====
+function doExport(){
+  clearLog();
+  if(!parsedOut){ log("❌ 先にバリデーション＋プレビューを実行してください"); return; }
+  const mc=Object.values(parsedOut).filter(q=>q.media?.url).length;
+  downloadText(`questions_${room}_v2.csv`,buildCanonicalCSV(parsedOut)+"\r\n");
+  log(`✅ CSVを保存しました（メディア付き ${mc}問込み）`);
+}
+document.getElementById("exportNormalizedBtn").onclick=doExport;
+document.getElementById("exportBtn2").onclick=doExport;
+</script>
+</body>
+</html>
