@@ -405,22 +405,29 @@
       layerEl.setAttribute("aria-hidden", on ? "false" : "true");
     }
     
+    // activity.qr フラグ（index の QRコードON/OFF が書き換える）
+    let currentQrFlag = false;
+    let currentView   = "";
+
     function setPhaseUI(p){
       currentPhase = p || "qr";
       phaseLabel.textContent = `phase: ${currentPhase}`;
-    
-      // ✅ まず“必ず”全部消す（ここが最重要）
+
+      // QR表示条件：phase==qr OR activity.qr==true OR activity.view==qr のどれか
+      const showQR = (currentPhase === "qr") || currentQrFlag || (currentView === "qr");
+
+      // まず全部消す
       showLayer(qrLayer, false);
       showLayer(mediaLayer, false);
-    
-      // ✅ phaseで必要なものだけ出す
-      if (currentPhase === "qr") {
+
+      // 条件に合うものだけ出す
+      if (showQR) {
         showLayer(qrLayer, true);
       } else if (currentPhase === "media") {
         showLayer(mediaLayer, true);
       }
-    
-      // explain表示（これはメイン領域なので従来通り）
+
+      // explain表示（メイン領域）
       expEl.style.display = (currentPhase === "explain") ? "" : "none";
     }
 
@@ -567,14 +574,24 @@
     // activity
     onValue(activityRef, snap=>{
       const a = snap.val() || {};
-      currentStatus = a.status || "-";
-      currentMode = (a.mode || "ox").toLowerCase();
+      currentStatus  = a.status || "-";
+      currentMode    = (a.mode || "ox").toLowerCase();
       currentSession = String(a.session || "");
+
+      // QRコードON/OFFボタンが書き換える qr フラグと view を取得
+      const prevQrFlag = currentQrFlag;
+      currentQrFlag = a.qr === true;
+      currentView   = String(a.view || "");
+
       statusLabel.textContent = `status: ${currentStatus}`;
-      safeDrawQR(); // session更新に追随して描き直す（現行と同じ考え方）:contentReference[oaicite:10]{index=10}
+      safeDrawQR(); // session更新に追随してQR再描画
+
+      // qr フラグが変化したら setPhaseUI を再呼び出しして表示を切り替える
+      if (currentQrFlag !== prevQrFlag || currentView === "qr") {
+        setPhaseUI(currentPhase);
+      }
 
       // 参加人数
-      // ※ rosterがある場合はroster数にしても良いが、ここはanswers数を簡易表示
       const n = Object.keys(lastAnswers || {}).length;
       countLabel.textContent = `参加中 ${n}人`;
       qrCount.textContent = `参加中 ${n}人`;
