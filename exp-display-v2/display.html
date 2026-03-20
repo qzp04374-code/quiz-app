@@ -413,8 +413,8 @@
       currentPhase = p || "qr";
       phaseLabel.textContent = `phase: ${currentPhase}`;
 
-      // QR表示条件：phase==qr OR activity.qr==true OR activity.view==qr のどれか
-      const showQR = (currentPhase === "qr") || currentQrFlag || (currentView === "qr");
+      // QR表示条件：activity.qr===true のとき（phase単独では判定しない）
+      const showQR = currentQrFlag || (currentView === "qr");
 
       // まず全部消す
       showLayer(qrLayer, false);
@@ -580,14 +580,15 @@
 
       // QRコードON/OFFボタンが書き換える qr フラグと view を取得
       const prevQrFlag = currentQrFlag;
+      const prevView   = currentView;
       currentQrFlag = a.qr === true;
       currentView   = String(a.view || "");
 
       statusLabel.textContent = `status: ${currentStatus}`;
       safeDrawQR(); // session更新に追随してQR再描画
 
-      // qr フラグが変化したら setPhaseUI を再呼び出しして表示を切り替える
-      if (currentQrFlag !== prevQrFlag || currentView === "qr") {
+      // qr/view フラグが変化したら必ず再描画
+      if (currentQrFlag !== prevQrFlag || currentView !== prevView) {
         setPhaseUI(currentPhase);
       }
 
