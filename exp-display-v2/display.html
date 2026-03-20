@@ -5,328 +5,150 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>ClassSync v2 Display</title>
   <link rel="icon" href="data:,">
-
   <style>
     :root{
       --bg:#050608;
-      --panel:#111827;
-      --panel2:#020617;
+      --panel:rgba(17,24,39,.72);
       --ink:#f9fafb;
       --muted:rgba(203,213,225,.85);
-
-      --o:#34c759;
-      --x:#ff3b30;
-      --a:#0a84ff;
-      --b:#30d158;
-      --c:#ff9f0a;
-      --d:#bf5af2;
-
-      --shadow: 0 1.2rem 4rem rgba(0,0,0,.65);
+      --line:rgba(255,255,255,.10);
+      --shadow:0 1.2rem 4rem rgba(0,0,0,.65);
+      --o:#34c759; --x:#ff3b30;
+      --a:#0a84ff; --b:#30d158;
+      --c:#ff9f0a; --d:#bf5af2; --e:#ff375f;
     }
     *{box-sizing:border-box;}
-    html,body{height:100%;}
+    html,body{height:100%;margin:0;}
     body{
-      margin:0;
       background:
         radial-gradient(1100px 760px at 20% 20%, rgba(96,165,250,.10), transparent 55%),
-        radial-gradient(900px 760px at 80% 30%, rgba(34,197,94,.08), transparent 55%),
-        radial-gradient(820px 820px at 50% 90%, rgba(191,90,242,.10), transparent 60%),
+        radial-gradient(900px  760px at 80% 30%, rgba(34,197,94,.08),  transparent 55%),
+        radial-gradient(820px  820px at 50% 90%, rgba(191,90,242,.10), transparent 60%),
         var(--bg);
       color:var(--ink);
       font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",sans-serif;
       overflow:hidden;
     }
-
     #buildTag{
-      position:fixed; right:.7rem; bottom:.7rem;
-      opacity:.60; font-size:.75rem; z-index:60;
-      background:rgba(0,0,0,.35);
-      border:1px solid rgba(255,255,255,.08);
-      padding:.4rem .65rem;
-      border-radius:999px;
-      backdrop-filter: blur(8px);
+      position:fixed; right:.7rem; bottom:.7rem; z-index:60;
+      opacity:.55; font-size:.72rem;
+      background:rgba(0,0,0,.35); border:1px solid rgba(255,255,255,.08);
+      padding:.35rem .65rem; border-radius:999px; backdrop-filter:blur(8px);
     }
+    .wrap{ height:100%; display:flex; flex-direction:column; }
 
-    .wrap{
-      height:100%;
-      display:flex;
-      flex-direction:column;
-    }
+    /* TOPBAR */
     .topbar{
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      gap:1rem;
-      padding:1rem 1rem;
-      border-bottom:1px solid rgba(255,255,255,.10);
-      background:rgba(2,6,23,.50);
-      backdrop-filter: blur(10px);
+      display:flex; justify-content:space-between; align-items:center; gap:1rem;
+      padding:.85rem 1rem; border-bottom:1px solid var(--line);
+      background:rgba(2,6,23,.50); backdrop-filter:blur(10px); flex-shrink:0;
     }
-    .room{
-      font-weight:1000;
-      letter-spacing:.10em;
-      font-size:1.05rem;
-      white-space:nowrap;
-    }
-    .meta{
-      display:flex;
-      gap:.8rem;
-      align-items:center;
-      flex-wrap:wrap;
-      justify-content:flex-end;
-      font-weight:900;
-      color:var(--muted);
-      letter-spacing:.06em;
-      font-size:.9rem;
-    }
-    .pill{
-      padding:.35rem .7rem;
-      border-radius:999px;
-      border:1px solid rgba(255,255,255,.12);
-      background:rgba(17,24,39,.55);
-    }
+    .room{ font-weight:1000; letter-spacing:.10em; font-size:clamp(.9rem,1.6vw,1.1rem); white-space:nowrap; }
+    .meta{ display:flex; gap:.7rem; align-items:center; flex-wrap:wrap; justify-content:flex-end; font-weight:900; color:var(--muted); font-size:.88rem; }
+    .pill{ padding:.3rem .65rem; border-radius:999px; border:1px solid var(--line); background:rgba(17,24,39,.55); white-space:nowrap; }
+    .pill.open  { border-color:rgba(34,197,94,.4);  background:rgba(34,197,94,.14);  color:#4ade80; }
+    .pill.closed{ border-color:rgba(239,68,68,.35); background:rgba(239,68,68,.12);  color:#f87171; }
 
-    .stage{
-      flex:1;
-      min-height:0;
-      display:grid;
-      grid-template-columns: 1.15fr .85fr;
-      gap:1rem;
-      padding:1rem;
-    }
-    @media (max-width: 62rem){
-      .stage{ grid-template-columns: 1fr; }
-    }
+    /* STAGE */
+    .stage{ flex:1; min-height:0; display:grid; grid-template-columns:1.15fr .85fr; gap:1rem; padding:1rem; }
+    @media(max-width:62rem){ .stage{ grid-template-columns:1fr; } }
+    .panel{ background:var(--panel); border:1px solid var(--line); border-radius:1.4rem; box-shadow:var(--shadow); overflow:hidden; min-height:0; }
 
-    .panel{
-      background:rgba(17,24,39,.72);
-      border:1px solid rgba(255,255,255,.10);
-      border-radius:1.4rem;
-      box-shadow:var(--shadow);
-      overflow:hidden;
-      min-height:0;
-    }
+    /* LEFT */
+    .left{ padding:1rem 1.1rem; display:flex; flex-direction:column; gap:.75rem; min-height:0; overflow:hidden; }
+    .q{ font-weight:1100; letter-spacing:.02em; font-size:clamp(1.4rem,2.8vw,3.0rem); line-height:1.2; white-space:pre-wrap; flex-shrink:0; }
 
-    /* left */
-    .left{
-      padding:1rem 1.1rem;
-      display:flex;
-      flex-direction:column;
-      gap:1rem;
-      min-height:0;
+    /* 選択肢 */
+    .choices{ display:grid; grid-template-columns:1fr 1fr; gap:.55rem; flex-shrink:0; }
+    .ci{
+      padding:clamp(.45rem,.85vw,.75rem) clamp(.55rem,.95vw,.9rem);
+      border-radius:1rem; border:1px solid rgba(255,255,255,.12);
+      background:rgba(255,255,255,.05); font-weight:900;
+      font-size:clamp(.88rem,1.55vw,1.45rem);
+      display:flex; align-items:center; gap:.55rem;
+      position:relative; overflow:hidden;
     }
-    .q{
-      font-weight:1100;
-      letter-spacing:.02em;
-      font-size:clamp(1.6rem, 2.8vw, 3.0rem);
-      line-height:1.18;
-      white-space:pre-wrap;
-    }
-    .exp{
-      margin-top:.5rem;
-      padding:.8rem 1rem;
-      border-radius:1.1rem;
-      background:rgba(0,0,0,.20);
-      border:1px solid rgba(255,255,255,.10);
-      white-space:pre-wrap;
-      font-size:clamp(1.1rem, 1.6vw, 1.6rem);
-      line-height:1.45;
-    }
+    .ci .cbar{ position:absolute; left:0; top:0; bottom:0; width:0%; border-radius:1rem; opacity:.20; transition:width .45s ease; pointer-events:none; }
+    .ci .ck{ font-size:clamp(.95rem,1.8vw,1.65rem); font-weight:1200; min-width:1.9rem; text-align:center; flex-shrink:0; }
+    .ci .ct{ flex:1; line-height:1.35; word-break:break-word; }
+    .ci .ccnt{ font-size:clamp(.68rem,1.05vw,.92rem); opacity:.75; min-width:2.2rem; text-align:right; flex-shrink:0; }
+    .ci-O{ border-color:rgba(52,199,89,.35);  background:rgba(52,199,89,.09); } .ci-O .ck{ color:var(--o); } .ci-O .cbar{ background:var(--o); }
+    .ci-X{ border-color:rgba(255,59,48,.35);  background:rgba(255,59,48,.09); } .ci-X .ck{ color:var(--x); } .ci-X .cbar{ background:var(--x); }
+    .ci-A{ border-color:rgba(10,132,255,.35); background:rgba(10,132,255,.09); } .ci-A .ck{ color:var(--a); } .ci-A .cbar{ background:var(--a); }
+    .ci-B{ border-color:rgba(48,209,88,.35);  background:rgba(48,209,88,.09); } .ci-B .ck{ color:var(--b); } .ci-B .cbar{ background:var(--b); }
+    .ci-C{ border-color:rgba(255,159,10,.35); background:rgba(255,159,10,.09); } .ci-C .ck{ color:var(--c); } .ci-C .cbar{ background:var(--c); }
+    .ci-D{ border-color:rgba(191,90,242,.35); background:rgba(191,90,242,.09); } .ci-D .ck{ color:var(--d); } .ci-D .cbar{ background:var(--d); }
+    .ci-E{ border-color:rgba(255,55,95,.35);  background:rgba(255,55,95,.09); } .ci-E .ck{ color:var(--e); } .ci-E .cbar{ background:var(--e); }
+    .ci.correct{ border-width:2px; box-shadow:0 0 1.2rem rgba(34,197,94,.30); }
+    .ci-O.correct{ border-color:var(--o); background:rgba(52,199,89,.20); }
+    .ci-X.correct{ border-color:var(--x); background:rgba(255,59,48,.20); }
+    .ci-A.correct{ border-color:var(--a); background:rgba(10,132,255,.20); }
+    .ci-B.correct{ border-color:var(--b); background:rgba(48,209,88,.20); }
+    .ci-C.correct{ border-color:var(--c); background:rgba(255,159,10,.20); }
+    .ci-D.correct{ border-color:var(--d); background:rgba(191,90,242,.20); }
+    .ci-E.correct{ border-color:var(--e); background:rgba(255,55,95,.20); }
+
+    /* 解説 */
+    .exp{ padding:.8rem 1rem; border-radius:1.1rem; background:rgba(0,0,0,.22); border:1px solid var(--line); white-space:pre-wrap; font-size:clamp(1rem,1.6vw,1.5rem); line-height:1.5; flex-shrink:0; }
     .exp strong{ color:var(--o); }
 
-    /* choices */
-    .choices{
-      display:grid;
-      grid-template-columns: 1fr 1fr;
-      gap:.6rem;
-      margin-top:.5rem;
+    /* 音・読み上げコントロール */
+    .soundCtrl{
+      display:flex; gap:.55rem; flex-wrap:wrap; align-items:center;
+      padding:.5rem .75rem; border-radius:.85rem;
+      background:rgba(255,255,255,.04); border:1px solid var(--line);
+      font-size:.73rem; font-weight:900; color:var(--muted); flex-shrink:0;
     }
-    .choiceItem{
-      padding:.65rem .9rem;
-      border-radius:1rem;
-      border:1px solid rgba(255,255,255,.12);
-      background:rgba(255,255,255,.06);
-      font-size:clamp(1rem,1.6vw,1.4rem);
-      font-weight:900;
-      display:flex;
-      align-items:center;
-      gap:.6rem;
-      position:relative;
-      overflow:hidden;
+    .soundCtrl label{ display:flex; align-items:center; gap:.28rem; cursor:pointer; white-space:nowrap; user-select:none; }
+    .soundCtrl input[type=checkbox]{ width:.85rem; height:.85rem; cursor:pointer; accent-color:#0a84ff; }
+    .speakBtn{
+      margin-left:auto; padding:.26rem .72rem; border-radius:999px; border:none;
+      background:rgba(10,132,255,.22); border:1px solid rgba(10,132,255,.38);
+      color:#60c0ff; font-size:.72rem; font-weight:900; cursor:pointer; transition:filter .12s;
     }
-    .choiceItem .ck{
-      font-size:clamp(1.1rem,1.8vw,1.6rem);
-      font-weight:1200;
-      min-width:1.8rem;
-      letter-spacing:.04em;
-    }
-    .choiceItem .ct{ flex:1; line-height:1.35; }
-    .choiceItem .cbar{
-      position:absolute; left:0; top:0; bottom:0; width:0%;
-      border-radius:1rem; opacity:.22; transition:width .4s ease; pointer-events:none;
-    }
-    .choiceItem .ccnt{
-      font-size:clamp(.75rem,1.2vw,1rem); opacity:.8; min-width:2.2rem; text-align:right;
-    }
-    .ci-O{ border-color:rgba(52,199,89,.35);  background:rgba(52,199,89,.10); }
-    .ci-O .ck{ color:#34c759; } .ci-O .cbar{ background:#34c759; }
-    .ci-X{ border-color:rgba(255,59,48,.35);  background:rgba(255,59,48,.10); }
-    .ci-X .ck{ color:#ff3b30; } .ci-X .cbar{ background:#ff3b30; }
-    .ci-A{ border-color:rgba(10,132,255,.35); background:rgba(10,132,255,.10); }
-    .ci-A .ck{ color:#0a84ff; } .ci-A .cbar{ background:#0a84ff; }
-    .ci-B{ border-color:rgba(48,209,88,.35);  background:rgba(48,209,88,.10); }
-    .ci-B .ck{ color:#30d158; } .ci-B .cbar{ background:#30d158; }
-    .ci-C{ border-color:rgba(255,159,10,.35); background:rgba(255,159,10,.10); }
-    .ci-C .ck{ color:#ff9f0a; } .ci-C .cbar{ background:#ff9f0a; }
-    .ci-D{ border-color:rgba(191,90,242,.35); background:rgba(191,90,242,.10); }
-    .ci-D .ck{ color:#bf5af2; } .ci-D .cbar{ background:#bf5af2; }
-    .ci-E{ border-color:rgba(255,55,95,.35);  background:rgba(255,55,95,.10); }
-    .ci-E .ck{ color:#ff375f; } .ci-E .cbar{ background:#ff375f; }
+    .speakBtn:hover{ filter:brightness(1.2); }
 
-    /* right counts */
-    .right{
-      padding:1rem;
-      display:flex;
-      flex-direction:column;
-      gap:1rem;
-      min-height:0;
-    }
-    .rtitle{
-      font-weight:1000;
-      letter-spacing:.08em;
-      color:rgba(203,213,225,.92);
-      font-size:.9rem;
-    }
-    .bars{
-      flex:1;
-      min-height:0;
-      display:flex;
-      flex-direction:column;
-      gap:.65rem;
-      overflow:auto;
-      padding-right:.2rem;
-    }
-    .barRow{
-      display:grid;
-      grid-template-columns: 4.2rem 1fr 4.5rem;
-      gap:.7rem;
-      align-items:center;
-      font-weight:1000;
-    }
-    .k{ opacity:.9; }
-    .v{ text-align:right; opacity:.95; }
-    .track{
-      height:1.3rem;
-      border-radius:999px;
-      background:rgba(255,255,255,.10);
-      border:1px solid rgba(255,255,255,.10);
-      overflow:hidden;
-    }
-    .fill{
-      height:100%;
-      width:0%;
-      border-radius:999px;
-      background:linear-gradient(90deg, rgba(10,132,255,.95), rgba(168,85,247,.92));
-      transition:width .18s ease;
-    }
+    /* RIGHT */
+    .right{ padding:1rem; display:flex; flex-direction:column; gap:.8rem; min-height:0; }
+    .rtitle{ font-weight:1000; letter-spacing:.08em; color:var(--muted); font-size:.88rem; flex-shrink:0; }
+    .bars{ flex:1; min-height:0; display:flex; flex-direction:column; gap:.65rem; overflow:auto; padding-right:.2rem; }
+    .barRow{ display:grid; grid-template-columns:4.2rem 1fr 4.8rem; gap:.7rem; align-items:center; font-weight:1000; }
+    .k{ opacity:.9; font-size:clamp(.9rem,1.5vw,1.2rem); }
+    .v{ text-align:right; opacity:.95; font-size:clamp(.8rem,1.3vw,1rem); }
+    .track{ height:1.4rem; border-radius:999px; background:rgba(255,255,255,.10); border:1px solid var(--line); overflow:hidden; }
+    .fill{ height:100%; width:0%; border-radius:999px; background:linear-gradient(90deg, rgba(10,132,255,.95), rgba(168,85,247,.92)); transition:width .25s ease; }
 
-    /* phase layers */
-    .layer{
-      position:fixed;
-      inset:0;
-      display:none;
-      align-items:center;
-      justify-content:center;
-      padding:1.2rem;
-      z-index:999;
-      background:rgba(0,0,0,.72);
-      backdrop-filter: blur(10px);
-    }
+    /* LAYERS */
+    .layer{ position:fixed; inset:0; display:none; align-items:center; justify-content:center; padding:1.2rem; z-index:999; background:rgba(0,0,0,.72); backdrop-filter:blur(10px); }
     .layer.show{ display:flex; }
-    .box{
-      width:min(58rem, 94vw);
-      border-radius:1.6rem;
-      padding:1.2rem 1.2rem 1rem;
-      background:rgba(17,24,39,.92);
-      border:1px solid rgba(255,255,255,.12);
-      box-shadow:0 1.4rem 5rem rgba(0,0,0,.72);
-      text-align:center;
-    }
-    .title{
-      margin:0 0 .5rem 0;
-      font-size:1.35rem;
-      letter-spacing:.10em;
-      font-weight:1000;
-    }
-    .hint{
-      margin:0 0 .9rem 0;
-      color:var(--muted);
-      font-size:1rem;
-      font-weight:900;
-      letter-spacing:.06em;
-    }
-
-    /* QR */
+    .box{ width:min(58rem,94vw); border-radius:1.6rem; padding:1.2rem 1.2rem 1rem; background:rgba(17,24,39,.92); border:1px solid var(--line); box-shadow:0 1.4rem 5rem rgba(0,0,0,.72); text-align:center; }
+    .ltitle{ margin:0 0 .5rem; font-size:1.35rem; letter-spacing:.10em; font-weight:1000; }
+    .lhint{ margin:0 0 .9rem; color:var(--muted); font-size:1rem; font-weight:900; letter-spacing:.06em; }
     #qrcode{ display:flex; justify-content:center; align-items:center; margin:.6rem 0 .4rem; }
-    #qrcode canvas{
-      width:min(32rem, 82vw) !important;
-      height:min(32rem, 82vw) !important;
-      border-radius:1.1rem;
-      background:#fff;
-      padding:.7rem;
-      box-sizing:border-box;
-      image-rendering: pixelated;
-    }
-
-    /* media */
-    .mediaWrap{
-      width:min(68rem, 96vw);
-      border-radius:1.6rem;
-      padding:1.2rem;
-      background:rgba(17,24,39,.92);
-      border:1px solid rgba(255,255,255,.12);
-      box-shadow:0 1.4rem 5rem rgba(0,0,0,.72);
-      text-align:center;
-    }
-    .cap{
-      margin-top:.8rem;
-      color:rgba(203,213,225,.92);
-      font-weight:1000;
-      letter-spacing:.04em;
-      font-size:clamp(1.0rem, 1.6vw, 1.3rem);
-      white-space:pre-wrap;
-    }
-    video, img{
-      width:100%;
-      max-height:72vh;
-      border-radius:1.2rem;
-      background:#000;
-      border:1px solid rgba(255,255,255,.10);
-      box-shadow:0 1.2rem 3.5rem rgba(0,0,0,.55);
-    }
+    #qrcode canvas{ width:min(32rem,82vw) !important; height:min(32rem,82vw) !important; border-radius:1.1rem; background:#fff; padding:.7rem; box-sizing:border-box; image-rendering:pixelated; }
+    .mediaWrap{ width:min(68rem,96vw); border-radius:1.6rem; padding:1.2rem; background:rgba(17,24,39,.92); border:1px solid var(--line); box-shadow:0 1.4rem 5rem rgba(0,0,0,.72); text-align:center; }
+    .cap{ margin-top:.8rem; color:var(--muted); font-weight:1000; letter-spacing:.04em; font-size:clamp(1rem,1.6vw,1.3rem); white-space:pre-wrap; }
+    video,img{ width:100%; max-height:72vh; border-radius:1.2rem; background:#000; border:1px solid var(--line); box-shadow:0 1.2rem 3.5rem rgba(0,0,0,.55); }
   </style>
-
-  <!-- QRCode.js（現行同様：module環境で不安定になりやすいのでwindow.QRCode前提） -->
   <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 </head>
-
 <body>
-  <div id="buildTag">build: 2026-03-01 / exp-display-v2</div>
+  <div id="buildTag">build: 2026-03-01 / exp-display-v2 / display</div>
 
   <!-- QR layer -->
   <div id="qrLayer" class="layer">
     <div class="box">
-      <div class="title">参加用QRコード</div>
-      <div class="hint">スマホで読み取って参加（v2）</div>
+      <div class="ltitle">参加用QRコード</div>
+      <div class="lhint">スマホで読み取って参加（v2）</div>
       <div id="qrcode"></div>
-      <div id="qrCount" class="hint">参加中 0人</div>
+      <div id="qrCount" class="lhint">参加中 0人</div>
     </div>
   </div>
 
   <!-- media layer -->
   <div id="mediaLayer" class="layer">
     <div class="mediaWrap">
-      <div class="title">MEDIA</div>
+      <div class="ltitle">MEDIA</div>
       <div id="mediaSlot"></div>
       <div id="mediaCaption" class="cap"></div>
     </div>
@@ -334,7 +156,7 @@
 
   <div class="wrap">
     <div class="topbar">
-      <div class="room" id="roomLabel">ROOM</div>
+      <div class="room" id="roomLabel">ROOM —</div>
       <div class="meta">
         <span class="pill" id="phaseLabel">phase: —</span>
         <span class="pill" id="statusLabel">status: —</span>
@@ -344,13 +166,20 @@
 
     <div class="stage">
       <section class="panel left">
+        <!-- 音・読み上げコントロール -->
+        <div class="soundCtrl">
+          <label><input type="checkbox" id="chkSoundQ"   checked> 出題音</label>
+          <label><input type="checkbox" id="chkSoundEnd" checked> 終了音</label>
+          <label><input type="checkbox" id="chkSpeak"    checked> 読み上げ</label>
+          <button class="speakBtn" id="speakBtn">🔊 今すぐ読み上げ</button>
+        </div>
         <div id="qEl" class="q">起動中…</div>
         <div id="choicesEl" class="choices" style="display:none;"></div>
         <div id="expEl" class="exp" style="display:none;"></div>
       </section>
 
       <section class="panel right">
-        <div class="rtitle" id="rightTitle">集計</div>
+        <div class="rtitle" id="rightTitle">集計（リアルタイム）</div>
         <div class="bars" id="bars"></div>
       </section>
     </div>
@@ -360,375 +189,370 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
-    // ★ここをあなたの現行display.htmlの設定に差し替え
     const firebaseConfig = {
       apiKey: "AIzaSyBke-wTU16skpbK8z80ddK04tE154dHERQ",
       authDomain: "satosan-41eac.firebaseapp.com",
       databaseURL: "https://satosan-41eac-default-rtdb.asia-southeast1.firebasedatabase.app",
       projectId: "satosan-41eac"
     };
-
     const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
+    const db  = getDatabase(app);
 
-    const url = new URL(location.href);
+    const url  = new URL(location.href);
     const room = url.searchParams.get("room") || "kyoto-01";
 
     // DOM
-    const roomLabel = document.getElementById("roomLabel");
-    const phaseLabel = document.getElementById("phaseLabel");
+    const roomLabel   = document.getElementById("roomLabel");
+    const phaseLabel  = document.getElementById("phaseLabel");
     const statusLabel = document.getElementById("statusLabel");
-    const countLabel = document.getElementById("countLabel");
-
-    const qrLayer = document.getElementById("qrLayer");
-    const qrDiv = document.getElementById("qrcode");
-    const qrCount = document.getElementById("qrCount");
-
-    const mediaLayer = document.getElementById("mediaLayer");
-    const mediaSlot = document.getElementById("mediaSlot");
-    const mediaCaption = document.getElementById("mediaCaption");
-
-    const qEl = document.getElementById("qEl");
-    const expEl = document.getElementById("expEl");
-    const bars = document.getElementById("bars");
-    const rightTitle = document.getElementById("rightTitle");
+    const countLabel  = document.getElementById("countLabel");
+    const qrLayer     = document.getElementById("qrLayer");
+    const qrDiv       = document.getElementById("qrcode");
+    const qrCount     = document.getElementById("qrCount");
+    const mediaLayer  = document.getElementById("mediaLayer");
+    const mediaSlot   = document.getElementById("mediaSlot");
+    const mediaCaption= document.getElementById("mediaCaption");
+    const qEl         = document.getElementById("qEl");
+    const choicesEl   = document.getElementById("choicesEl");
+    const expEl       = document.getElementById("expEl");
+    const bars        = document.getElementById("bars");
+    const rightTitle  = document.getElementById("rightTitle");
+    const chkSoundQ   = document.getElementById("chkSoundQ");
+    const chkSoundEnd = document.getElementById("chkSoundEnd");
+    const chkSpeak    = document.getElementById("chkSpeak");
+    const speakBtn    = document.getElementById("speakBtn");
 
     roomLabel.textContent = `ROOM ${room}`;
 
-    // refs
-    const activityRef = ref(db, `rooms/${room}/activity`);
-    const answersRef = ref(db, `rooms/${room}/answers`);
-    const qidRef = ref(db, `rooms/${room}/quiz/current_question_id`);
-    const phaseRef = ref(db, `rooms/${room}/quiz/present/phase`);
+    // REFS
+    const actRef  = ref(db, `rooms/${room}/activity`);
+    const ansRef  = ref(db, `rooms/${room}/answers`);
+    const qidRef  = ref(db, `rooms/${room}/quiz/current_question_id`);
+    const phRef   = ref(db, `rooms/${room}/quiz/present/phase`);
+    const qRef = id => ref(db, `rooms/${room}/questions/${id}`);
 
-    // state
-    let currentSession = "";
-    let currentStatus = "-";
-    let currentMode = "ox";
-    let currentConfig = {};
-    let currentPhase = "qr";
-    let currentQid = null;
+    // STATE
+    let currentSession  = "";
+    let currentStatus   = "-";
+    let prevStatus      = "-";
+    let currentMode     = "ox";
+    let currentConfig   = {};
+    let currentPhase    = "standby";
+    let prevPhase       = "standby";
+    let currentQid      = null;
     let currentQuestion = null;
-    let lastAnswers = {};
+    let lastAnswers     = {};
+    let unsubQ          = null;
 
-    // question subscription
-    let unsubQ = null;
-    function qRef(qid){ return ref(db, `rooms/${room}/questions/${qid}`); }
+    // ===== WEB AUDIO =====
+    let audioCtx = null;
+    function getCtx(){
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === "suspended") audioCtx.resume();
+      return audioCtx;
+    }
+    document.addEventListener("click", ()=>{ try{ getCtx(); }catch(_){} }, { once:true });
 
-    // v2 student URL（現行は exp-display/student.html 固定だったので v2へ）:contentReference[oaicite:8]{index=8}
-    function buildStudentUrl(session){
-      const base = `https://qzp04374-code.github.io/quiz-app/exp-display-v2/student.html?room=${encodeURIComponent(room)}`;
-      return session ? `${base}&s=${encodeURIComponent(session)}` : base;
+    function playTones(tones){ // [{freq, delay, vol}]
+      try{
+        const ctx = getCtx();
+        const t0  = ctx.currentTime;
+        tones.forEach(({freq, delay=0, vol=0.28})=>{
+          const osc  = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.connect(gain); gain.connect(ctx.destination);
+          osc.type = "sine";
+          osc.frequency.setValueAtTime(freq, t0 + delay);
+          gain.gain.setValueAtTime(0, t0 + delay);
+          gain.gain.linearRampToValueAtTime(vol, t0 + delay + 0.04);
+          gain.gain.exponentialRampToValueAtTime(0.001, t0 + delay + 0.58);
+          osc.start(t0 + delay);
+          osc.stop(t0 + delay + 0.65);
+        });
+      }catch(e){ console.warn("audio:", e); }
     }
 
+    // 出題チャイム：ド→ミ→ソ（上昇）
+    function playQuestionSound(){
+      if (!chkSoundQ.checked) return;
+      playTones([
+        { freq:523.25, delay:0    },
+        { freq:659.25, delay:0.18 },
+        { freq:783.99, delay:0.36 },
+      ]);
+    }
+
+    // 終了チャイム：ソ→ミ（下降）
+    function playEndSound(){
+      if (!chkSoundEnd.checked) return;
+      playTones([
+        { freq:783.99, delay:0    },
+        { freq:523.25, delay:0.24 },
+      ]);
+    }
+
+    // ===== SPEECH =====
+    function buildSpeakText(){
+      if (!currentQuestion) return "";
+      const q  = currentQuestion.question || "";
+      const ch = currentQuestion.choices  || {};
+      const keys = (currentConfig?.choices?.length) ? currentConfig.choices
+                 : (currentMode === "ox" ? ["O","X"] : currentMode === "five" ? ["A","B","C","D","E"] : []);
+      if (!keys.length) return q;
+      const parts = keys.map(k =>{
+        const key   = String(k).toUpperCase();
+        const label = key === "O" ? "まる" : key === "X" ? "ばつ" : key;
+        const txt   = ch[key] || ch[key.toLowerCase()] || "";
+        return txt ? `${label}、${txt}` : label;
+      });
+      return `${q}。選択肢は、${parts.join("。")}。`;
+    }
+
+    function speak(text){
+      if (!chkSpeak.checked || !text || !window.speechSynthesis) return;
+      window.speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = "ja-JP"; u.rate = 0.92; u.pitch = 1.0;
+      window.speechSynthesis.speak(u);
+    }
+
+    speakBtn.onclick = ()=>{
+      try{ getCtx(); }catch(_){}
+      speak(buildSpeakText());
+    };
+
+    // ===== QR =====
+    function buildStudentUrl(){
+      const base = `https://qzp04374-code.github.io/quiz-app/exp-display-v2/student.html?room=${encodeURIComponent(room)}`;
+      return currentSession ? `${base}&s=${encodeURIComponent(currentSession)}` : base;
+    }
     function safeDrawQR(){
       try{
         if (!qrDiv) return;
         qrDiv.innerHTML = "";
-
-        if (!window.QRCode){
-          qrDiv.innerHTML = `<div style="color:#fca5a5;font-weight:900;">
-            QRライブラリ未読込（qrcode.min.js）<br>Consoleを確認
-          </div>`;
-          return;
-        }
-        // eslint-disable-next-line no-undef
-        new window.QRCode(qrDiv, {
-          text: buildStudentUrl(currentSession),
-          width: 520,
-          height: 520
-        });
-      }catch(e){
-        console.error("QR draw failed:", e);
-        qrDiv.innerHTML = `<div style="color:#fca5a5;font-weight:900;">QR生成に失敗（Console参照）</div>`;
-      }
+        if (!window.QRCode){ qrDiv.innerHTML = `<div style="color:#fca5a5;font-weight:900;">QRライブラリ未読込</div>`; return; }
+        new window.QRCode(qrDiv, { text: buildStudentUrl(), width:520, height:520 });
+      }catch(e){ qrDiv.innerHTML = `<div style="color:#fca5a5;font-weight:900;">QR生成に失敗</div>`; }
     }
     safeDrawQR();
     window.addEventListener("load", safeDrawQR);
 
-    function showLayer(layerEl, on){
-      if (!layerEl) return;
-    
-      // classが残っても関係ないように、displayを直指定で強制する
-      layerEl.classList.toggle("show", !!on); // 残してもOK（デバッグしやすい）
-      layerEl.style.display = on ? "flex" : "none";
-      layerEl.style.pointerEvents = on ? "auto" : "none";
-      layerEl.setAttribute("aria-hidden", on ? "false" : "true");
-    }
-    
-    function setPhaseUI(p){
-      currentPhase = p || "qr";
-      phaseLabel.textContent = `phase: ${currentPhase}`;
-    
-      // ✅ まず“必ず”全部消す（ここが最重要）
-      showLayer(qrLayer, false);
-      showLayer(mediaLayer, false);
-    
-      // ✅ phaseで必要なものだけ出す
-      if (currentPhase === "qr") {
-        showLayer(qrLayer, true);
-      } else if (currentPhase === "media") {
-        showLayer(mediaLayer, true);
-      }
-    
-      // explain表示（これはメイン領域なので従来通り）
-      expEl.style.display = (currentPhase === "explain") ? "" : "none";
+    // ===== LAYER =====
+    function showLayer(el, on){
+      if (!el) return;
+      el.classList.toggle("show", !!on);
+      el.style.display      = on ? "flex" : "none";
+      el.style.pointerEvents = on ? "auto" : "none";
     }
 
+    // ===== CHOICES =====
+    const CL = { O:"○", X:"✕" };
+    function cl(k){ return CL[k] || k; }
+
+    function renderChoices(countMap, total){
+      if (!choicesEl) return;
+      if (currentMode === "text"){ choicesEl.style.display = "none"; return; }
+      const keys = (currentConfig?.choices?.length) ? currentConfig.choices
+                 : (currentMode === "ox" ? ["O","X"] : ["A","B","C","D","E"]);
+      const q       = currentQuestion || {};
+      const choices = q.choices || {};
+      const answer  = currentPhase === "explain" ? String(q.answer || "").trim().toUpperCase() : "";
+
+      choicesEl.innerHTML = "";
+      choicesEl.style.display = "grid";
+
+      keys.forEach(k =>{
+        const key  = String(k).toUpperCase();
+        const txt  = choices[key] || choices[key.toLowerCase()] || "";
+        const cnt  = (countMap && countMap[key]) || 0;
+        const pct  = total > 0 ? (cnt / total) * 100 : 0;
+
+        const item = document.createElement("div");
+        item.className = `ci ci-${key}${(answer && key === answer) ? " correct" : ""}`;
+
+        const bar = document.createElement("div"); bar.className = "cbar"; bar.style.width = `${pct.toFixed(1)}%`;
+        const ck  = document.createElement("span"); ck.className = "ck";   ck.textContent = cl(key);
+        const ct  = document.createElement("span"); ct.className = "ct";   ct.textContent = txt;
+        const cc  = document.createElement("span"); cc.className = "ccnt"; cc.textContent = total > 0 ? `${cnt}` : "";
+
+        item.appendChild(bar); item.appendChild(ck); item.appendChild(ct); item.appendChild(cc);
+        choicesEl.appendChild(item);
+      });
+    }
+
+    // ===== QUESTION =====
+    function renderQuestion(){
+      if (!currentQuestion){
+        qEl.textContent = "（問題データがありません）";
+        choicesEl.style.display = "none";
+        expEl.style.display     = "none";
+        return;
+      }
+      qEl.textContent = currentQuestion.question || "";
+
+      const ans    = normalizeAnswers(lastAnswers);
+      const total  = Object.keys(ans).length;
+      const cmap   = {};
+      Object.values(ans).forEach(v=>{ if(v) cmap[v]=(cmap[v]||0)+1; });
+      renderChoices(cmap, total);
+
+      if (currentPhase === "explain"){
+        const a   = currentQuestion.answer ? String(currentQuestion.answer) : "";
+        const exp = currentQuestion.explanation ? String(currentQuestion.explanation) : "";
+        expEl.innerHTML = `<strong>答え: ${cl(a)}</strong><br><br>${exp}`;
+        expEl.style.display = "";
+      } else {
+        expEl.style.display = "none";
+      }
+    }
+
+    // ===== BARS =====
     function normalizeAnswers(ans){
       const out = {};
       Object.entries(ans || {}).forEach(([uid, v])=>{
         if (v == null) return;
         if (typeof v === "string"){ out[uid] = String(v).trim().toUpperCase(); return; }
-        if (typeof v === "object" && v.value != null){
-          out[uid] = String(v.value).trim().toUpperCase();
-          return;
-        }
+        if (typeof v === "object" && v.value != null) out[uid] = String(v.value).trim().toUpperCase();
       });
       return out;
-    }
-
-    function defaultChoiceOrder(mode){
-      if (mode === "five") return ["A","B","C","D","E"];
-      if (mode === "text") return [];
-      return ["O","X"];
-    }
-
-    function computeCounts(choiceOrder, ans){
-      const count = {};
-      choiceOrder.forEach(k=>count[k]=0);
-      Object.values(ans).forEach(v=>{
-        if (count[v] != null) count[v]++;
-      });
-      return count;
     }
 
     function renderBars(){
       const mode = (currentMode || "ox").toLowerCase();
       if (mode === "text"){
         rightTitle.textContent = "TEXT（件数のみ）";
-        bars.innerHTML = `<div style="opacity:.85;font-weight:1000;">回答数: ${Object.keys(lastAnswers||{}).length}</div>`;
+        bars.innerHTML = `<div style="opacity:.85;font-weight:1000;font-size:clamp(.9rem,1.5vw,1.2rem);">回答数: ${Object.keys(lastAnswers||{}).length}</div>`;
+        // 選択肢エリアは非表示
+        const ans2 = normalizeAnswers(lastAnswers);
+        renderChoices({}, Object.keys(ans2).length);
         return;
       }
-
-      rightTitle.textContent = "集計（縦棒）";
-      const order = defaultChoiceOrder(mode);
-      const ans = normalizeAnswers(lastAnswers);
-      const count = computeCounts(order, ans);
+      rightTitle.textContent = "集計（リアルタイム）";
+      const order = mode === "five" ? ["A","B","C","D","E"] : ["O","X"];
+      const ans   = normalizeAnswers(lastAnswers);
       const total = Object.keys(ans).length || 0;
+      const count = {}; order.forEach(k => count[k] = 0);
+      Object.values(ans).forEach(v=>{ if (count[v] != null) count[v]++; });
 
       bars.innerHTML = "";
-      order.forEach(k=>{
-        const n = count[k] || 0;
+      order.forEach(k =>{
+        const n   = count[k] || 0;
         const pct = total ? (n / total) * 100 : 0;
-
-        const row = document.createElement("div");
-        row.className = "barRow";
-
-        const kEl = document.createElement("div");
-        kEl.className = "k";
-        kEl.textContent = k;
-
-        const track = document.createElement("div");
-        track.className = "track";
-        const fill = document.createElement("div");
-        fill.className = "fill";
-        fill.style.width = `${pct.toFixed(1)}%`;
-        // 色味
-        if (k==="O") fill.style.background = `linear-gradient(90deg, rgba(52,199,89,.95), rgba(6,182,212,.90))`;
-        if (k==="X") fill.style.background = `linear-gradient(90deg, rgba(255,59,48,.95), rgba(251,113,133,.88))`;
-        track.appendChild(fill);
-
-        const vEl = document.createElement("div");
-        vEl.className = "v";
-        vEl.textContent = `${n} (${pct.toFixed(0)}%)`;
-
-        row.appendChild(kEl);
-        row.appendChild(track);
-        row.appendChild(vEl);
-
+        const row  = document.createElement("div"); row.className = "barRow";
+        const kEl  = document.createElement("div"); kEl.className = "k"; kEl.textContent = cl(k);
+        const trk  = document.createElement("div"); trk.className = "track";
+        const fill = document.createElement("div"); fill.className = "fill"; fill.style.width = `${pct.toFixed(1)}%`;
+        if (k==="O") fill.style.background = `linear-gradient(90deg,rgba(52,199,89,.95),rgba(6,182,212,.90))`;
+        if (k==="X") fill.style.background = `linear-gradient(90deg,rgba(255,59,48,.95),rgba(251,113,133,.88))`;
+        if (k==="A") fill.style.background = `linear-gradient(90deg,rgba(10,132,255,.95),rgba(56,189,248,.88))`;
+        if (k==="B") fill.style.background = `linear-gradient(90deg,rgba(48,209,88,.95),rgba(34,197,94,.88))`;
+        if (k==="C") fill.style.background = `linear-gradient(90deg,rgba(255,159,10,.95),rgba(245,158,11,.88))`;
+        if (k==="D") fill.style.background = `linear-gradient(90deg,rgba(191,90,242,.95),rgba(168,85,247,.88))`;
+        if (k==="E") fill.style.background = `linear-gradient(90deg,rgba(255,55,95,.95),rgba(251,113,133,.88))`;
+        trk.appendChild(fill);
+        const vEl = document.createElement("div"); vEl.className = "v"; vEl.textContent = `${n} (${pct.toFixed(0)}%)`;
+        row.appendChild(kEl); row.appendChild(trk); row.appendChild(vEl);
         bars.appendChild(row);
       });
-      renderChoices(); // 回答更新時に選択肢カウントも再描画
+
+      // 選択肢カウントを同時更新
+      const cmap = {}; Object.values(ans).forEach(v=>{ if(v) cmap[v]=(cmap[v]||0)+1; });
+      renderChoices(cmap, total);
     }
 
-    // choicesEl は renderQuestion / renderBars 両方から更新
-    const choicesEl = document.getElementById("choicesEl");
-
-    function renderChoices(){
-      if (!choicesEl) return;
-      const mode = (currentMode || "ox").toLowerCase();
-      const q    = currentQuestion || {};
-
-      if (mode === "text"){
-        choicesEl.style.display = "none";
-        return;
-      }
-
-      const cfg    = currentConfig || {};
-      const keys   = (cfg.choices && cfg.choices.length)
-                     ? cfg.choices
-                     : (mode === "ox" ? ["O","X"] : ["A","B","C","D","E"]);
-      const choices = q.choices || {};
-      const ans     = normalizeAnswers(lastAnswers);
-      const total   = Object.keys(ans).length || 0;
-      const countMap = {};
-      Object.values(ans).forEach(v=>{ if(v) countMap[v]=(countMap[v]||0)+1; });
-
-      choicesEl.innerHTML = "";
-      choicesEl.style.display = "grid";
-
-      keys.forEach(k=>{
-        const key   = String(k).toUpperCase();
-        const label = key==="O"?"○":key==="X"?"✕":key;
-        const txt   = choices[key] || choices[key.toLowerCase()] || "";
-        const cnt   = countMap[key] || 0;
-        const pct   = total ? (cnt/total)*100 : 0;
-
-        const item = document.createElement("div");
-        item.className = `choiceItem ci-${key}`;
-
-        const bar = document.createElement("div");
-        bar.className = "cbar";
-        bar.style.width = `${pct.toFixed(1)}%`;
-
-        const ck = document.createElement("span");
-        ck.className = "ck"; ck.textContent = label;
-
-        const ct = document.createElement("span");
-        ct.className = "ct"; ct.textContent = txt;
-
-        const cc = document.createElement("span");
-        cc.className = "ccnt";
-        cc.textContent = total > 0 ? cnt : "";
-
-        item.appendChild(bar);
-        item.appendChild(ck);
-        item.appendChild(ct);
-        item.appendChild(cc);
-        choicesEl.appendChild(item);
-      });
-    }
-
-    function renderQuestion(){
-      if (!currentQuestion){
-        qEl.textContent = "（問題データがありません）";
-        if(choicesEl) choicesEl.style.display = "none";
-        expEl.textContent = "";
-        expEl.style.display = "none";
-        return;
-      }
-      qEl.textContent = currentQuestion.question || "";
-
-      renderChoices();
-
-      if (currentPhase === "explain"){
-        const ans = currentQuestion.answer ? String(currentQuestion.answer) : "";
-        const exp = currentQuestion.explanation ? String(currentQuestion.explanation) : "";
-        expEl.innerHTML = `<strong>答え:</strong> ${ans}<br><br>${exp}`;
-        expEl.style.display = "";
-      }else{
-        expEl.textContent = "";
-        expEl.style.display = "none";
-      }
-    }
-
+    // ===== MEDIA =====
     function renderMedia(){
-      mediaSlot.innerHTML = "";
-      mediaCaption.textContent = "";
-
+      mediaSlot.innerHTML = ""; mediaCaption.textContent = "";
       const m = currentQuestion?.media;
-      if (!m || !m.url){
-        mediaSlot.innerHTML = `<div style="opacity:.85;font-weight:1000;">mediaがありません（questions/{qid}/media）</div>`;
-        return;
-      }
-
-      const type = String(m.type || "").toLowerCase();
+      if (!m || !m.url){ mediaSlot.innerHTML = `<div style="opacity:.85;font-weight:1000;">mediaがありません</div>`; return; }
       const fit = (m.objectFit === "cover") ? "cover" : "contain";
-
-      if (type === "video"){
+      if (String(m.type||"").toLowerCase() === "video"){
         const v = document.createElement("video");
-        v.src = m.url;
-        v.controls = true;
-        v.playsInline = true;
-        v.style.objectFit = fit;
-        v.muted = !!m.muted;
-        v.loop = !!m.loop;
-        if (m.autoplay) v.autoplay = true;
+        v.src = m.url; v.controls = true; v.playsInline = true; v.style.objectFit = fit;
+        v.muted = !!m.muted; v.loop = !!m.loop;
+        if (m.autoplay){ v.autoplay = true; v.play().catch(()=>{}); }
         mediaSlot.appendChild(v);
-        if (m.autoplay){
-          // 自動再生はブラウザ制限があるので、失敗しても落ちない
-          v.play().catch(()=>{});
-        }
-      }else{
-        const img = document.createElement("img");
-        img.src = m.url;
-        img.alt = "";
-        img.style.objectFit = fit;
+      } else {
+        const img = document.createElement("img"); img.src = m.url; img.alt = ""; img.style.objectFit = fit;
         mediaSlot.appendChild(img);
       }
-
       if (m.caption) mediaCaption.textContent = String(m.caption);
     }
 
-    // phase
-    onValue(phaseRef, snap=>{
-      setPhaseUI(snap.val() || "qr");
-      // media phaseならmediaを描く
+    // ===== PHASE UI =====
+    function setPhaseUI(p){
+      prevPhase    = currentPhase;
+      currentPhase = p || "standby";
+      phaseLabel.textContent = `phase: ${currentPhase}`;
+
+      showLayer(qrLayer,    currentPhase === "qr");
+      showLayer(mediaLayer, currentPhase === "media");
+      expEl.style.display = (currentPhase === "explain") ? "" : "none";
+
+      // 出題チャイム＋読み上げ：→ question に変わったとき
+      if (currentPhase === "question" && prevPhase !== "question"){
+        playQuestionSound();
+        setTimeout(()=> speak(buildSpeakText()), 950);
+      }
       if (currentPhase === "media") renderMedia();
-      // explain phaseなら解説を出す
+      renderQuestion();
+    }
+
+    // ===== SUBSCRIPTIONS =====
+
+    // phase
+    onValue(phRef, snap => setPhaseUI(snap.val() || "standby"));
+
+    // activity
+    onValue(actRef, snap =>{
+      const a       = snap.val() || {};
+      prevStatus     = currentStatus;
+      currentStatus  = a.status || "-";
+      currentMode    = (a.mode || "ox").toLowerCase();
+      currentConfig  = a.config || {};
+      currentSession = String(a.session || "");
+
+      statusLabel.textContent = `status: ${currentStatus}`;
+      statusLabel.className   = `pill ${currentStatus === "open" ? "open" : currentStatus === "closed" ? "closed" : ""}`;
+
+      safeDrawQR();
+
+      // 終了チャイム：open → closed
+      if (currentStatus === "closed" && prevStatus === "open") playEndSound();
+
+      const n = Object.keys(lastAnswers || {}).length;
+      countLabel.textContent = `参加中 ${n}人`;
+      qrCount.textContent    = `参加中 ${n}人`;
+      renderBars();
       renderQuestion();
     });
 
-    // activity
-    onValue(activityRef, snap=>{
-      const a = snap.val() || {};
-      currentStatus = a.status || "-";
-      currentMode   = (a.mode || "ox").toLowerCase();
-      currentConfig = a.config || {};
-      currentSession = String(a.session || "");
-      statusLabel.textContent = `status: ${currentStatus}`;
-      safeDrawQR(); // session更新に追随して描き直す（現行と同じ考え方）:contentReference[oaicite:10]{index=10}
-
-      // 参加人数
-      // ※ rosterがある場合はroster数にしても良いが、ここはanswers数を簡易表示
-      const n = Object.keys(lastAnswers || {}).length;
-      countLabel.textContent = `参加中 ${n}人`;
-      qrCount.textContent = `参加中 ${n}人`;
-    });
-
     // qid
-    onValue(qidRef, snap=>{
+    onValue(qidRef, snap =>{
       const qid = snap.val() || null;
       if (qid === currentQid) return;
       currentQid = qid;
-
       if (unsubQ){ unsubQ(); unsubQ = null; }
-      if (!qid){
-        currentQuestion = null;
-        renderQuestion();
-        renderBars();
-        renderMedia();
-        return;
-      }
-      unsubQ = onValue(qRef(qid), s=>{
+      if (!qid){ currentQuestion = null; renderQuestion(); renderBars(); renderMedia(); return; }
+      unsubQ = onValue(qRef(qid), s =>{
         currentQuestion = s.val() || null;
         renderQuestion();
+        renderBars();
         if (currentPhase === "media") renderMedia();
       });
     });
 
     // answers
-    onValue(answersRef, snap=>{
+    onValue(ansRef, snap =>{
       lastAnswers = snap.val() || {};
-      const n = Object.keys(lastAnswers || {}).length;
+      const n = Object.keys(lastAnswers).length;
       countLabel.textContent = `参加中 ${n}人`;
-      qrCount.textContent = `参加中 ${n}人`;
+      qrCount.textContent    = `参加中 ${n}人`;
       renderBars();
     });
 
     // init
-    setPhaseUI("qr");
+    setPhaseUI("standby");
     renderBars();
   </script>
 </body>
