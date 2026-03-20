@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ClassSync v2 Media Editor</title>
+<link rel="icon" href="data:,">
+<style>
+  :root{
+    --bg:#050608; --panel:#111827; --panel2:#020617;
+    --ink:#f9fafb; --muted:#cbd5e1; --line:rgba(255,255,255,.10);
+    --cyan:#00c7be; --cyan-bg:rgba(0,199,190,.12); --cyan-border:rgba(0,199,190,.35);
+  }
+  *{ box-sizing:border-box; }
+  body{
+    background:var(--bg); color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",sans-serif;
+    margin:0; padding:0 0 6rem;
+  }
+
+  /* ===== TOPBAR ===== */
+  .topbar{
+    position:sticky; top:0; z-index:40;
+    display:flex; align-items:center; justify-content:space-between;
+    gap:.8rem; flex-wrap:wrap;
+    padding:.85rem 1.2rem;
+    background:rgba(5,6,8,.88);
+    border-bottom:1px solid var(--line);
+    backdrop-filter:blur(14px);
+  }
+  .topbar-left{ display:flex; align-items:center; gap:.75rem; flex-wrap:wrap; }
+  .topbar-title{ font-weight:1000; font-size:1rem; letter-spacing:.08em; }
+  .room-pill{
+    display:inline-flex; align-items:center; gap:.4rem;
+    padding:.32rem .75rem; border-radius:999px;
+    background:rgba(10,132,255,.18); border:1px solid rgba(10,132,255,.35);
+    font-weight:900; font-size:.8rem; letter-spacing:.06em; color:#60c0ff;
+  }
+  .topbar-right{ display:flex; align-items:center; gap:.6rem; flex-wrap:wrap; }
+
+  button{
+    padding:.62rem 1.1rem; border-radius:999px; border:none; color:#fff;
+    font-size:.85rem; cursor:pointer; font-weight:900; letter-spacing:.04em;
+    transition:transform .12s,filter .12s,opacity .12s;
+    box-shadow:0 .3rem 1rem rgba(0,0,0,.4);
+  }
+  button:active{ transform:scale(.97); filter:brightness(.92); }
+  button:disabled{ opacity:.40; cursor:not-allowed; transform:none; }
+  .btn-load   { background:linear-gradient(135deg,#6366f1,#8b5cf6); }
+  .btn-saveall{ background:linear-gradient(135deg,#22c55e,#16a34a); }
+  .btn-cyan   { background:linear-gradient(135deg,rgba(0,199,190,.85),rgba(0,150,145,.85)); }
+  .btn-gray   { background:#374151; }
+  .btn-red    { background:rgba(239,68,68,.80); }
+  .btn-sm     { padding:.42rem .8rem; font-size:.78rem; }
+
+  /* ===== STATUS BAR ===== */
+  .statusbar{
+    padding:.55rem 1.2rem;
+    background:rgba(17,24,39,.60);
+    border-bottom:1px solid var(--line);
+    font-size:.78rem; color:var(--muted);
+    display:flex; align-items:center; gap:1rem; flex-wrap:wrap;
+  }
+  .stat-pill{
+    padding:.22rem .6rem; border-radius:999px;
+    border:1px solid var(--line); background:rgba(255,255,255,.05);
+    font-weight:900; white-space:nowrap;
+  }
+  .stat-pill.media-on{ border-color:var(--cyan-border); background:var(--cyan-bg); color:var(--cyan); }
+  .stat-pill.dirty   { border-color:rgba(245,158,11,.40); background:rgba(245,158,11,.12); color:#fbbf24; }
+
+  /* ===== MAIN ===== */
+  .main{ max-width:74rem; margin:0 auto; padding:1.2rem 1rem; }
+
+  /* ===== FILTER BAR ===== */
+  .filterbar{
+    display:flex; gap:.5rem; flex-wrap:wrap; align-items:center; margin-bottom:1rem;
+  }
+  .filterbar input[type=text]{
+    background:var(--panel); color:var(--ink);
+    border:1px solid var(--line); border-radius:999px;
+    padding:.45rem .9rem; font-size:.82rem; outline:none; width:14rem;
+    transition:border-color .15s;
+  }
+  .filterbar input[type=text]:focus{ border-color:rgba(0,199,190,.50); }
+  .filter-btn{
+    padding:.42rem .85rem; border-radius:999px; border:1px solid var(--line);
+    background:rgba(255,255,255,.06); color:var(--muted);
+    font-size:.78rem; font-weight:900; cursor:pointer; transition:all .14s;
+  }
+  .filter-btn.on{ background:var(--cyan-bg); border-color:var(--cyan-border); color:var(--cyan); }
+
+  /* ===== CARD GRID ===== */
+  .card-grid{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:.9rem; }
+  @media(max-width:680px){ .card-grid{ grid-template-columns:1fr; } }
+
+  /* ===== QUESTION CARD ===== */
+  .q-card{
+    border-radius:1.1rem; overflow:hidden;
+    border:1px solid var(--line);
+    background:var(--panel);
+    transition:border-color .2s;
+  }
+  .q-card.has-media{ border-color:var(--cyan-border); }
+  .q-card.dirty-card{ border-color:rgba(245,158,11,.45); }
+
+  .q-card-head{
+    padding:.75rem 1rem;
+    display:flex; align-items:center; gap:.5rem; flex-wrap:wrap;
+    border-bottom:1px solid rgba(255,255,255,.06);
+    cursor:pointer; user-select:none;
+    transition:background .14s;
+  }
+  .q-card-head:hover{ background:rgba(255,255,255,.03); }
+
+  .q-badge{ font-size:.67rem; font-weight:900; letter-spacing:.08em; padding:.24rem .56rem; border-radius:999px; }
+  .badge-ox  { background:rgba(52,199,89,.22);  border:1px solid rgba(52,199,89,.35);  color:#6ee7b7; }
+  .badge-five{ background:rgba(99,102,241,.22); border:1px solid rgba(99,102,241,.35); color:#a5b4fc; }
+  .badge-text{ background:rgba(255,159,10,.22); border:1px solid rgba(255,159,10,.35); color:#fcd34d; }
+  .badge-media-on { background:var(--cyan-bg); border:1px solid var(--cyan-border); color:var(--cyan); }
+  .badge-media-off{ background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.10); color:#475569; }
+
+  .q-id  { font-size:.72rem; font-weight:1000; color:#60c0ff; font-family:ui-monospace,monospace; }
+  .q-text{ flex:1; font-size:.85rem; font-weight:700; line-height:1.4;
+            overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .chevron{ font-size:.72rem; color:var(--muted); transition:transform .2s; flex-shrink:0; }
+  .q-card.open .chevron{ transform:rotate(180deg); }
+
+  /* ===== MEDIA PANEL ===== */
+  .media-panel{ display:none; padding:.9rem 1rem 1rem; border-top:1px solid rgba(255,255,255,.06); }
+  .q-card.open .media-panel{ display:block; }
+
+  .mp-title{
+    font-size:.72rem; font-weight:900; letter-spacing:.08em;
+    color:var(--cyan); margin-bottom:.65rem;
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  .mp-clear-btn{
+    font-size:.67rem; font-weight:900; padding:.18rem .55rem;
+    border-radius:999px; border:1px solid rgba(239,68,68,.35);
+    background:rgba(239,68,68,.10); color:#f87171;
+    cursor:pointer; transition:filter .12s;
+  }
+  .mp-clear-btn:hover{ filter:brightness(1.2); }
+
+  /* URL row */
+  .url-row{ display:flex; gap:.45rem; align-items:center; margin-bottom:.58rem; }
+  .url-row input{
+    flex:1; background:var(--panel2); color:var(--ink);
+    border:1px solid rgba(255,255,255,.14); border-radius:.6rem;
+    padding:.45rem .7rem; font-size:.82rem; outline:none;
+    transition:border-color .15s;
+  }
+  .url-row input:focus{ border-color:var(--cyan-border); }
+  .apply-btn{
+    flex-shrink:0; padding:.42rem .82rem; border-radius:999px; border:none;
+    background:rgba(0,199,190,.78); color:#fff;
+    font-size:.76rem; font-weight:900; cursor:pointer; transition:filter .12s; white-space:nowrap;
+  }
+  .apply-btn:hover{ filter:brightness(1.15); }
+
+  /* opts grid */
+  .opts-grid{
+    display:grid; grid-template-columns:auto 1fr; gap:.35rem .7rem;
+    align-items:center; font-size:.77rem; margin-bottom:.6rem;
+  }
+  .opts-grid label{ color:var(--muted); font-weight:900; white-space:nowrap; }
+  .opt-row{ display:flex; gap:.38rem; flex-wrap:wrap; }
+
+  .tbtn{
+    padding:.22rem .58rem; border-radius:999px;
+    border:1px solid rgba(255,255,255,.13); background:rgba(255,255,255,.06);
+    color:var(--muted); font-size:.7rem; font-weight:900; cursor:pointer; transition:all .13s;
+  }
+  .tbtn.on{ background:var(--cyan-bg); border-color:var(--cyan-border); color:var(--cyan); }
+  .tybtn{
+    padding:.22rem .65rem; border-radius:999px;
+    border:1px solid rgba(255,255,255,.13); background:rgba(255,255,255,.06);
+    color:var(--muted); font-size:.7rem; font-weight:900; cursor:pointer; transition:all .13s;
+  }
+  .tybtn.on.video{ background:rgba(99,102,241,.22); border-color:rgba(99,102,241,.45); color:#a5b4fc; }
+  .tybtn.on.image{ background:rgba(52,199,89,.18);  border-color:rgba(52,199,89,.40);  color:#6ee7b7; }
+
+  /* caption */
+  .cap-row input{
+    width:100%; background:var(--panel2); color:var(--ink);
+    border:1px solid rgba(255,255,255,.13); border-radius:.6rem;
+    padding:.42rem .68rem; font-size:.8rem; outline:none;
+    transition:border-color .15s;
+  }
+  .cap-row input:focus{ border-color:var(--cyan-border); }
+
+  /* thumb */
+  .thumb{
+    width:100%; border-radius:.65rem; overflow:hidden;
+    background:#000; max-height:16rem;
+    display:flex; align-items:center; justify-content:center;
+    border:1px solid rgba(255,255,255,.10); margin-top:.58rem;
+    min-height:3rem;
+  }
+  .thumb img,.thumb video{ max-width:100%; max-height:16rem; display:block; border-radius:.55rem; }
+  .thumb-empty{ padding:1.2rem; text-align:center; font-size:.76rem; color:#334155; font-weight:900; letter-spacing:.05em; }
+
+  /* save row */
+  .save-row{ margin-top:.75rem; display:flex; gap:.5rem; align-items:center; flex-wrap:wrap; }
+  .saved-tag{
+    font-size:.72rem; font-weight:900; color:#4ade80;
+    padding:.2rem .6rem; border-radius:999px;
+    background:rgba(34,197,94,.12); border:1px solid rgba(34,197,94,.30);
+    display:none;
+  }
+  .saved-tag.show{ display:inline-block; }
+
+  /* ===== EMPTY STATE ===== */
+  .empty{
+    text-align:center; padding:4rem 1rem;
+    font-size:.9rem; color:var(--muted); opacity:.6;
+    font-weight:900; letter-spacing:.06em;
+  }
+
+  /* ===== LOG ===== */
+  #globalLog{
+    position:fixed; bottom:1rem; left:50%; transform:translateX(-50%);
+    background:rgba(17,24,39,.95); border:1px solid rgba(255,255,255,.12);
+    border-radius:999px; padding:.55rem 1.1rem;
+    font-size:.8rem; font-weight:900; letter-spacing:.06em;
+    color:var(--ink); white-space:nowrap; max-width:90vw; overflow:hidden; text-overflow:ellipsis;
+    opacity:0; pointer-events:none; transition:opacity .2s; z-index:50;
+    box-shadow:0 .8rem 2.5rem rgba(0,0,0,.6);
+  }
+  #globalLog.show{ opacity:1; }
+
+  #buildTag{
+    position:fixed; right:.65rem; bottom:.65rem; opacity:.40; font-size:.64rem; z-index:60;
+    background:rgba(0,0,0,.40); border:1px solid rgba(255,255,255,.07);
+    padding:.28rem .52rem; border-radius:999px; backdrop-filter:blur(8px); pointer-events:none;
+  }
+</style>
+</head>
+<body>
+  <div id="buildTag">build: 2026-03-01 / exp-display-v2 / media-editor</div>
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <span class="topbar-title">🎬 Media Editor</span>
+      <span class="room-pill">🏫 <span id="roomLabel">—</span></span>
+      <select id="roomSelect" style="background:var(--panel2);color:#e5e7eb;border:1px solid var(--line);border-radius:999px;padding:.38rem .75rem;font-size:.82rem;outline:none;cursor:pointer;"></select>
+    </div>
+    <div class="topbar-right">
+      <button id="loadBtn" class="btn-load">↓ 問題を読み込む</button>
+      <button id="saveAllBtn" class="btn-saveall" disabled>✅ 全て保存（Firebase）</button>
+    </div>
+  </div>
+
+  <!-- STATUS BAR -->
+  <div class="statusbar">
+    <span class="stat-pill" id="st-total">0問</span>
+    <span class="stat-pill media-on" id="st-media">メディア: 0問</span>
+    <span class="stat-pill dirty" id="st-dirty" style="display:none">未保存の変更あり</span>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+    <!-- FILTER -->
+    <div class="filterbar">
+      <input type="text" id="searchBox" placeholder="🔍 問題IDまたはキーワード…">
+      <button class="filter-btn" id="fAll" onclick="setFilter('all')" >すべて</button>
+      <button class="filter-btn" id="fMedia" onclick="setFilter('media')">メディアあり</button>
+      <button class="filter-btn" id="fNoMedia" onclick="setFilter('nomedia')">メディアなし</button>
+    </div>
+
+    <!-- CARDS -->
+    <div class="card-grid" id="cardGrid">
+      <div class="empty" id="emptyState">「問題を読み込む」を押してください</div>
+    </div>
+  </div>
+
+  <!-- GLOBAL TOAST -->
+  <div id="globalLog"></div>
+
+<script type="module">
+import { initializeApp }  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getDatabase, ref, get, update } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBke-wTU16skpbK8z80ddK04tE154dHERQ",
+  databaseURL: "https://satosan-41eac-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "satosan-41eac"
+};
+const app = initializeApp(firebaseConfig);
+const db  = getDatabase(app);
+
+const ROOMS = ["kyoto-01","kyoto-02","sendai-01","sendai-02","nagoya-01","nagoya-02"];
+
+// ===== DOM =====
+const roomLabel  = document.getElementById("roomLabel");
+const roomSelect = document.getElementById("roomSelect");
+const loadBtn    = document.getElementById("loadBtn");
+const saveAllBtn = document.getElementById("saveAllBtn");
+const cardGrid   = document.getElementById("cardGrid");
+const emptyState = document.getElementById("emptyState");
+const searchBox  = document.getElementById("searchBox");
+const stTotal    = document.getElementById("st-total");
+const stMedia    = document.getElementById("st-media");
+const stDirty    = document.getElementById("st-dirty");
+
+// ===== ROOMS SELECT =====
+const urlRoom = new URLSearchParams(location.search).get("room");
+ROOMS.forEach(r => {
+  const opt = document.createElement("option");
+  opt.value = r; opt.textContent = r;
+  roomSelect.appendChild(opt);
+});
+const savedRoom = localStorage.getItem("cs_v2_media_editor_room");
+const initRoom  = (urlRoom && ROOMS.includes(urlRoom)) ? urlRoom
+                : (savedRoom && ROOMS.includes(savedRoom)) ? savedRoom
+                : ROOMS[0];
+roomSelect.value = initRoom;
+roomLabel.textContent = initRoom;
+
+roomSelect.onchange = () => {
+  roomLabel.textContent = roomSelect.value;
+  localStorage.setItem("cs_v2_media_editor_room", roomSelect.value);
+  questions = {};
+  dirtySet.clear();
+  renderCards();
+  updateStatus();
+  saveAllBtn.disabled = true;
+};
+
+// ===== STATE =====
+let questions = {};   // { [qid]: questionObject }  ← live, media編集はここを書き換える
+let dirtySet  = new Set(); // 変更済みqid
+let filter    = "all";
+let allQids   = [];
+
+// ===== TOAST =====
+let toastTimer = null;
+function toast(msg, color="#f9fafb") {
+  const el = document.getElementById("globalLog");
+  el.textContent = msg;
+  el.style.color = color;
+  el.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove("show"), 2200);
+}
+
+// ===== LOAD =====
+loadBtn.onclick = async () => {
+  loadBtn.disabled = true;
+  loadBtn.textContent = "読み込み中…";
+  const room = roomSelect.value;
+  try {
+    const snap = await get(ref(db, `rooms/${room}/questions`));
+    const data = snap.val() || {};
+    questions  = JSON.parse(JSON.stringify(data)); // deep copy
+    dirtySet.clear();
+    allQids = Object.keys(questions).sort(sortQid);
+    renderCards();
+    updateStatus();
+    saveAllBtn.disabled = true;
+    toast(`✅ ${allQids.length}問を読み込みました（room: ${room}）`, "#4ade80");
+  } catch(e) {
+    console.error(e);
+    toast("❌ 読み込みに失敗しました: " + e.message, "#f87171");
+  } finally {
+    loadBtn.disabled = false;
+    loadBtn.textContent = "↓ 問題を読み込む";
+  }
+};
+
+// ===== SAVE ALL =====
+saveAllBtn.onclick = async () => {
+  if (!dirtySet.size) return;
+  const room  = roomSelect.value;
+  const dirty = [...dirtySet];
+  if (!confirm(`${dirty.length}問のメディア設定を Firebase に保存します。\nよろしいですか？`)) return;
+  saveAllBtn.disabled = true;
+  saveAllBtn.textContent = "保存中…";
+  try {
+    // 変更済み問題だけ patch（上書きしない）
+    const patch = {};
+    for (const qid of dirty) {
+      const q = questions[qid];
+      patch[`rooms/${room}/questions/${qid}/media`] = q.media || null;
+    }
+    await update(ref(db), patch);
+    dirtySet.clear();
+    updateStatus();
+    // saved タグ更新
+    dirty.forEach(qid => {
+      const tag = document.getElementById(`saved_${qid}`);
+      if (tag) { tag.classList.add("show"); setTimeout(()=>tag.classList.remove("show"),2000); }
+      const card = document.getElementById(`card_${qid}`);
+      if (card) card.classList.remove("dirty-card");
+    });
+    toast(`✅ ${dirty.length}問のメディア設定を保存しました`, "#4ade80");
+  } catch(e) {
+    console.error(e);
+    toast("❌ 保存に失敗しました: " + e.message, "#f87171");
+    saveAllBtn.disabled = false;
+    saveAllBtn.textContent = "✅ 全て保存（Firebase）";
+  }
+  saveAllBtn.disabled = !dirtySet.size;
+  saveAllBtn.textContent = "✅ 全て保存（Firebase）";
+};
+
+// ===== FILTER =====
+window.setFilter = (f) => {
+  filter = f;
+  document.getElementById("fAll")    .classList.toggle("on", f==="all");
+  document.getElementById("fMedia")  .classList.toggle("on", f==="media");
+  document.getElementById("fNoMedia").classList.toggle("on", f==="nomedia");
+  renderCards();
+};
+setFilter("all");
+
+searchBox.oninput = () => renderCards();
+
+// ===== SORT =====
+function sortQid(a,b) {
+  const na = parseInt(String(a).match(/^Q(\d+)/i)?.[1]||"999999",10);
+  const nb = parseInt(String(b).match(/^Q(\d+)/i)?.[1]||"999999",10);
+  if (na !== nb) return na - nb;
+  return String(a).localeCompare(String(b),"ja");
+}
+
+// ===== STATUS =====
+function updateStatus() {
+  const total  = allQids.length;
+  const mediaC = allQids.filter(q => questions[q]?.media?.url).length;
+  const dirty  = dirtySet.size;
+  stTotal.textContent  = `${total}問`;
+  stMedia.textContent  = `メディア: ${mediaC}問`;
+  stDirty.style.display= dirty ? "inline-block" : "none";
+  stDirty.textContent  = `未保存: ${dirty}問`;
+  saveAllBtn.disabled  = !dirty;
+}
+
+// ===== RENDER CARDS =====
+function renderCards() {
+  const kw = searchBox.value.trim().toLowerCase();
+  const visible = allQids.filter(qid => {
+    const q = questions[qid] || {};
+    const hasMedia = !!q.media?.url;
+    if (filter === "media"   && !hasMedia) return false;
+    if (filter === "nomedia" && hasMedia)  return false;
+    if (kw) {
+      const hay = (qid + " " + (q.question||"")).toLowerCase();
+      if (!hay.includes(kw)) return false;
+    }
+    return true;
+  });
+
+  cardGrid.innerHTML = "";
+  emptyState.style.display = visible.length ? "none" : "block";
+  if (!visible.length) {
+    emptyState.textContent = allQids.length
+      ? "条件に合う問題がありません"
+      : "「問題を読み込む」を押してください";
+    cardGrid.appendChild(emptyState);
+    return;
+  }
+
+  visible.forEach(qid => cardGrid.appendChild(buildCard(qid)));
+}
+
+// ===== BUILD CARD =====
+function buildCard(qid) {
+  const q    = questions[qid] || {};
+  const mode = (q.mode||"").toLowerCase();
+  const m0   = q.media || {};
+  const hasMedia = !!m0.url;
+
+  const card = document.createElement("div");
+  card.className = "q-card" + (hasMedia?" has-media":"") + (dirtySet.has(qid)?" dirty-card":"");
+  card.id = `card_${qid}`;
+
+  // ---- HEAD (toggle open) ----
+  const modeCls  = mode==="ox"?"badge-ox":mode==="five"?"badge-five":"badge-text";
+  const modeLbl  = mode==="ox"?"○✕":mode==="five"?"5択":mode==="text"?"TEXT":mode||"?";
+  const mBadgeCls= hasMedia?"badge-media-on":"badge-media-off";
+  const mBadgeLbl= hasMedia?(m0.type==="video"?"🎬 VIDEO":"🖼️ IMAGE"):"📷 MEDIA";
+
+  card.innerHTML = `
+    <div class="q-card-head" id="head_${qid}">
+      <span class="q-id">${esc(qid)}</span>
+      <span class="q-badge ${modeCls}">${modeLbl}</span>
+      <span class="q-badge ${mBadgeCls}" id="mbadge_${qid}">${mBadgeLbl}</span>
+      <span class="q-text">${esc(q.question||"（問題文なし）")}</span>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="media-panel" id="mpanel_${qid}"></div>`;
+
+  // toggle
+  card.querySelector(`#head_${qid}`).onclick = () => {
+    const isOpen = card.classList.toggle("open");
+    if (isOpen && !card.dataset.built) {
+      card.dataset.built = "1";
+      buildMediaPanel(qid, card.querySelector(`#mpanel_${qid}`));
+    }
+  };
+
+  return card;
+}
+
+// ===== BUILD MEDIA PANEL =====
+function buildMediaPanel(qid, container) {
+  const q  = questions[qid] || {};
+  const m0 = q.media || {};
+
+  // local state
+  let mUrl    = m0.url      || "";
+  let mType   = m0.type     || "image";
+  let mCaption= m0.caption  || "";
+  let mAuto   = m0.autoplay !== false && !!m0.url;
+  let mMuted  = m0.muted    !== false && !!m0.url;
+  let mLoop   = m0.loop     === true;
+  let mFit    = m0.objectFit|| "contain";
+
+  // commit: questions[qid].media を更新して dirty マーク
+  function commit() {
+    const card = document.getElementById(`card_${qid}`);
+    if (!mUrl.trim()) {
+      delete q.media;
+      if (card) { card.classList.remove("has-media"); card.classList.add("dirty-card"); }
+    } else {
+      const mm = { url: mUrl.trim(), type: mType };
+      if (mCaption.trim()) mm.caption = mCaption.trim();
+      if (mType==="video") { mm.autoplay=mAuto; mm.muted=mMuted; mm.loop=mLoop; }
+      mm.objectFit = mFit;
+      q.media = mm;
+      if (card) { card.classList.add("has-media","dirty-card"); }
+    }
+    questions[qid] = q;
+    dirtySet.add(qid);
+    // badge update
+    const badge = document.getElementById(`mbadge_${qid}`);
+    if (badge) {
+      badge.textContent = mUrl.trim() ? (mType==="video"?"🎬 VIDEO":"🖼️ IMAGE") : "📷 MEDIA";
+      badge.className = "q-badge " + (mUrl.trim()?"badge-media-on":"badge-media-off");
+    }
+    updateStatus();
+  }
+
+  container.innerHTML = `
+    <div class="mp-title">
+      🎬 メディア設定
+      <button class="mp-clear-btn" id="clr_${qid}">✕ クリア</button>
+    </div>
+
+    <div class="url-row">
+      <input type="url" id="url_${qid}" placeholder="https://… （動画 or 画像のURL）" value="${esc(mUrl)}">
+      <button class="apply-btn" id="apl_${qid}">適用 ↵</button>
+    </div>
+
+    <div class="opts-grid">
+      <label>種類</label>
+      <div class="opt-row">
+        <button class="tybtn video ${mType==="video"?"on":""}" id="tv_${qid}">🎬 動画</button>
+        <button class="tybtn image ${mType==="image"?"on":""}" id="ti_${qid}">🖼️ 画像</button>
+      </div>
+      <label>表示</label>
+      <div class="opt-row">
+        <button class="tbtn ${mFit==="contain"?"on":""}" id="fc_${qid}">contain</button>
+        <button class="tbtn ${mFit==="cover"?"on":""}"   id="fv_${qid}">cover</button>
+      </div>
+      <label id="vl_${qid}" style="${mType!=="video"?"opacity:.32":""}">動画設定</label>
+      <div class="opt-row" id="vo_${qid}" style="${mType!=="video"?"opacity:.32":""}">
+        <button class="tbtn ${mAuto?"on":""}"  id="ap_${qid}">autoplay</button>
+        <button class="tbtn ${mMuted?"on":""}" id="mu_${qid}">muted</button>
+        <button class="tbtn ${mLoop?"on":""}"  id="lp_${qid}">loop</button>
+      </div>
+    </div>
+
+    <div class="cap-row">
+      <input type="text" id="cap_${qid}" placeholder="キャプション（任意）" value="${esc(mCaption)}">
+    </div>
+
+    <div class="thumb" id="th_${qid}">
+      <div class="thumb-empty">${mUrl?"読み込み中…":"URL を入力して「適用」を押してください"}</div>
+    </div>
+
+    <div class="save-row">
+      <button class="btn-cyan btn-sm" id="saveOne_${qid}">💾 この問題だけ保存</button>
+      <span class="saved-tag" id="saved_${qid}">✅ 保存しました</span>
+    </div>`;
+
+  // ---- refs ----
+  const urlI  = document.getElementById(`url_${qid}`);
+  const aplB  = document.getElementById(`apl_${qid}`);
+  const clrB  = document.getElementById(`clr_${qid}`);
+  const tvB   = document.getElementById(`tv_${qid}`);
+  const tiB   = document.getElementById(`ti_${qid}`);
+  const fcB   = document.getElementById(`fc_${qid}`);
+  const fvB   = document.getElementById(`fv_${qid}`);
+  const apB   = document.getElementById(`ap_${qid}`);
+  const muB   = document.getElementById(`mu_${qid}`);
+  const lpB   = document.getElementById(`lp_${qid}`);
+  const capI  = document.getElementById(`cap_${qid}`);
+  const thumb = document.getElementById(`th_${qid}`);
+  const voDv  = document.getElementById(`vo_${qid}`);
+  const vlLb  = document.getElementById(`vl_${qid}`);
+  const saveOneBtn = document.getElementById(`saveOne_${qid}`);
+  const savedTag   = document.getElementById(`saved_${qid}`);
+
+  function setVopts() {
+    const on = mType==="video";
+    voDv.style.opacity = on?"1":".32";
+    vlLb.style.opacity = on?"1":".32";
+  }
+
+  function renderThumb() {
+    thumb.innerHTML = "";
+    if (!mUrl.trim()) {
+      thumb.innerHTML = `<div class="thumb-empty">URL を入力して「適用」を押してください</div>`;
+      return;
+    }
+    if (mType==="video") {
+      const v = document.createElement("video");
+      v.src = mUrl; v.muted = true; v.controls = true; v.playsInline = true;
+      Object.assign(v.style, {maxWidth:"100%",maxHeight:"16rem",borderRadius:".5rem"});
+      thumb.appendChild(v);
+    } else {
+      const img = document.createElement("img");
+      img.src = mUrl; img.alt = "preview";
+      Object.assign(img.style, {maxWidth:"100%",maxHeight:"16rem",borderRadius:".5rem"});
+      img.onerror = () => { thumb.innerHTML = `<div class="thumb-empty" style="color:#f87171;">⚠️ 画像を読み込めません</div>`; };
+      thumb.appendChild(img);
+    }
+  }
+
+  // initial thumb
+  if (mUrl) renderThumb();
+
+  aplB.onclick = () => {
+    mUrl    = urlI.value.trim();
+    mCaption= capI.value.trim();
+    commit(); renderThumb();
+  };
+  clrB.onclick = () => {
+    mUrl = ""; urlI.value = "";
+    mCaption = ""; capI.value = "";
+    commit(); renderThumb();
+  };
+  urlI.addEventListener("keydown", e => { if(e.key==="Enter"){e.preventDefault();aplB.click();} });
+
+  tvB.onclick = () => { mType="video"; tvB.classList.add("on"); tiB.classList.remove("on"); setVopts(); commit(); };
+  tiB.onclick = () => { mType="image"; tiB.classList.add("on"); tvB.classList.remove("on"); setVopts(); commit(); };
+  fcB.onclick = () => { mFit="contain"; fcB.classList.add("on"); fvB.classList.remove("on"); commit(); };
+  fvB.onclick = () => { mFit="cover";   fvB.classList.add("on"); fcB.classList.remove("on"); commit(); };
+
+  function tog(btn, get, set) {
+    btn.onclick = () => { set(!get()); btn.classList.toggle("on", get()); commit(); };
+  }
+  tog(apB, ()=>mAuto,  v=>{ mAuto=v; });
+  tog(muB, ()=>mMuted, v=>{ mMuted=v; });
+  tog(lpB, ()=>mLoop,  v=>{ mLoop=v; });
+
+  capI.oninput = () => { mCaption = capI.value.trim(); commit(); };
+
+  // save single
+  saveOneBtn.onclick = async () => {
+    const room = roomSelect.value;
+    saveOneBtn.disabled = true;
+    saveOneBtn.textContent = "保存中…";
+    try {
+      const q2 = questions[qid];
+      await update(ref(db), {
+        [`rooms/${room}/questions/${qid}/media`]: q2.media || null
+      });
+      dirtySet.delete(qid);
+      updateStatus();
+      const card = document.getElementById(`card_${qid}`);
+      if (card) card.classList.remove("dirty-card");
+      savedTag.classList.add("show");
+      setTimeout(() => savedTag.classList.remove("show"), 2000);
+      toast(`✅ ${qid} を保存しました`, "#4ade80");
+    } catch(e) {
+      console.error(e);
+      toast("❌ 保存失敗: " + e.message, "#f87171");
+    }
+    saveOneBtn.disabled = false;
+    saveOneBtn.textContent = "💾 この問題だけ保存";
+  };
+
+  setVopts();
+}
+
+function esc(s) {
+  return String(s??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+</script>
+</body>
+</html>
