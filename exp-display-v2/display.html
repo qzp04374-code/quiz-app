@@ -134,6 +134,55 @@
     }
     .exp strong{ color:var(--o); }
 
+    /* choices */
+    .choices{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:.6rem;
+      margin-top:.5rem;
+    }
+    .choiceItem{
+      padding:.65rem .9rem;
+      border-radius:1rem;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(255,255,255,.06);
+      font-size:clamp(1rem,1.6vw,1.4rem);
+      font-weight:900;
+      display:flex;
+      align-items:center;
+      gap:.6rem;
+      position:relative;
+      overflow:hidden;
+    }
+    .choiceItem .ck{
+      font-size:clamp(1.1rem,1.8vw,1.6rem);
+      font-weight:1200;
+      min-width:1.8rem;
+      letter-spacing:.04em;
+    }
+    .choiceItem .ct{ flex:1; line-height:1.35; }
+    .choiceItem .cbar{
+      position:absolute; left:0; top:0; bottom:0; width:0%;
+      border-radius:1rem; opacity:.22; transition:width .4s ease; pointer-events:none;
+    }
+    .choiceItem .ccnt{
+      font-size:clamp(.75rem,1.2vw,1rem); opacity:.8; min-width:2.2rem; text-align:right;
+    }
+    .ci-O{ border-color:rgba(52,199,89,.35);  background:rgba(52,199,89,.10); }
+    .ci-O .ck{ color:#34c759; } .ci-O .cbar{ background:#34c759; }
+    .ci-X{ border-color:rgba(255,59,48,.35);  background:rgba(255,59,48,.10); }
+    .ci-X .ck{ color:#ff3b30; } .ci-X .cbar{ background:#ff3b30; }
+    .ci-A{ border-color:rgba(10,132,255,.35); background:rgba(10,132,255,.10); }
+    .ci-A .ck{ color:#0a84ff; } .ci-A .cbar{ background:#0a84ff; }
+    .ci-B{ border-color:rgba(48,209,88,.35);  background:rgba(48,209,88,.10); }
+    .ci-B .ck{ color:#30d158; } .ci-B .cbar{ background:#30d158; }
+    .ci-C{ border-color:rgba(255,159,10,.35); background:rgba(255,159,10,.10); }
+    .ci-C .ck{ color:#ff9f0a; } .ci-C .cbar{ background:#ff9f0a; }
+    .ci-D{ border-color:rgba(191,90,242,.35); background:rgba(191,90,242,.10); }
+    .ci-D .ck{ color:#bf5af2; } .ci-D .cbar{ background:#bf5af2; }
+    .ci-E{ border-color:rgba(255,55,95,.35);  background:rgba(255,55,95,.10); }
+    .ci-E .ck{ color:#ff375f; } .ci-E .cbar{ background:#ff375f; }
+
     /* right counts */
     .right{
       padding:1rem;
@@ -296,6 +345,7 @@
     <div class="stage">
       <section class="panel left">
         <div id="qEl" class="q">起動中…</div>
+        <div id="choicesEl" class="choices" style="display:none;"></div>
         <div id="expEl" class="exp" style="display:none;"></div>
       </section>
 
@@ -355,6 +405,7 @@
     let currentSession = "";
     let currentStatus = "-";
     let currentMode = "ox";
+    let currentConfig = {};
     let currentPhase = "qr";
     let currentQid = null;
     let currentQuestion = null;
@@ -405,29 +456,22 @@
       layerEl.setAttribute("aria-hidden", on ? "false" : "true");
     }
     
-    // activity.qr フラグ（index の QRコードON/OFF が書き換える）
-    let currentQrFlag = false;
-    let currentView   = "";
-
     function setPhaseUI(p){
       currentPhase = p || "qr";
       phaseLabel.textContent = `phase: ${currentPhase}`;
-
-      // QR表示条件：activity.qr===true のとき（phase単独では判定しない）
-      const showQR = currentQrFlag || (currentView === "qr");
-
-      // まず全部消す
+    
+      // ✅ まず“必ず”全部消す（ここが最重要）
       showLayer(qrLayer, false);
       showLayer(mediaLayer, false);
-
-      // 条件に合うものだけ出す
-      if (showQR) {
+    
+      // ✅ phaseで必要なものだけ出す
+      if (currentPhase === "qr") {
         showLayer(qrLayer, true);
       } else if (currentPhase === "media") {
         showLayer(mediaLayer, true);
       }
-
-      // explain表示（メイン領域）
+    
+      // explain表示（これはメイン領域なので従来通り）
       expEl.style.display = (currentPhase === "explain") ? "" : "none";
     }
 
@@ -505,22 +549,87 @@
 
         bars.appendChild(row);
       });
+      renderChoices(); // 回答更新時に選択肢カウントも再描画
+    }
+
+    // choicesEl は renderQuestion / renderBars 両方から更新
+    const choicesEl = document.getElementById("choicesEl");
+
+    function renderChoices(){
+      if (!choicesEl) return;
+      const mode = (currentMode || "ox").toLowerCase();
+      const q    = currentQuestion || {};
+
+      if (mode === "text"){
+        choicesEl.style.display = "none";
+        return;
+      }
+
+      const cfg    = currentConfig || {};
+      const keys   = (cfg.choices && cfg.choices.length)
+                     ? cfg.choices
+                     : (mode === "ox" ? ["O","X"] : ["A","B","C","D","E"]);
+      const choices = q.choices || {};
+      const ans     = normalizeAnswers(lastAnswers);
+      const total   = Object.keys(ans).length || 0;
+      const countMap = {};
+      Object.values(ans).forEach(v=>{ if(v) countMap[v]=(countMap[v]||0)+1; });
+
+      choicesEl.innerHTML = "";
+      choicesEl.style.display = "grid";
+
+      keys.forEach(k=>{
+        const key   = String(k).toUpperCase();
+        const label = key==="O"?"○":key==="X"?"✕":key;
+        const txt   = choices[key] || choices[key.toLowerCase()] || "";
+        const cnt   = countMap[key] || 0;
+        const pct   = total ? (cnt/total)*100 : 0;
+
+        const item = document.createElement("div");
+        item.className = `choiceItem ci-${key}`;
+
+        const bar = document.createElement("div");
+        bar.className = "cbar";
+        bar.style.width = `${pct.toFixed(1)}%`;
+
+        const ck = document.createElement("span");
+        ck.className = "ck"; ck.textContent = label;
+
+        const ct = document.createElement("span");
+        ct.className = "ct"; ct.textContent = txt;
+
+        const cc = document.createElement("span");
+        cc.className = "ccnt";
+        cc.textContent = total > 0 ? cnt : "";
+
+        item.appendChild(bar);
+        item.appendChild(ck);
+        item.appendChild(ct);
+        item.appendChild(cc);
+        choicesEl.appendChild(item);
+      });
     }
 
     function renderQuestion(){
       if (!currentQuestion){
         qEl.textContent = "（問題データがありません）";
+        if(choicesEl) choicesEl.style.display = "none";
         expEl.textContent = "";
+        expEl.style.display = "none";
         return;
       }
       qEl.textContent = currentQuestion.question || "";
+
+      renderChoices();
 
       if (currentPhase === "explain"){
         const ans = currentQuestion.answer ? String(currentQuestion.answer) : "";
         const exp = currentQuestion.explanation ? String(currentQuestion.explanation) : "";
         expEl.innerHTML = `<strong>答え:</strong> ${ans}<br><br>${exp}`;
+        expEl.style.display = "";
       }else{
         expEl.textContent = "";
+        expEl.style.display = "none";
       }
     }
 
@@ -574,25 +683,15 @@
     // activity
     onValue(activityRef, snap=>{
       const a = snap.val() || {};
-      currentStatus  = a.status || "-";
-      currentMode    = (a.mode || "ox").toLowerCase();
+      currentStatus = a.status || "-";
+      currentMode   = (a.mode || "ox").toLowerCase();
+      currentConfig = a.config || {};
       currentSession = String(a.session || "");
-
-      // QRコードON/OFFボタンが書き換える qr フラグと view を取得
-      const prevQrFlag = currentQrFlag;
-      const prevView   = currentView;
-      currentQrFlag = a.qr === true;
-      currentView   = String(a.view || "");
-
       statusLabel.textContent = `status: ${currentStatus}`;
-      safeDrawQR(); // session更新に追随してQR再描画
-
-      // qr/view フラグが変化したら必ず再描画
-      if (currentQrFlag !== prevQrFlag || currentView !== prevView) {
-        setPhaseUI(currentPhase);
-      }
+      safeDrawQR(); // session更新に追随して描き直す（現行と同じ考え方）:contentReference[oaicite:10]{index=10}
 
       // 参加人数
+      // ※ rosterがある場合はroster数にしても良いが、ここはanswers数を簡易表示
       const n = Object.keys(lastAnswers || {}).length;
       countLabel.textContent = `参加中 ${n}人`;
       qrCount.textContent = `参加中 ${n}人`;
