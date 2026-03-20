@@ -113,7 +113,8 @@
     .btnRed{ background:rgba(255,69,58,.92); border-color:rgba(255,69,58,.55); }
     .btnGreen{ background:linear-gradient(135deg, #22c55e, #16a34a); border-color:rgba(34,197,94,.45); }
     .btnPurple{ background:rgba(191,90,242,.90); border-color:rgba(191,90,242,.55); }
-    .btnCyan{ background:rgba(0,199,190,.85); border-color:rgba(0,199,190,.55); }
+    .btnCyan  { background:rgba(0,199,190,.85); border-color:rgba(0,199,190,.55); }
+    .btnAmber { background:rgba(245,158,11,.90); border-color:rgba(245,158,11,.55); }
 
     .metaPill{
       padding:.5rem .8rem;
@@ -239,7 +240,10 @@
         </div>
         <div class="row">
           <button id="quickTextBtn">投票 TEXT</button>
-          <button id="importBtn">CSV投入</button>
+          <button id="importBtn" class="btnAmber">CSV 投入</button>
+        </div>
+        <div class="row">
+          <button id="mediaEditorBtn" class="btnCyan">🎬 Media Editor</button>
         </div>
       </section>
     </div>
@@ -316,7 +320,8 @@
     const quick2Btn = document.getElementById("quick2Btn");
     const quick5Btn = document.getElementById("quick5Btn");
     const quickTextBtn = document.getElementById("quickTextBtn");
-    const importBtn = document.getElementById("importBtn");
+    const importBtn      = document.getElementById("importBtn");
+    const mediaEditorBtn = document.getElementById("mediaEditorBtn");
 
     // preview
     const pvQid = document.getElementById("pvQid");
@@ -648,6 +653,11 @@
     importBtn.onclick = () => {
       const r = encodeURIComponent(state.room || "");
       window.open(`./import-csv.html?room=${r}`, "_blank");
+    };
+
+    mediaEditorBtn.onclick = () => {
+      const r = encodeURIComponent(state.room || "");
+      window.open(`./media-editor.html?room=${r}`, "_blank");
     };
 
     endClassBtn.onclick = endClass;
