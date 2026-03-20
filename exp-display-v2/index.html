@@ -559,12 +559,14 @@
     async function toggleQrFlag(){
       const cur = state.activity?.qr === true;
       if (cur){
+        // QR OFF: qrフラグを落とし、phaseも"standby"にしてdisplay側のQRを消す
         await update(activityRef(state.room), { qr:false, view:"quiz" });
+        await set(presentPhaseRef(state.room), "standby");
       }else{
-        // QRを出すときは session新規（安全運用ルール）
+        // QR ON: session新規発行
         const session = Date.now().toString(36);
         await update(activityRef(state.room), { qr:true, view:"qr", status:"closed", session });
-        await update(presentPhaseRef(state.room), "qr");
+        await set(presentPhaseRef(state.room), "qr");
       }
     }
 
