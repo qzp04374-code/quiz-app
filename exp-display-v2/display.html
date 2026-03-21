@@ -447,7 +447,8 @@
 
     function updateAnswerUI(){
       const q=currentQuestion;
-      const show=(currentStatus==="closed"||currentPhase==="explain")&&q&&(q.answer||q.explanation);
+      // 解答解説は status==="closed" のときだけ表示
+      const show = (currentStatus==="closed") && q && (q.answer||q.explanation);
       if(!show){answerBox.classList.remove("show");answerLine.textContent="";explanationLine.textContent="";return;}
       answerBox.classList.add("show");
       const ans=q.answer?String(q.answer).trim().toUpperCase():"";
@@ -505,7 +506,9 @@
     function applyQuestion(){
       const q=currentQuestion; if(!q) return;
       qEl.textContent=q.question||"";
-      const isClosed=currentStatus==="closed"||currentPhase==="explain";
+      // isClosed は status==="closed" のみ（phase==="explain"は除外）
+      // → 「次の問題」でphaseが遅れて届いても解説モードで描画されない
+      const isClosed = (currentStatus==="closed");
       const ans=q.answer?String(q.answer).trim().toUpperCase():null;
       renderChoices(q.choices||{},ans,isClosed);
       updateAnswerUI(); recomputeAndRender(lastAnswers); maybeAutoSpeak();
@@ -559,6 +562,13 @@
         hideQR();
         mediaLayer.classList.remove("show");
         if(mainGrid) mainGrid.style.visibility="visible";
+      }
+      // phase="question" に切り替わったら解答解説を強制的に隠す
+      // （前問のclosed状態から次の問題に切り替わっても解説が残らない）
+      if(currentPhase==="question"){
+        answerBox.classList.remove("show");
+        answerLine.textContent="";
+        explanationLine.textContent="";
       }
       // phase が変わったら必ず問題・解答を再描画
       if(currentQuestion){
