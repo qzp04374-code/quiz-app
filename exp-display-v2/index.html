@@ -637,8 +637,8 @@
       const ok = confirm("授業を終了します（standbyに戻してanswersも消します）");
       if (!ok) return;
       await clearAnswers();
-      await update(activityRef(state.room), { status:"closed", view:"standby", qr:false });
-      await update(presentPhaseRef(state.room), "qr");
+      await update(activityRef(state.room), { status:"closed", view:"standby", qr:false, revealMode:"closed" });
+      await set(presentPhaseRef(state.room), "standby");
     }
 
     // ===== events =====
