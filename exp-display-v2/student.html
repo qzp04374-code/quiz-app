@@ -766,18 +766,31 @@
       currentPhase=snap.val()||"standby";
 
       if(currentPhase==="qr"){
-        setOverlay(true,"QRコード表示中です。先生の指示をお待ちください。");
-        lockUI();
+        // QR表示中：完全ロック
+        isOpen=false; lockUI();
+        setOverlay(true,"QRコードで参加してください。");
+        // 状態をリセット（次の出題に備える）
+        lastStatus=null; lastMode=null; lastView=null; lastConfigKey="";
       } else if(currentPhase==="media"){
+        // メディア表示中：ロック
+        isOpen=false; lockUI();
         setOverlay(true,"映像・画像を表示中です。先生の指示をお待ちください。");
-        lockUI();
       } else if(currentPhase==="standby"){
-        // QR OFF → standby に戻った：オーバーレイを解除して通常待機へ
-        setOverlay(true,"先生の操作を待っています…");
-        // activity側が再描画するのでここではlockだけ解除
+        // スタンバイ：ロックを解除して待機画面に
+        isOpen=false; lockUI();
         container.classList.remove("locked");
+        unlockUI();
+        setOverlay(true,"先生の操作を待っています…");
+        hudMode.textContent="待機";
+        modeText.textContent="mode: -";
+        container.innerHTML="";
+        submitBtn.style.display="block"; submitBtn.disabled=true;
+        // 再描画フラグリセット（次の出題で必ず再描画させる）
+        lastStatus=null; lastMode=null; lastView=null; lastConfigKey="";
+      } else if(currentPhase==="question"){
+        // 問題表示：activity監視が制御（ここでは何もしない）
       }
-      // question / explain / game は activity監視が制御
+      // explain / game は activity監視が制御
     });
 
     // ===== activity subscription =====
