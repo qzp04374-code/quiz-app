@@ -379,7 +379,13 @@
         if(timerState.autoClose&&currentStatus==="open"&&!isQR){
           if(remain<=3000&&remain>0&&!countdownPlayed){playSE("countdown");countdownPlayed=true;}
           if(remain>3000) countdownPlayed=false;
-          if(remain<=0){const now=Date.now();if(now-lastAutoClosedAt>1500){lastAutoClosedAt=now;update(activityRef,{status:"closed"}).catch(()=>{});}}
+          if(remain<=0){const now=Date.now();if(now-lastAutoClosedAt>1500){lastAutoClosedAt=now;
+            // status と phase を同時に書く（closeAccept 相当）
+            Promise.all([
+              update(activityRef,{status:"closed"}),
+              update(ref(db,`rooms/${room}/quiz/present/phase`),"explain")
+            ]).catch(()=>{});
+          }}
         }
       },250);
     }
@@ -397,8 +403,8 @@
       if(currentPhase==="explain") return false;
       // index から「グラフ表示」指示 → 表示
       if(manualRevealed) return false;
-      // それ以外は隠す（open中もquestion中も非公開）
-      return !isQR;
+      // question / open 中は隠す
+      return currentPhase==="question";
     }
     function syncRevealUI(){
       const hide=shouldHideResults();
@@ -513,12 +519,13 @@
       renderChoices(q.choices||{},ans,isClosed);
       updateAnswerUI(); recomputeAndRender(lastAnswers); maybeAutoSpeak();
       if(currentPhase==="media") renderMedia();
+      // 新しい問題になったら closed読み上げキーをリセット
+      ttsClosedKey="";
     }
 
     function applyCurrentQid(){
-      // standby/qr/game のときは購読を止めて問題をクリア
-      const inactiveViews = ["standby","qr","game",""];
-      if(inactiveViews.includes(currentView) && currentView !== "quiz"){
+      // quiz / poll 以外は購読を止めて問題をクリア
+      if(currentView!=="quiz" && currentView!=="poll"){
         if(unsubQ){unsubQ();unsubQ=null;} subscribedQid=null; currentQid=null;
         currentQuestion=null;
         return;
@@ -569,6 +576,10 @@
         answerLine.textContent="";
         explanationLine.textContent="";
       }
+      // phase="explain" → body.closed を付けて正解アニメーション発動
+      // phase="question" → body.closed を外す
+      document.body.classList.toggle("closed", currentPhase==="explain");
+
       // phase="explain" 到着時に gong・toast・正解読み上げ
       if(currentPhase==="explain"){
         playSE("gong"); showToast();
@@ -594,7 +605,8 @@
       if(timerState?.running&&timerState?.endsAt) ensureTimerTick(); else stopTimerTick();
       document.body.classList.toggle("timer-running",!!(timerState?.running&&timerState?.endsAt));
       statusLabel.textContent=`status: ${currentStatus}`;
-      document.body.classList.toggle("closed",currentStatus==="closed");
+      // body.closed は phase==="explain" のときだけ（choice.correct アニメーション制御）
+      // ※ status==="closed" だと次問切替の瞬間も発火してしまう
 
       const qrOn=(a.qr===true)||(a.view==="qr");
       const qrChanged=qrOn!==prevQrFlag, viewChanged=currentView!==prevView;
