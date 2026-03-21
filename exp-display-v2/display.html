@@ -393,7 +393,11 @@
       syncRevealUI();
     };
     function shouldHideResults(){
-      if(currentStatus==="closed"||manualRevealed) return false;
+      // closed時は必ず表示
+      if(currentStatus==="closed") return false;
+      // indexから「表示」を指示されている
+      if(manualRevealed) return false;
+      // open中 かつ QR表示中でない → 隠す
       return currentStatus==="open"&&!isQR;
     }
     function syncRevealUI(){
@@ -524,14 +528,26 @@
     }
 
     // ===== PHASE =====
+    const mainGrid = document.querySelector(".stage");
     let prevQrFlag=false, prevView="";
     onValue(phaseRef,snap=>{
       currentPhase=snap.val()||"standby";
       phaseLabel.textContent=`phase: ${currentPhase}`;
-      if(currentPhase==="qr"){showQR();}
-      else if(currentPhase==="standby"){hideQR();}
-      else if(currentPhase==="media"){hideQR();renderMedia();mediaLayer.classList.add("show");}
-      else{hideQR();mediaLayer.classList.remove("show");}
+      if(currentPhase==="qr"){
+        showQR();
+        if(mainGrid) mainGrid.style.visibility="hidden";
+      } else if(currentPhase==="standby"){
+        hideQR();
+        if(mainGrid) mainGrid.style.visibility="hidden";
+      } else if(currentPhase==="media"){
+        hideQR();
+        if(mainGrid) mainGrid.style.visibility="hidden";
+        renderMedia(); mediaLayer.classList.add("show");
+      } else {
+        hideQR();
+        mediaLayer.classList.remove("show");
+        if(mainGrid) mainGrid.style.visibility="visible";
+      }
       if(currentQuestion){
         const isClosed=currentStatus==="closed"||currentPhase==="explain";
         const ans=currentQuestion.answer?String(currentQuestion.answer).trim().toUpperCase():null;
@@ -562,14 +578,19 @@
       if(qrOn){safeDrawQR();showQR();}
       else if(qrChanged||viewChanged) hideQR();
 
+      // revealMode を index から同期（"live"=表示, "closed"=非公開）
+      const rm = a.revealMode || "closed";
+      manualRevealed = (rm === "live");
+      revealBtn.classList.toggle("revealed", manualRevealed);
+      revealBtn.textContent = manualRevealed ? "📊 集計を隠す" : "📊 集計を表示";
+
       // open → 出題音 + 自動読み上げ
       if(lastStatus!=="open"&&currentStatus==="open"){
         playSE("start"); ttsAutoKey=null; maybeAutoSpeak();
       }
-      // → closed → 終了音 + 正解読み上げ + toast
+      // closed → 終了音 + 正解読み上げ + toast
       if(lastStatus!=="closed"&&currentStatus==="closed"){
         playSE("gong"); showToast();
-        manualRevealed=false; revealBtn.classList.remove("revealed"); revealBtn.textContent="📊 集計を表示";
         speakClosed();
       }
       recomputeAndRender(lastAnswers); syncRevealUI(); applyCurrentQid();
