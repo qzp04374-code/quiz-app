@@ -513,12 +513,23 @@
     }
 
     function applyCurrentQid(){
-      if(currentView!=="quiz"){
-        if(unsubQ){unsubQ();unsubQ=null;} subscribedQid=null; currentQid=null; return;
+      // standby/qr/game のときは購読を止めて問題をクリア
+      const inactiveViews = ["standby","qr","game",""];
+      if(inactiveViews.includes(currentView) && currentView !== "quiz"){
+        if(unsubQ){unsubQ();unsubQ=null;} subscribedQid=null; currentQid=null;
+        currentQuestion=null;
+        return;
       }
       const qid=latestQid;
-      if(!qid){currentQid=null;currentQuestion=null;qEl.textContent="（問題を待っています…）";choicesEl.style.display="none";return;}
-      if(qid===subscribedQid&&unsubQ){if(currentQuestion)applyQuestion();return;}
+      if(!qid){
+        currentQid=null; currentQuestion=null;
+        qEl.textContent="（問題を待っています…）"; choicesEl.style.display="none";
+        return;
+      }
+      if(qid===subscribedQid&&unsubQ){
+        if(currentQuestion) applyQuestion();
+        return;
+      }
       if(unsubQ){unsubQ();unsubQ=null;} subscribedQid=qid;
       unsubQ=onValue(qRef(qid),snap=>{
         const q=snap.val();
@@ -544,15 +555,14 @@
         if(mainGrid) mainGrid.style.visibility="hidden";
         renderMedia(); mediaLayer.classList.add("show");
       } else {
+        // question / explain → メインを見せる
         hideQR();
         mediaLayer.classList.remove("show");
         if(mainGrid) mainGrid.style.visibility="visible";
       }
+      // phase が変わったら必ず問題・解答を再描画
       if(currentQuestion){
-        const isClosed=currentStatus==="closed"||currentPhase==="explain";
-        const ans=currentQuestion.answer?String(currentQuestion.answer).trim().toUpperCase():null;
-        renderChoices(currentQuestion.choices||{},ans,isClosed);
-        updateAnswerUI();
+        applyQuestion();
       }
       syncRevealUI();
     });
@@ -575,8 +585,13 @@
       const qrOn=(a.qr===true)||(a.view==="qr");
       const qrChanged=qrOn!==prevQrFlag, viewChanged=currentView!==prevView;
       prevQrFlag=qrOn; prevView=currentView;
-      if(qrOn){safeDrawQR();showQR();}
-      else if(qrChanged||viewChanged) hideQR();
+      if(qrOn){safeDrawQR();showQR();if(mainGrid)mainGrid.style.visibility="hidden";}
+      else if(qrChanged||viewChanged){
+        hideQR();
+        // view="quiz" or "poll" → mainGrid を見せる
+        const showMain = (currentView==="quiz"||currentView==="poll");
+        if(mainGrid) mainGrid.style.visibility = showMain ? "visible" : "hidden";
+      }
 
       // revealMode を index から同期（"live"=表示, "closed"=非公開）
       const rm = a.revealMode || "closed";
