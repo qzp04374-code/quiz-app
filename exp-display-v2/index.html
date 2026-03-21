@@ -534,7 +534,8 @@
 
     async function openAccept(){
       await ensureSession();
-      await update(activityRef(state.room), { status:"open", qr:false, view:"quiz" });
+      // view:"quiz", qr:false を明示して display側の isQR を確実に解除
+      await update(activityRef(state.room), { status:"open", qr:false, view:"quiz", revealMode: state.activity?.revealMode || "closed" });
       await set(presentPhaseRef(state.room), "question");
     }
 
