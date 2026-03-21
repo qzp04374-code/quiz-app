@@ -203,6 +203,14 @@
           <button id="openBtn" class="btnGreen">回答開始（open）</button>
           <button id="stopBtn" class="btnOrange">解答終了（closed）</button>
         </div>
+        <div class="row">
+          <button id="timer30Btn">⏱ 30秒</button>
+          <button id="timer60Btn">⏱ 60秒</button>
+          <button id="timerStopBtn" class="btnRed">⏹ タイマー停止</button>
+        </div>
+        <div class="row">
+          <button id="revealGraphBtn" class="btnCyan">📊 グラフ表示</button>
+        </div>
       </section>
 
       <!-- ② 表示フェーズ -->
@@ -322,6 +330,10 @@
     const quickTextBtn = document.getElementById("quickTextBtn");
     const importBtn      = document.getElementById("importBtn");
     const mediaEditorBtn = document.getElementById("mediaEditorBtn");
+    const timer30Btn     = document.getElementById("timer30Btn");
+    const timer60Btn     = document.getElementById("timer60Btn");
+    const timerStopBtn   = document.getElementById("timerStopBtn");
+    const revealGraphBtn = document.getElementById("revealGraphBtn");
 
     // preview
     const pvQid = document.getElementById("pvQid");
@@ -409,6 +421,7 @@
       state.question = null;
       state.nextQid = null;
       state.nextQuestion = null;
+      graphRevealed = false; updateRevealBtn();
 
       state.unsubA = onValue(activityRef(room), snap=>{
         state.activity = snap.val() || {};
@@ -521,6 +534,8 @@
       });
 
       await update(presentPhaseRef(state.room), phase);
+      // 問題切替時にグラフを非公開にリセット
+      await update(activityRef(state.room), { revealMode: "closed" });
     }
 
     async function openAccept(){
@@ -559,9 +574,10 @@
     async function toggleQrFlag(){
       const cur = state.activity?.qr === true;
       if (cur){
-        // QR OFF: qrフラグを落とし、phaseも"standby"にしてdisplay側のQRを消す
-        await update(activityRef(state.room), { qr:false, view:"quiz" });
+        // QR OFF: standbyに戻す
+        await update(activityRef(state.room), { qr:false, view:"standby", revealMode:"closed" });
         await set(presentPhaseRef(state.room), "standby");
+        graphRevealed = false; updateRevealBtn();
       }else{
         // QR ON: session新規発行
         const session = Date.now().toString(36);
@@ -585,6 +601,36 @@
       });
       // pollは“question”相当で良い（display側はpoll表示）
       await update(presentPhaseRef(state.room), "question");
+    }
+
+    // ===== タイマー =====
+    const timerRef = (room) => ref(db, `rooms/${room}/activity/timer`);
+
+    async function startTimer(sec){
+      const endsAt = Date.now() + sec * 1000;
+      await update(activityRef(state.room), {
+        timer: { running:true, endsAt, durationSec:sec, autoClose:true }
+      });
+    }
+    async function stopTimer(){
+      await update(activityRef(state.room), {
+        timer: { running:false }
+      });
+    }
+
+    // ===== グラフ表示切替（revealMode） =====
+    let graphRevealed = false;
+    function updateRevealBtn(){
+      revealGraphBtn.textContent = graphRevealed ? "📊 グラフ隠す" : "📊 グラフ表示";
+      revealGraphBtn.className = graphRevealed
+        ? "btnGreen" : "btnCyan";
+    }
+    async function toggleRevealGraph(){
+      graphRevealed = !graphRevealed;
+      await update(activityRef(state.room), {
+        revealMode: graphRevealed ? "live" : "closed"
+      });
+      updateRevealBtn();
     }
 
     async function endClass(){
@@ -638,8 +684,12 @@
 
     qrToggleBtn.onclick = toggleQrFlag;
 
-    projectionBtn.onclick = () => {
+    projectionBtn.onclick = async () => {
       const r = encodeURIComponent(state.room || "");
+      // displayを開く前にQRを発行（display側が起動したらQRから始まる）
+      const session = Date.now().toString(36);
+      await update(activityRef(state.room), { qr:true, view:"qr", status:"closed", session });
+      await set(presentPhaseRef(state.room), "qr");
       window.open(`./display.html?room=${r}`, "_blank");
     };
     gameProjectionBtn.onclick = () => {
@@ -661,6 +711,11 @@
       const r = encodeURIComponent(state.room || "");
       window.open(`./media-editor.html?room=${r}`, "_blank");
     };
+
+    timer30Btn.onclick  = () => startTimer(30);
+    timer60Btn.onclick  = () => startTimer(60);
+    timerStopBtn.onclick= stopTimer;
+    revealGraphBtn.onclick = toggleRevealGraph;
 
     endClassBtn.onclick = endClass;
 
