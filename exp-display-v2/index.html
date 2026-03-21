@@ -523,35 +523,28 @@
       const phase = hasMedia ? "media" : "question";
 
       // 受付は一旦 closed（先生が「回答開始」を押す）
+      // activity と revealMode を1回のupdateで書く
       await update(activityRef(state.room), {
-        view:"quiz",
-        qr:false,
-        status:"closed",
-        mode,
-        config,
-        timer:{ running:false },
-        session
+        view:"quiz", qr:false, status:"closed",
+        mode, config, timer:{ running:false }, session,
+        revealMode:"closed"
       });
-
-      await update(presentPhaseRef(state.room), phase);
-      // 問題切替時にグラフを非公開にリセット
-      await update(activityRef(state.room), { revealMode: "closed" });
+      await set(presentPhaseRef(state.room), phase);
     }
 
     async function openAccept(){
       await ensureSession();
       await update(activityRef(state.room), { status:"open", qr:false, view:"quiz" });
-      // 受付開始＝question画面
-      await update(presentPhaseRef(state.room), "question");
+      await set(presentPhaseRef(state.room), "question");
     }
 
     async function closeAccept(){
       await update(activityRef(state.room), { status:"closed" });
-      await update(presentPhaseRef(state.room), "explain");
+      await set(presentPhaseRef(state.room), "explain");
     }
 
     async function setPhase(p){
-      await update(presentPhaseRef(state.room), p);
+      await set(presentPhaseRef(state.room), p);
       // phase=qr のときだけ session更新ルール（安全運用）に合わせる
       if (p === "qr"){
         const session = Date.now().toString(36);
@@ -607,6 +600,7 @@
     const timerRef = (room) => ref(db, `rooms/${room}/activity/timer`);
 
     async function startTimer(sec){
+      // 「回答開始」後に押す想定（status:"open" のまま）
       const endsAt = Date.now() + sec * 1000;
       await update(activityRef(state.room), {
         timer: { running:true, endsAt, durationSec:sec, autoClose:true }
