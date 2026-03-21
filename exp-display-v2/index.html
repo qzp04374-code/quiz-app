@@ -590,10 +590,10 @@
         mode,
         config,
         timer:{ running:false },
-        session
+        session,
+        revealMode:"closed"
       });
-      // pollは“question”相当で良い（display側はpoll表示）
-      await update(presentPhaseRef(state.room), "question");
+      await set(presentPhaseRef(state.room), "question");
     }
 
     // ===== タイマー =====
