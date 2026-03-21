@@ -396,6 +396,8 @@
       manualRevealed=!manualRevealed;
       revealBtn.classList.toggle("revealed",manualRevealed);
       revealBtn.textContent=manualRevealed?"📊 集計を隠す":"📊 集計を表示";
+      // Firebase にも書き込む（activity監視の上書きで消えないように）
+      update(ref(db,`rooms/${room}/activity`),{revealMode:manualRevealed?"live":"closed"}).catch(()=>{});
       syncRevealUI();
     };
     function shouldHideResults(){
