@@ -788,7 +788,13 @@
         // 再描画フラグリセット（次の出題で必ず再描画させる）
         lastStatus=null; lastMode=null; lastView=null; lastConfigKey="";
       } else if(currentPhase==="question"){
-        // 問題表示：activity監視が制御（ここでは何もしない）
+        // 問題表示フェーズ：overlay を「回答待ち」に更新
+        // isOpen の詳細は activity監視が決めるが、まず解説モードのオーバーレイをリセット
+        if(!isOpen){
+          setOverlay(true,"先生の操作を待っています…");
+        }
+        // 再描画フラグリセット（前問の closed 状態が残らないように）
+        lastStatus=null; lastMode=null; lastView=null; lastConfigKey="";
       }
       // explain / game は activity監視が制御
     });
