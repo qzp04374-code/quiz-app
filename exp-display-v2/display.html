@@ -577,6 +577,8 @@
         answerBox.classList.remove("show");
         answerLine.textContent="";
         explanationLine.textContent="";
+        // lastStatus をリセット → 次の status:open で必ず start音が鳴る
+        lastStatus=null;
       }
       // phase="explain" → body.closed を付けて正解アニメーション発動
       // phase="question" → body.closed を外す
@@ -611,14 +613,18 @@
       // ※ status==="closed" だと次問切替の瞬間も発火してしまう
 
       const qrOn=(a.qr===true)||(a.view==="qr");
-      const qrChanged=qrOn!==prevQrFlag, viewChanged=currentView!==prevView;
       prevQrFlag=qrOn; prevView=currentView;
-      if(qrOn){safeDrawQR();showQR();if(mainGrid)mainGrid.style.visibility="hidden";}
-      else if(qrChanged||viewChanged){
+      // qrOn の状態を毎回確実に反映（差分チェックなし）
+      if(qrOn){
+        safeDrawQR(); showQR();
+        if(mainGrid) mainGrid.style.visibility="hidden";
+      } else {
         hideQR();
-        // view="quiz" or "poll" → mainGrid を見せる
-        const showMain = (currentView==="quiz"||currentView==="poll");
-        if(mainGrid) mainGrid.style.visibility = showMain ? "visible" : "hidden";
+        // phase が question/explain のときだけ mainGrid を見せる
+        // （phase監視側と二重管理を避けるため、ここでは基本的に表示に戻す）
+        if(mainGrid && (currentPhase==="question"||currentPhase==="explain")){
+          mainGrid.style.visibility="visible";
+        }
       }
 
       // revealMode を index から同期（"live"=表示, "closed"=非公開）
