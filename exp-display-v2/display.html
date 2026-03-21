@@ -393,12 +393,12 @@
       syncRevealUI();
     };
     function shouldHideResults(){
-      // closed時は必ず表示
-      if(currentStatus==="closed") return false;
-      // indexから「表示」を指示されている
+      // explain フェーズ → 必ず表示
+      if(currentPhase==="explain") return false;
+      // index から「グラフ表示」指示 → 表示
       if(manualRevealed) return false;
-      // open中 かつ QR表示中でない → 隠す
-      return currentStatus==="open"&&!isQR;
+      // それ以外は隠す（open中もquestion中も非公開）
+      return !isQR;
     }
     function syncRevealUI(){
       const hide=shouldHideResults();
@@ -447,8 +447,9 @@
 
     function updateAnswerUI(){
       const q=currentQuestion;
-      // 解答解説は status==="closed" のときだけ表示
-      const show = (currentStatus==="closed") && q && (q.answer||q.explanation);
+      // 解答解説は phase==="explain" のときだけ表示
+      // status==="closed" だけでは出さない（次問切替時に一瞬解説が出るバグを防ぐ）
+      const show = (currentPhase==="explain") && q && (q.answer||q.explanation);
       if(!show){answerBox.classList.remove("show");answerLine.textContent="";explanationLine.textContent="";return;}
       answerBox.classList.add("show");
       const ans=q.answer?String(q.answer).trim().toUpperCase():"";
@@ -506,9 +507,8 @@
     function applyQuestion(){
       const q=currentQuestion; if(!q) return;
       qEl.textContent=q.question||"";
-      // isClosed は status==="closed" のみ（phase==="explain"は除外）
-      // → 「次の問題」でphaseが遅れて届いても解説モードで描画されない
-      const isClosed = (currentStatus==="closed");
+      // 正解ハイライトは phase==="explain" のときだけ
+      const isClosed = (currentPhase==="explain");
       const ans=q.answer?String(q.answer).trim().toUpperCase():null;
       renderChoices(q.choices||{},ans,isClosed);
       updateAnswerUI(); recomputeAndRender(lastAnswers); maybeAutoSpeak();
@@ -564,11 +564,15 @@
         if(mainGrid) mainGrid.style.visibility="visible";
       }
       // phase="question" に切り替わったら解答解説を強制的に隠す
-      // （前問のclosed状態から次の問題に切り替わっても解説が残らない）
       if(currentPhase==="question"){
         answerBox.classList.remove("show");
         answerLine.textContent="";
         explanationLine.textContent="";
+      }
+      // phase="explain" 到着時に gong・toast・正解読み上げ
+      if(currentPhase==="explain"){
+        playSE("gong"); showToast();
+        speakClosed();
       }
       // phase が変わったら必ず問題・解答を再描画
       if(currentQuestion){
@@ -613,11 +617,8 @@
       if(lastStatus!=="open"&&currentStatus==="open"){
         playSE("start"); ttsAutoKey=null; maybeAutoSpeak();
       }
-      // closed → 終了音 + 正解読み上げ + toast
-      if(lastStatus!=="closed"&&currentStatus==="closed"){
-        playSE("gong"); showToast();
-        speakClosed();
-      }
+      // closed になっても音・読み上げはまだ鳴らさない
+      // → phase="explain" 到着時（phase監視側）で鳴らす
       recomputeAndRender(lastAnswers); syncRevealUI(); applyCurrentQid();
     });
 
