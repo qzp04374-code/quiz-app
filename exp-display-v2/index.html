@@ -519,33 +519,45 @@
       await remove(answersRef(state.room));
     }
 
+    // goQuestion: closed止まり（回答開始を待つ）
     async function goQuestion(qid){
       if (!qid) return;
-
       const qs = await get(questionRef(state.room, qid));
       const q = qs.val() || {};
       const mode = guessMode(q);
       const config = buildConfigFromMode(mode);
       const session = await ensureSession();
-
-      // まず問題IDを切替
       await set(qidRef(state.room), qid);
-
-      // answersは問題切替で必ずリセット
       await clearAnswers();
-
-      // mediaがあるなら phase=media、なければ phase=question
       const hasMedia = !!(q && q.media && q.media.url);
-      const phase = hasMedia ? "media" : "question";
-
-      // 受付は一旦 closed（先生が「回答開始」を押す）
-      // activity と revealMode を1回のupdateで書く
       await update(activityRef(state.room), {
         view:"quiz", qr:false, status:"closed",
         mode, config, timer:{ running:false }, session,
         revealMode:"closed"
       });
-      await set(presentPhaseRef(state.room), phase);
+      await set(presentPhaseRef(state.room), hasMedia ? "media" : "question");
+    }
+
+    // 問題を出題＋open まで一発で行う（2問目以降の「次の問題」用）
+    async function goQuestionAndOpen(qid){
+      if (!qid) return;
+      const qs = await get(questionRef(state.room, qid));
+      const q = qs.val() || {};
+      const mode = guessMode(q);
+      const config = buildConfigFromMode(mode);
+      const session = await ensureSession();
+      await set(qidRef(state.room), qid);
+      await clearAnswers();
+      // mediaがあるとき: closed+media（先生がQUESTIONに切り替えたらopenする）
+      // mediaがないとき: open+question を一括
+      const hasMedia = !!(q && q.media && q.media.url);
+      await update(activityRef(state.room), {
+        view:"quiz", qr:false,
+        status: hasMedia ? "closed" : "open",
+        mode, config, timer:{ running:false }, session,
+        revealMode:"closed"
+      });
+      await set(presentPhaseRef(state.room), hasMedia ? "media" : "question");
     }
 
     async function openAccept(){
@@ -652,27 +664,74 @@
       attachRoom(r);
     };
 
+    // 現在のフェーズが「解説中（explain）」かどうか
+    function isInExplainPhase(){
+      return state.phase === "explain";
+    }
+    // 現在のフェーズが「待機中（standby）」かどうか
+    function isInStandby(){
+      return state.phase === "standby" || !state.phase;
+    }
+
     prevQuestionBtn.onclick = async () => {
-      const q = state.qid;
-      if (!q) return;
+      const q = state.qid || "Q02"; // standby時はQ01から戻る
       const m = String(q).match(/^Q(\d+)(.*)$/i);
-      if (!m) return;
-      const n = Number(m[1]);
-      const suffix = m[2] || "";
+      if (!m && !isInStandby()) return;
+      const n = m ? Number(m[1]) : 2;
+      const suffix = m ? (m[2]||"") : "";
       const prev = `Q${String(Math.max(1, n-1)).padStart(2,"0")}${suffix}`;
-      await goQuestion(prev);
+
+      if (isInStandby()){
+        // 待機中：プレビューのみ更新（Firebaseには書かない）
+        state.qid = prev;
+        subscribeQuestion(prev);
+        updateNextSubscription();
+      } else {
+        // 解説中 or その他：次の問題へ（explain なら自動open）
+        if (isInExplainPhase()){
+          await goQuestionAndOpen(prev);
+        } else {
+          await goQuestion(prev);
+        }
+      }
     };
 
     nextQuestionBtn.onclick = async () => {
-      const q = state.qid || "Q00";
-      const m = String(q).match(/^Q(\d+)(.*)$/i);
-      const n = m ? Number(m[1]) : 0;
-      const suffix = m ? (m[2]||"") : "";
-      const next = `Q${String(n+1).padStart(2,"0")}${suffix}`;
-      await goQuestion(next);
+      if (isInStandby()){
+        // 待機中：プレビューのみ更新（Firebaseには書かない）
+        const q = state.qid || "Q00";
+        const m = String(q).match(/^Q(\d+)(.*)$/i);
+        const n = m ? Number(m[1]) : 0;
+        const suffix = m ? (m[2]||"") : "";
+        const next = `Q${String(n+1).padStart(2,"0")}${suffix}`;
+        state.qid = next;
+        subscribeQuestion(next);
+        updateNextSubscription();
+      } else {
+        // 解説中 or その他：次の問題を出題
+        const q = state.qid || "Q00";
+        const m = String(q).match(/^Q(\d+)(.*)$/i);
+        const n = m ? Number(m[1]) : 0;
+        const suffix = m ? (m[2]||"") : "";
+        const next = `Q${String(n+1).padStart(2,"0")}${suffix}`;
+        if (isInExplainPhase()){
+          await goQuestionAndOpen(next);  // 解説後 → 自動でopen
+        } else {
+          await goQuestion(next);          // その他 → closed止まり
+        }
+      }
     };
 
-    openBtn.onclick = openAccept;
+    // 「回答開始」ボタン：
+    // - standby時 → state.qidの問題をそのまま出題＋open
+    // - それ以外 → 従来通り open のみ
+    openBtn.onclick = async () => {
+      if (isInStandby() && state.qid){
+        await goQuestionAndOpen(state.qid);
+      } else {
+        await openAccept();
+      }
+    };
     stopBtn.onclick = closeAccept;
 
     phaseQrBtn.onclick = () => setPhase("qr");
