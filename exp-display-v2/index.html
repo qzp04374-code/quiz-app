@@ -166,6 +166,39 @@
     .pvAnswer{ margin-top:.6rem; font-weight:900; color:var(--o); }
     .pvExp{ margin-top:.4rem; white-space:pre-wrap; opacity:.92; }
 
+    /* ===== TTS辞書パネル ===== */
+    #dictPanel{
+      display:none; margin-top:1rem;
+      padding:1rem 1.1rem; border-radius:1.2rem;
+      background:var(--panel2); border:1px solid rgba(255,255,255,.10);
+    }
+    #dictPanel.show{ display:block; }
+    .dictTitle{ font-weight:900; letter-spacing:.08em; font-size:.85rem; margin-bottom:.8rem; }
+    .dictHint{ font-size:.75rem; color:var(--muted); margin-bottom:.8rem; line-height:1.6; }
+    .dictHint code{ background:rgba(255,255,255,.10); padding:1px 5px; border-radius:5px; }
+    .dictTable{ width:100%; border-collapse:collapse; font-size:.8rem; margin-bottom:.8rem; }
+    .dictTable th{ text-align:left; padding:.4rem .5rem; color:var(--muted); font-weight:900;
+      font-size:.72rem; letter-spacing:.08em; border-bottom:1px solid rgba(255,255,255,.10); }
+    .dictTable td{ padding:.35rem .5rem; border-bottom:1px solid rgba(255,255,255,.06); vertical-align:middle; }
+    .dictInput{
+      background:var(--panel); color:var(--ink);
+      border:1px solid rgba(255,255,255,.14); border-radius:.5rem;
+      padding:.3rem .5rem; font-size:.8rem; width:100%; box-sizing:border-box;
+    }
+    .dictInput:focus{ outline:none; border-color:rgba(0,199,190,.5); }
+    .dictSelect{
+      background:var(--panel); color:var(--ink);
+      border:1px solid rgba(255,255,255,.14); border-radius:.5rem;
+      padding:.3rem .5rem; font-size:.8rem; cursor:pointer;
+    }
+    .dictDelBtn{
+      background:rgba(239,68,68,.20); border:1px solid rgba(239,68,68,.35);
+      color:#f87171; border-radius:.5rem; padding:.28rem .6rem;
+      font-size:.72rem; font-weight:900; cursor:pointer; white-space:nowrap;
+    }
+    .dictDelBtn:hover{ background:rgba(239,68,68,.35); }
+    .dictRow.new-row td{ background:rgba(0,199,190,.05); }
+
     #buildTag{
       position:fixed; right:.7rem; bottom:.7rem;
       opacity:.60; font-size:.75rem; z-index:60;
@@ -189,6 +222,7 @@
       <select id="roomSelect"></select>
       <span id="roomMeta" class="metaPill">—</span>
       <span id="phaseMeta" class="metaPill">phase: —</span>
+      <button id="dictToggleBtn" style="font-size:.78rem;padding:.45rem .85rem;background:rgba(0,199,190,.18);border-color:rgba(0,199,190,.35);color:#5ee8e0;">🗣 辞書</button>
     </div>
 
     <div class="grid">
@@ -254,6 +288,40 @@
           <button id="mediaEditorBtn" class="btnCyan">🎬 Media Editor</button>
         </div>
       </section>
+    </div>
+
+    <!-- TTS辞書パネル -->
+    <div id="dictPanel">
+      <div class="dictTitle">🗣 TTS読み上げ辞書</div>
+      <div class="dictHint">
+        読み上げ時の変換ルールを登録します。<br>
+        <b>type:</b> <code>text</code>=文字列置換 / <code>word</code>=単語境界 / <code>regex</code>=正規表現<br>
+        保存すると <code>dict/tts-dict.json</code> としてダウンロードされます。サーバーに配置してください。
+      </div>
+      <table class="dictTable">
+        <thead>
+          <tr>
+            <th style="width:28%">変換前 (from)</th>
+            <th style="width:28%">変換後 (to)</th>
+            <th style="width:16%">type</th>
+            <th style="width:20%">flags（regex）</th>
+            <th style="width:8%"></th>
+          </tr>
+        </thead>
+        <tbody id="dictTbody"></tbody>
+      </table>
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.4rem;">
+        <button id="dictAddBtn"  class="btnCyan"  style="font-size:.82rem;padding:.55rem 1rem;">＋ 行を追加</button>
+        <button id="dictSaveBtn" class="btnGreen" style="font-size:.82rem;padding:.55rem 1rem;">💾 JSONを保存（ダウンロード）</button>
+        <button id="dictLoadBtn" class="btnAmber" style="font-size:.82rem;padding:.55rem 1rem;">📂 JSONを読み込む</button>
+        <button id="dictTestBtn" style="font-size:.82rem;padding:.55rem 1rem;">🔊 テスト読み上げ</button>
+        <input id="dictFileInput" type="file" accept=".json" style="display:none">
+      </div>
+      <div id="dictTestRow" style="display:none;margin-top:.6rem;gap:.5rem;align-items:center;flex-wrap:wrap;">
+        <input id="dictTestInput" class="dictInput" style="width:20rem;" placeholder="テスト文を入力…">
+        <button id="dictTestSpeakBtn" class="btnBlue" style="font-size:.82rem;padding:.5rem .9rem;">読む</button>
+        <span id="dictTestResult" style="font-size:.8rem;color:var(--muted);"></span>
+      </div>
     </div>
 
     <!-- プレビュー（現行＋次） -->
@@ -713,6 +781,141 @@
     revealGraphBtn.onclick = toggleRevealGraph;
 
     endClassBtn.onclick = endClass;
+
+    // ===== TTS辞書管理 =====
+    // LocalStorageに保持（JSONダウンロードでファイル管理）
+    const DICT_LS_KEY = "cs_v2_tts_dict";
+    let dictEntries = [];
+
+    function loadDictFromLS(){
+      try{
+        const raw = localStorage.getItem(DICT_LS_KEY);
+        if(raw) dictEntries = JSON.parse(raw);
+        else dictEntries = [];
+      }catch(e){ dictEntries = []; }
+    }
+    function saveDictToLS(){
+      try{ localStorage.setItem(DICT_LS_KEY, JSON.stringify(dictEntries)); }catch(e){}
+    }
+
+    // 辞書コンパイル（読み上げテスト用）
+    function compileTtsDict(list){
+      const esc = s => String(s).replace(/[.*+?^${}()|[\]\]/g,"\$&");
+      return (list||[]).filter(e=>e&&e.from).map(e=>{
+        const to = e.to??"", type = e.type||"text";
+        if(type==="word"){ const re=new RegExp("\b"+esc(e.from)+"\b","g"); return s=>s.replace(re,to); }
+        if(type==="regex"){ try{ const re=new RegExp(String(e.from),e.flags||"g"); return s=>s.replace(re,to); }catch(_){ return s=>s; } }
+        return s => s.split(String(e.from)).join(to);
+      });
+    }
+    function ttsNormalizeLocal(text){
+      let s = String(text||"").replace(/\s+/g," ").trim();
+      for(const fn of compileTtsDict(dictEntries)){ try{ s=fn(s); }catch(_){} }
+      return s;
+    }
+
+    function renderDictTable(){
+      const tbody = document.getElementById("dictTbody");
+      if(!tbody) return;
+      tbody.innerHTML = "";
+      dictEntries.forEach((e,i)=>{
+        const tr = document.createElement("tr");
+        tr.className = "dictRow";
+        tr.innerHTML = `
+          <td><input class="dictInput" data-i="${i}" data-f="from"  value="${esc2(e.from||"")}" placeholder="変換前"></td>
+          <td><input class="dictInput" data-i="${i}" data-f="to"    value="${esc2(e.to||"")}"   placeholder="変換後（空=削除）"></td>
+          <td><select class="dictSelect" data-i="${i}" data-f="type">
+            <option value="text"  ${(e.type||"text")==="text"  ?"selected":""}>text</option>
+            <option value="word"  ${e.type==="word"  ?"selected":""}>word</option>
+            <option value="regex" ${e.type==="regex" ?"selected":""}>regex</option>
+          </select></td>
+          <td><input class="dictInput" data-i="${i}" data-f="flags" value="${esc2(e.flags||"")}" placeholder="gi など"></td>
+          <td><button class="dictDelBtn" data-i="${i}">削除</button></td>`;
+        tbody.appendChild(tr);
+      });
+      // 入力変更をリアルタイムで dictEntries に反映
+      tbody.querySelectorAll(".dictInput,.dictSelect").forEach(el=>{
+        el.oninput = el.onchange = ()=>{
+          const i = Number(el.dataset.i), f = el.dataset.f;
+          if(!dictEntries[i]) return;
+          dictEntries[i][f] = el.value;
+          saveDictToLS();
+        };
+      });
+      tbody.querySelectorAll(".dictDelBtn").forEach(btn=>{
+        btn.onclick = ()=>{
+          const i = Number(btn.dataset.i);
+          dictEntries.splice(i,1);
+          saveDictToLS(); renderDictTable();
+        };
+      });
+    }
+    function esc2(s){ return String(s||"").replace(/&/g,"&amp;").replace(/"/g,"&quot;"); }
+
+    function downloadJson(filename, data){
+      const blob = new Blob([JSON.stringify(data, null, 2)], {type:"application/json"});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a"); a.href=url; a.download=filename;
+      document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    }
+
+    // ボタンイベント
+    document.getElementById("dictToggleBtn").onclick = ()=>{
+      const p = document.getElementById("dictPanel");
+      p.classList.toggle("show");
+      if(p.classList.contains("show")) renderDictTable();
+    };
+    document.getElementById("dictAddBtn").onclick = ()=>{
+      dictEntries.push({from:"",to:"",type:"text",flags:""});
+      saveDictToLS(); renderDictTable();
+      // 最後の行の from 入力にフォーカス
+      const inputs = document.getElementById("dictTbody").querySelectorAll("[data-f='from']");
+      if(inputs.length) inputs[inputs.length-1].focus();
+    };
+    document.getElementById("dictSaveBtn").onclick = ()=>{
+      // 空のエントリは除外してダウンロード
+      const clean = dictEntries.filter(e=>e.from&&e.from.trim());
+      downloadJson("tts-dict.json", clean);
+    };
+    document.getElementById("dictLoadBtn").onclick = ()=>{
+      document.getElementById("dictFileInput").click();
+    };
+    document.getElementById("dictFileInput").onchange = e=>{
+      const file = e.target.files[0]; if(!file) return;
+      const reader = new FileReader();
+      reader.onload = ()=>{
+        try{
+          const data = JSON.parse(reader.result);
+          if(!Array.isArray(data)) throw new Error("配列ではありません");
+          dictEntries = data;
+          saveDictToLS(); renderDictTable();
+          alert(`✅ ${data.length}件の辞書を読み込みました`);
+        }catch(err){ alert("❌ JSONの読み込みに失敗しました: "+err.message); }
+        e.target.value="";
+      };
+      reader.readAsText(file,"UTF-8");
+    };
+    // テスト読み上げ
+    document.getElementById("dictTestBtn").onclick = ()=>{
+      const row = document.getElementById("dictTestRow");
+      row.style.display = row.style.display==="none" ? "flex" : "none";
+    };
+    document.getElementById("dictTestSpeakBtn").onclick = ()=>{
+      const input = document.getElementById("dictTestInput").value.trim();
+      if(!input) return;
+      const result = ttsNormalizeLocal(input);
+      document.getElementById("dictTestResult").textContent = "→ " + result;
+      // Web Speech で読み上げ
+      try{
+        window.speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(result);
+        u.lang="ja-JP"; u.rate=1.0;
+        window.speechSynthesis.speak(u);
+      }catch(e){}
+    };
+
+    // 起動時ロード
+    loadDictFromLS();
 
     // ===== init =====
     const saved = localStorage.getItem("cs_v2_teacher_room");
