@@ -174,7 +174,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getDatabase, ref, onValue, update } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+    import { getDatabase, ref, onValue, update, set } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyBke-wTU16skpbK8z80ddK04tE154dHERQ",
@@ -413,11 +413,9 @@
           if(remain<=3000&&remain>0&&!countdownPlayed){playSE("countdown");countdownPlayed=true;}
           if(remain>3000) countdownPlayed=false;
           if(remain<=0){const now=Date.now();if(now-lastAutoClosedAt>1500){lastAutoClosedAt=now;
-            // status と phase を同時に書く（closeAccept 相当）
-            Promise.all([
-              update(activityRef,{status:"closed"}),
-              update(ref(db,`rooms/${room}/quiz/present/phase`),"explain")
-            ]).catch(()=>{});
+            // closeAccept 相当: status:closed + phase=explain を確実に書く
+            update(activityRef,{status:"closed"}).catch(()=>{});
+            set(ref(db,`rooms/${room}/quiz/present/phase`),"explain").catch(()=>{});
           }}
         }
       },250);
@@ -434,11 +432,13 @@
       syncRevealUI();
     };
     function shouldHideResults(){
+      // テキストモードはマスク不要（件数は常に見せる）
+      if(currentMode==="text") return false;
       // explain フェーズ → 必ず表示
       if(currentPhase==="explain") return false;
       // index から「グラフ表示」指示 → 表示
       if(manualRevealed) return false;
-      // question / open 中は隠す
+      // question 中は隠す
       return currentPhase==="question";
     }
     function syncRevealUI(){
@@ -518,10 +518,46 @@
       });
     }
 
+    function renderTextAnswers(ans){
+      // テキスト回答一覧（右パネルに表示）
+      vchart.innerHTML="";
+      const vals=Object.values(ans||{}).map(v=>{
+        if(typeof v==="string") return v;
+        if(v&&typeof v==="object"&&v.value!=null) return String(v.value);
+        return null;
+      }).filter(Boolean);
+      const n=vals.length;
+      // 件数表示
+      const header=document.createElement("div");
+      header.style.cssText="font-weight:1000;letter-spacing:.08em;color:rgba(203,213,225,.92);margin-bottom:.5rem;font-size:clamp(.75rem,1.1vw,.88rem);";
+      header.textContent=`文字回答 ${n}件${currentPhase==="explain"?"":" （解答終了で一覧公開）"}`;
+      vchart.appendChild(header);
+      // explain フェーズのときだけ一覧表示
+      if(currentPhase==="explain"){
+        vals.forEach((t,i)=>{
+          const div=document.createElement("div");
+          div.style.cssText="padding:.3rem .4rem;border-bottom:1px solid rgba(255,255,255,.08);font-size:clamp(.75rem,1.2vw,.9rem);line-height:1.4;";
+          div.textContent=`${i+1}. ${t}`;
+          vchart.appendChild(div);
+        });
+        if(!vals.length){
+          const empty=document.createElement("div");
+          empty.style.cssText="color:var(--muted);font-size:.8rem;";
+          empty.textContent="（回答なし）";
+          vchart.appendChild(empty);
+        }
+      }
+    }
+
     function recomputeAndRender(ans){
       const normalized=normalizeAnswers(ans);
       const n=Object.keys(normalized).length;
       countLabel.textContent=`参加中 ${n}人`; qrCount.textContent=`参加中 ${n}人`;
+      // テキストモードは専用表示
+      if(currentMode==="text"){
+        renderTextAnswers(ans);
+        return;
+      }
       const cfg=currentConfig||{};
       const keys=(cfg.choices?.length)?cfg.choices.map(x=>String(x).toUpperCase())
                :(currentMode==="ox"?["O","X"]:currentMode==="five"?["A","B","C","D","E"]:[]);
