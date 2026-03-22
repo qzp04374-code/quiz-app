@@ -1,1 +1,883 @@
+[
+  {
+    "type": "text",
+    "from": "OSCE",
+    "to": "おすきー"
+  },
+  {
+    "type": "text",
+    "from": "価値観",
+    "to": "かちかん"
+  },
+  {
+    "type": "text",
+    "from": "反張膝",
+    "to": "はんちょうしつ"
+  },
+  {
+    "type": "text",
+    "from": "AFO",
+    "to": "えーえふおー"
+  },
+  {
+    "type": "text",
+    "from": "短下肢装具",
+    "to": "たんかしそうぐ"
+  },
+  {
+    "type": "text",
+    "from": "下垂足",
+    "to": "かすいそく"
+  },
+  {
+    "type": "text",
+    "from": "RIC型把持装具",
+    "to": "あーるあいしーがたはじそうぐ"
+  },
+  {
+    "type": "text",
+    "from": "長対立装具",
+    "to": "ちょうたいりつそうぐ"
+  },
+  {
+    "type": "text",
+    "from": "背屈",
+    "to": "はいくつ"
+  },
+  {
+    "type": "text",
+    "from": "太柄",
+    "to": "ふとえ"
+  },
+  {
+    "type": "text",
+    "from": "義肢",
+    "to": "ぎし"
+  },
+  {
+    "type": "text",
+    "from": "離断",
+    "to": "りだん"
+  },
+  {
+    "type": "text",
+    "from": "神経束",
+    "to": "しんけいそく"
+  },
+  {
+    "type": "text",
+    "from": "挙上",
+    "to": "きょじょう"
+  },
+  {
+    "type": "text",
+    "from": "手関節",
+    "to": "しゅかんせつ"
+  },
+  {
+    "type": "text",
+    "from": "下垂手",
+    "to": "かすいしゅ"
+  },
+  {
+    "type": "text",
+    "from": "前額面上",
+    "to": "ぜんがくめんじょう"
+  },
+  {
+    "type": "text",
+    "from": "肩甲下筋",
+    "to": "けんこうかきん"
+  },
+  {
+    "type": "text",
+    "from": "前額面",
+    "to": "ぜんがくめん"
+  },
+  {
+    "type": "text",
+    "from": "長胸",
+    "to": "ちょうきょう"
+  },
+  {
+    "type": "text",
+    "from": "腋窩",
+    "to": "えきか"
+  },
+  {
+    "type": "text",
+    "from": "腕神経叢",
+    "to": "わんしんけいそう"
+  },
+  {
+    "type": "text",
+    "from": "糸球体",
+    "to": "しきゅうたい"
+  },
+  {
+    "type": "text",
+    "from": "尿細管",
+    "to": "にょうさいかん"
+  },
+  {
+    "type": "text",
+    "from": "残気量",
+    "to": "ざんきりょう"
+  },
+  {
+    "type": "text",
+    "from": "→",
+    "to": "から"
+  },
+  {
+    "type": "text",
+    "from": "ヒス束",
+    "to": "ひすそく"
+  },
+  {
+    "type": "text",
+    "from": "洞房",
+    "to": "ぼうしつ"
+  },
+  {
+    "type": "text",
+    "from": "房室",
+    "to": "ぼうしつ"
+  },
+  {
+    "type": "text",
+    "from": "心尖",
+    "to": "しんせん"
+  },
+  {
+    "type": "text",
+    "from": "黒質",
+    "to": "こくしつ"
+  },
+  {
+    "type": "text",
+    "from": "淡蒼球",
+    "to": "たんそうきゅう"
+  },
+  {
+    "type": "text",
+    "from": "被殻",
+    "to": "ひかく"
+  },
+  {
+    "type": "text",
+    "from": "尾状核",
+    "to": "びじょうかく"
+  },
+  {
+    "type": "text",
+    "from": "どの様な",
+    "to": "どのような"
+  },
+  {
+    "type": "text",
+    "from": "移乗",
+    "to": "いじょう"
+  },
+  {
+    "type": "text",
+    "from": "脛骨",
+    "to": "けいこつ"
+  },
+  {
+    "type": "text",
+    "from": "顎先",
+    "to": "がくせん"
+  },
+  {
+    "type": "text",
+    "from": "耳介",
+    "to": "じかい"
+  },
+  {
+    "type": "text",
+    "from": "鼻尖",
+    "to": "びせん"
+  },
+  {
+    "type": "text",
+    "from": "足背",
+    "to": "そくはい"
+  },
+  {
+    "type": "text",
+    "from": "手掌",
+    "to": "しゅしょう"
+  },
+  {
+    "type": "text",
+    "from": "前胸",
+    "to": "ぜんきょう"
+  },
+  {
+    "type": "text",
+    "from": "背臥位",
+    "to": "はいがい"
+  },
+  {
+    "type": "text",
+    "from": "腹臥位",
+    "to": "ふくがい"
+  },
+  {
+    "type": "text",
+    "from": "仰臥位",
+    "to": "ぎょうがい"
+  },
+  {
+    "type": "text",
+    "from": "側臥位",
+    "to": "そくがい"
+  },
+  {
+    "type": "text",
+    "from": "体圧",
+    "to": "たいあつ"
+  },
+  {
+    "type": "text",
+    "from": "褥瘡",
+    "to": "じょくそう"
+  },
+  {
+    "type": "text",
+    "from": "尾骨",
+    "to": "びこつ"
+  },
+  {
+    "type": "text",
+    "from": "坐骨",
+    "to": "ざこつ"
+  },
+  {
+    "type": "text",
+    "from": "後傾",
+    "to": "こうけい"
+  },
+  {
+    "type": "text",
+    "from": "かかり方",
+    "to": "かかりかた"
+  },
+  {
+    "type": "text",
+    "from": "皮膚温",
+    "to": "ひふおん"
+  },
+  {
+    "type": "text",
+    "from": "偏位",
+    "to": "へんい"
+  },
+  {
+    "type": "text",
+    "from": "重り",
+    "to": "おもり"
+  },
+  {
+    "type": "text",
+    "from": "臥位",
+    "to": "がい"
+  },
+  {
+    "type": "text",
+    "from": "中殿",
+    "to": "ちゅうでん"
+  },
+  {
+    "type": "text",
+    "from": "足趾",
+    "to": "そくし"
+  },
+  {
+    "type": "text",
+    "from": "底屈",
+    "to": "ていくつ"
+  },
+  {
+    "type": "text",
+    "from": "前脛骨筋",
+    "to": "ぜんけいこつきん"
+  },
+  {
+    "type": "text",
+    "from": "血流",
+    "to": "けつりゅう"
+  },
+  {
+    "type": "text",
+    "from": "圧痛",
+    "to": "あっつう"
+  },
+  {
+    "type": "text",
+    "from": "筋肥大",
+    "to": "きんひだい"
+  },
+  {
+    "type": "text",
+    "from": "軟部",
+    "to": "なんぶ"
+  },
+  {
+    "type": "text",
+    "from": "測れる",
+    "to": "はかれる"
+  },
+  {
+    "type": "text",
+    "from": "測る",
+    "to": "はかる"
+  },
+  {
+    "type": "text",
+    "from": "1：29：300",
+    "to": "1たい29たい300"
+  },
+  {
+    "type": "text",
+    "from": "医療過誤",
+    "to": "いりょうかご"
+  },
+  {
+    "type": "text",
+    "from": "筋力",
+    "to": "きんりょく"
+  },
+  {
+    "type": "text",
+    "from": "求心",
+    "to": "きゅうしん"
+  },
+  {
+    "type": "text",
+    "from": "準則違反",
+    "to": "じゅんそくいはん"
+  },
+  {
+    "type": "text",
+    "from": "手指",
+    "to": "しゅし"
+  },
+  {
+    "type": "text",
+    "from": "卒試",
+    "to": "そつし"
+  },
+  {
+    "type": "text",
+    "from": "多職種",
+    "to": "たしょくしゅ"
+  },
+  {
+    "type": "text",
+    "from": "主動作筋",
+    "to": "しゅどうさきん"
+  },
+  {
+    "type": "text",
+    "from": "国試",
+    "to": "こくし"
+  },
+  {
+    "type": "text",
+    "from": "5m歩行",
+    "to": "5めーとるほこう"
+  },
+  {
+    "type": "text",
+    "from": "三科目",
+    "to": "さんかもく"
+  },
+  {
+    "type": "text",
+    "from": "過去問",
+    "to": "かこもん"
+  },
+  {
+    "type": "text",
+    "from": "遊脚期",
+    "to": "ゆうきゃくき"
+  },
+  {
+    "type": "text",
+    "from": "離地期",
+    "to": "りちき"
+  },
+  {
+    "type": "text",
+    "from": "踵接地",
+    "to": "しょうせっち"
+  },
+  {
+    "type": "text",
+    "from": "足角",
+    "to": "そくかく"
+  },
+  {
+    "type": "text",
+    "from": "足底",
+    "to": "そくてい"
+  },
+  {
+    "type": "text",
+    "from": "足関節",
+    "to": "そっかんせつ"
+  },
+  {
+    "type": "text",
+    "from": "体幹",
+    "to": "たいかん"
+  },
+  {
+    "type": "text",
+    "from": "足部",
+    "to": "そくぶ"
+  },
+  {
+    "type": "text",
+    "from": "歩隔",
+    "to": "ほかく"
+  },
+  {
+    "type": "text",
+    "from": "5m",
+    "to": "5めーとる"
+  },
+  {
+    "type": "text",
+    "from": "遠位",
+    "to": "えんい"
+  },
+  {
+    "type": "text",
+    "from": "近位",
+    "to": "きんい"
+  },
+  {
+    "type": "text",
+    "from": "主",
+    "to": "しゅ"
+  },
+  {
+    "type": "text",
+    "from": "尺骨",
+    "to": "しゃっこつ"
+  },
+  {
+    "type": "text",
+    "from": "肘頭",
+    "to": "ちゅうとう"
+  },
+  {
+    "type": "text",
+    "from": "体が",
+    "to": "からだが"
+  },
+  {
+    "type": "text",
+    "from": "橈骨頭",
+    "to": "とうこつとう"
+  },
+  {
+    "type": "text",
+    "from": "筋皮",
+    "to": "きんぴ"
+  },
+  {
+    "type": "text",
+    "from": "束",
+    "to": "そく"
+  },
+  {
+    "type": "text",
+    "from": "上腕骨",
+    "to": "じょうわんこつ"
+  },
+  {
+    "type": "text",
+    "from": "小結節",
+    "to": "しょうけっせつ"
+  },
+  {
+    "type": "text",
+    "from": "橈骨",
+    "to": "とうこつ"
+  },
+  {
+    "type": "text",
+    "from": "粗面",
+    "to": "そめん"
+  },
+  {
+    "type": "text",
+    "from": "鎖骨",
+    "to": "さこつ"
+  },
+  {
+    "type": "text",
+    "from": "肩峰",
+    "to": "けんぽう"
+  },
+  {
+    "type": "text",
+    "from": "内側端",
+    "to": "ないそくたん"
+  },
+  {
+    "type": "text",
+    "from": "烏口突起",
+    "to": "うこうとっき"
+  },
+  {
+    "type": "text",
+    "from": "肩甲棘",
+    "to": "けんこうきょく"
+  },
+  {
+    "type": "text",
+    "from": "外側端",
+    "to": "がいそくたん"
+  },
+  {
+    "type": "text",
+    "from": "心拍数",
+    "to": "しんぱくすう"
+  },
+  {
+    "type": "text",
+    "from": "足圧",
+    "to": "そくあつ"
+  },
+  {
+    "type": "text",
+    "from": "伸び縮み",
+    "to": "のびちじみ"
+  },
+  {
+    "type": "text",
+    "from": "平均値",
+    "to": "へいきんち"
+  },
+  {
+    "type": "text",
+    "from": "疾患名",
+    "to": "しっかんめい"
+  },
+  {
+    "type": "text",
+    "from": "COM",
+    "to": "しーおーえむ"
+  },
+  {
+    "type": "text",
+    "from": "身体",
+    "to": "しんたい"
+  },
+  {
+    "type": "text",
+    "from": "把持",
+    "to": "はじ"
+  },
+  {
+    "type": "text",
+    "from": "止める",
+    "to": "とめる"
+  },
+  {
+    "type": "text",
+    "from": "動ける",
+    "to": "うごける"
+  },
+  {
+    "type": "text",
+    "from": "床反力",
+    "to": "ゆかはんりょく"
+  },
+  {
+    "type": "text",
+    "from": "揺れ方",
+    "to": "ゆれかた"
+  },
+  {
+    "type": "text",
+    "from": "支持物",
+    "to": "しじぶつ"
+  },
+  {
+    "type": "text",
+    "from": "止まる",
+    "to": "とまる"
+  },
+  {
+    "type": "text",
+    "from": "COP",
+    "to": "しーおーぴー"
+  },
+  {
+    "type": "text",
+    "from": "内旋",
+    "to": "ないせん"
+  },
+  {
+    "type": "text",
+    "from": "診断名",
+    "to": "しんだんめい"
+  },
+  {
+    "type": "text",
+    "from": "腱板",
+    "to": "けんばん"
+  },
+  {
+    "type": "text",
+    "from": "右大腿骨",
+    "to": "みぎだいたいこつ"
+  },
+  {
+    "type": "text",
+    "from": "肩甲下角",
+    "to": "けんこうかかく"
+  },
+  {
+    "type": "text",
+    "from": "前腕",
+    "to": "ぜんわん"
+  },
+  {
+    "type": "text",
+    "from": "呼気",
+    "to": "こき"
+  },
+  {
+    "type": "text",
+    "from": "吸気",
+    "to": "きゅうき"
+  },
+  {
+    "type": "text",
+    "from": "回外",
+    "to": "かいがい"
+  },
+  {
+    "type": "text",
+    "from": "回内",
+    "to": "かいない"
+  },
+  {
+    "type": "text",
+    "from": "手内筋",
+    "to": "しゅないきん"
+  },
+  {
+    "type": "text",
+    "from": "左半側",
+    "to": "ひだりはんそく"
+  },
+  {
+    "type": "text",
+    "from": "外転",
+    "to": "がいてん"
+  },
+  {
+    "type": "text",
+    "from": "内転",
+    "to": "ないてん"
+  },
+  {
+    "type": "text",
+    "from": "発揮",
+    "to": "はっき"
+  },
+  {
+    "type": "text",
+    "from": "上肢",
+    "to": "じょうし"
+  },
+  {
+    "type": "text",
+    "from": "下肢",
+    "to": "かし"
+  },
+  {
+    "type": "text",
+    "from": "左大腿骨",
+    "to": "ひだりだいたいこつ"
+  },
+  {
+    "type": "text",
+    "from": "VO2",
+    "to": "ぶいおーつー"
+  },
+  {
+    "type": "text",
+    "from": "VCO2",
+    "to": "ぶいしーおーつー"
+  },
+  {
+    "type": "text",
+    "from": "SpO2",
+    "to": "えすぴーおーつー"
+  },
+  {
+    "type": "text",
+    "from": "呼吸数",
+    "to": "こきゅうすう"
+  },
+  {
+    "type": "text",
+    "from": "胸郭",
+    "to": "きょうかく"
+  },
+  {
+    "type": "text",
+    "from": "O2",
+    "to": "おーつー"
+  },
+  {
+    "type": "text",
+    "from": "エネルギー源",
+    "to": "えねるぎーげん"
+  },
+  {
+    "type": "text",
+    "from": "CO2",
+    "to": "しーおーつー"
+  },
+  {
+    "type": "text",
+    "from": "1L",
+    "to": "いちりっとる"
+  },
+  {
+    "type": "text",
+    "from": "2L",
+    "to": "にりっとる"
+  },
+  {
+    "type": "text",
+    "from": "3L",
+    "to": "さんりっとる"
+  },
+  {
+    "type": "text",
+    "from": "4L",
+    "to": "よんりっとる"
+  },
+  {
+    "type": "text",
+    "from": "5L",
+    "to": "ごりっとる"
+  },
+  {
+    "type": "text",
+    "from": "6L",
+    "to": "ろくりっとる"
+  },
+  {
+    "type": "text",
+    "from": "7L",
+    "to": "ななりっとる"
+  },
+  {
+    "type": "text",
+    "from": "8L",
+    "to": "はちりっとる"
+  },
+  {
+    "type": "text",
+    "from": "9L",
+    "to": "きゅうりっとる"
+  },
+  {
+    "type": "text",
+    "from": "10L",
+    "to": "じゅうりっとる"
+  },
+  {
+    "type": "text",
+    "from": "肩甲",
+    "to": "けんこう"
+  },
+  {
+    "type": "text",
+    "from": "外旋",
+    "to": "がいせん"
+  },
+  {
+    "type": "text",
+    "from": "2:1",
+    "to": "にたいいち"
+  },
+  {
+    "type": "text",
+    "from": "棘上",
+    "to": "きょくじょう"
+  },
+  {
+    "type": "text",
+    "from": "棘下",
+    "to": "きょっか"
+  },
+  {
+    "type": "text",
+    "from": "前鋸",
+    "to": "ぜんきょ"
+  },
+  {
+    "type": "text",
+    "from": "大胸",
+    "to": "だいきょう"
+  },
+  {
+    "type": "text",
+    "from": "広背",
+    "to": "こうはい"
+  },
+  {
+    "type": "text",
+    "from": "腹直",
+    "to": "ふくちょく"
+  },
+  {
+    "type": "text",
+    "from": "外腹斜",
+    "to": "がいふくしゃ"
+  },
+  {
+    "type": "text",
+    "from": "内腹斜",
+    "to": "ないふくしゃ"
+  },
+  {
+    "type": "text",
+    "from": "大腿四頭筋",
+    "to": "だいたいしとうきん"
+  },
+  {
+    "type": "text",
+    "from": "筋",
+    "to": "きん"
+  },
+  {
+    "type": "text",
+    "from": "骨",
+    "to": "こつ"
+  },
+  {
+    "type": "text",
+    "from": "見える",
+    "to": "みえる"
+  },
+  {
+    "type": "text",
+    "from": "見る",
+    "to": "みる"
+  }
+]
 
