@@ -252,6 +252,36 @@
     let ttsAutoKey=null, ttsClosedKey="", ttsOpenTimer=null;
     const OPEN_DELAY=1200;
 
+    // ===== TTS辞書 =====
+    let TTS_REPLACERS=[];
+    function compileTtsDict(list){
+      const esc=s=>String(s).replace(/[.*+?^${}()|[\]\]/g,"\$&");
+      return (list||[]).filter(e=>e&&e.from).map(e=>{
+        const to=e.to??"", type=e.type||"text";
+        if(type==="word"){const re=new RegExp("\b"+esc(e.from)+"\b","g");return s=>s.replace(re,to);}
+        if(type==="regex"){try{const re=new RegExp(String(e.from),e.flags||"g");return s=>s.replace(re,to);}catch(_){return s=>s;}}
+        return s=>s.split(String(e.from)).join(to); // text
+      });
+    }
+    function ttsNormalize(text){
+      let s=String(text||"").replace(/\s+/g," ").trim();
+      for(const fn of TTS_REPLACERS){try{s=fn(s);}catch(_){}}
+      return s;
+    }
+    async function loadTtsDict(){
+      try{
+        const res=await fetch("./dict/tts-dict.json?v="+Date.now());
+        if(!res.ok) throw new Error(res.status);
+        const data=await res.json();
+        TTS_REPLACERS=compileTtsDict(Array.isArray(data)?data:[]);
+        console.log("[TTS] dict loaded:",TTS_REPLACERS.length,"entries");
+      }catch(e){
+        TTS_REPLACERS=[];
+        console.warn("[TTS] dict load failed (ファイルがなければ正常):",e.message);
+      }
+    }
+    loadTtsDict(); // 起動時に非同期ロード
+
     const waitMs=ms=>new Promise(r=>setTimeout(r,ms));
     function stopTTS(){
       ttsRunId++;
@@ -265,7 +295,10 @@
     function speakOnce(text,runId){
       return new Promise(r=>{
         if(!text||runId!==ttsRunId) return r();
-        const u=new SpeechSynthesisUtterance(text);
+        // 辞書を通してから読み上げ
+        const normalized=ttsNormalize(text);
+        if(!normalized) return r();
+        const u=new SpeechSynthesisUtterance(normalized);
         u.lang="ja-JP"; u.rate=1.0; u.pitch=1.0; u.onend=()=>r(); u.onerror=()=>r();
         if(runId!==ttsRunId) return r();
         try{window.speechSynthesis.speak(u);}catch(_){r();}
