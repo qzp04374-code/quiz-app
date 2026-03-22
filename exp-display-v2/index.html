@@ -423,6 +423,21 @@
     const questionRef = (room, qid) => ref(db, `rooms/${room}/questions/${qid}`);
     const presentPhaseRef = (room) => ref(db, `rooms/${room}/quiz/present/phase`);
 
+    // ===== グラフ表示切替（revealMode）- attachRoom より前に宣言必須 =====
+    let graphRevealed = false;
+    function updateRevealBtn(){
+      if(!revealGraphBtn) return;
+      revealGraphBtn.textContent = graphRevealed ? "📊 グラフ隠す" : "📊 グラフ表示";
+      revealGraphBtn.className = graphRevealed ? "btnGreen" : "btnCyan";
+    }
+    async function toggleRevealGraph(){
+      graphRevealed = !graphRevealed;
+      await update(activityRef(state.room), {
+        revealMode: graphRevealed ? "live" : "closed"
+      });
+      updateRevealBtn();
+    }
+
     // ===== state =====
     const state = {
       room: null,
@@ -681,20 +696,7 @@
       });
     }
 
-    // ===== グラフ表示切替（revealMode） =====
-    let graphRevealed = false;
-    function updateRevealBtn(){
-      revealGraphBtn.textContent = graphRevealed ? "📊 グラフ隠す" : "📊 グラフ表示";
-      revealGraphBtn.className = graphRevealed
-        ? "btnGreen" : "btnCyan";
-    }
-    async function toggleRevealGraph(){
-      graphRevealed = !graphRevealed;
-      await update(activityRef(state.room), {
-        revealMode: graphRevealed ? "live" : "closed"
-      });
-      updateRevealBtn();
-    }
+    // ===== グラフ表示切替（revealMode）→ 宣言は下のstateブロックへ移動 =====
 
     async function endClass(){
       const ok = confirm("授業を終了します（standbyに戻してanswersも消します）");
@@ -749,11 +751,15 @@
 
     projectionBtn.onclick = async () => {
       const r = encodeURIComponent(state.room || "");
-      // displayを開く前にQRを発行（display側が起動したらQRから始まる）
-      const session = Date.now().toString(36);
-      await update(activityRef(state.room), { qr:true, view:"qr", status:"closed", session });
-      await set(presentPhaseRef(state.room), "qr");
-      window.open(`./display.html?room=${r}`, "_blank");
+      // ポップアップブロック対策：先に window.open（同期コンテキストで呼ぶ）
+      const win = window.open(`./display.html?room=${r}`, "_blank");
+      if(!win) alert("ポップアップがブロックされました。ブラウザの設定で許可してください。");
+      // その後 Firebase にQRを書く
+      try{
+        const session = Date.now().toString(36);
+        await update(activityRef(state.room), { qr:true, view:"qr", status:"closed", session });
+        await set(presentPhaseRef(state.room), "qr");
+      }catch(e){ console.warn("QR発行失敗:", e); }
     };
     gameProjectionBtn.onclick = () => {
       const r = encodeURIComponent(state.room || "");
@@ -800,10 +806,10 @@
 
     // 辞書コンパイル（読み上げテスト用）
     function compileTtsDict(list){
-      const esc = s => String(s).replace(/[.*+?^${}()|[\]\]/g,"\$&");
+      const esc = s => String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       return (list||[]).filter(e=>e&&e.from).map(e=>{
         const to = e.to??"", type = e.type||"text";
-        if(type==="word"){ const re=new RegExp("\b"+esc(e.from)+"\b","g"); return s=>s.replace(re,to); }
+        if(type==="word"){ const re=new RegExp("\\b"+esc(e.from)+"\\b","g"); return s=>s.replace(re,to); }
         if(type==="regex"){ try{ const re=new RegExp(String(e.from),e.flags||"g"); return s=>s.replace(re,to); }catch(_){ return s=>s; } }
         return s => s.split(String(e.from)).join(to);
       });
@@ -860,11 +866,15 @@
     }
 
     // ボタンイベント
-    document.getElementById("dictToggleBtn").onclick = ()=>{
-      const p = document.getElementById("dictPanel");
-      p.classList.toggle("show");
-      if(p.classList.contains("show")) renderDictTable();
-    };
+    const dictToggleBtn2 = document.getElementById("dictToggleBtn");
+    if(dictToggleBtn2){
+      dictToggleBtn2.onclick = ()=>{
+        const p = document.getElementById("dictPanel");
+        if(!p) return;
+        p.classList.toggle("show");
+        if(p.classList.contains("show")) renderDictTable();
+      };
+    }
     document.getElementById("dictAddBtn").onclick = ()=>{
       dictEntries.push({from:"",to:"",type:"text",flags:""});
       saveDictToLS(); renderDictTable();
