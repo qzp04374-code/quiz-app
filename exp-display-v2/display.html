@@ -255,10 +255,10 @@
     // ===== TTS辞書 =====
     let TTS_REPLACERS=[];
     function compileTtsDict(list){
-      const esc=s=>String(s).replace(/[.*+?^${}()|[\]\]/g,"\$&");
+      const esc = s => String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       return (list||[]).filter(e=>e&&e.from).map(e=>{
         const to=e.to??"", type=e.type||"text";
-        if(type==="word"){const re=new RegExp("\b"+esc(e.from)+"\b","g");return s=>s.replace(re,to);}
+        if(type==="word"){const re=new RegExp("\\b"+esc(e.from)+"\\b","g");return s=>s.replace(re,to);}
         if(type==="regex"){try{const re=new RegExp(String(e.from),e.flags||"g");return s=>s.replace(re,to);}catch(_){return s=>s;}}
         return s=>s.split(String(e.from)).join(to); // text
       });
