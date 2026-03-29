@@ -11,6 +11,10 @@
       --ink:#f9fafb; --muted:rgba(203,213,225,.85); --shadow:0 1.4rem 5rem rgba(0,0,0,.70);
       --color-o:#34c759; --color-x:#ff3b30; --color-a:#0a84ff; --color-b:#30d158;
       --color-c:#ff9f0a; --color-d:#bf5af2; --color-e:#ff375f;
+      /* 文字サイズ変数（JS で上書き） */
+      --sz-q: 2.8rem;       /* 問題文 */
+      --sz-choice: 1.5rem;  /* 選択肢 */
+      --sz-text: 1.1rem;    /* テキスト回答 */
     }
     *{box-sizing:border-box;}
     html,body{height:100%;margin:0;overflow:hidden;}
@@ -52,9 +56,9 @@
     .panel{background:var(--panel);border:1px solid var(--line);border-radius:1.3rem;box-shadow:var(--shadow);overflow:hidden;min-height:0;}
     .left{padding:.9rem 1rem;display:flex;flex-direction:column;gap:.6rem;min-height:0;overflow:hidden;}
     body.closed .left{overflow:auto;}
-    .q{font-size:clamp(1.4rem,3.2vw,2.8rem);font-weight:900;line-height:1.15;white-space:pre-wrap;flex-shrink:0;}
+    .q{font-size:var(--sz-q);font-weight:900;line-height:1.15;white-space:pre-wrap;flex-shrink:0;}
     .choices{display:grid;grid-template-columns:1fr;gap:.35rem;overflow-y:auto;flex:1;min-height:0;padding-right:.3rem;}
-    .choice{display:flex;align-items:flex-start;gap:.55rem;padding:.42rem .7rem;border-radius:.85rem;background:rgba(2,6,23,.22);line-height:1.15;word-break:break-word;font-size:clamp(1rem,1.9vw,1.5rem);}
+    .choice{display:flex;align-items:flex-start;gap:.55rem;padding:.42rem .7rem;border-radius:.85rem;background:rgba(2,6,23,.22);line-height:1.15;word-break:break-word;font-size:var(--sz-choice);}
     .choice.correct{border:2px solid rgba(34,197,94,.85);box-shadow:0 0 0 3px rgba(34,197,94,.15);}
     body.closed .choice.correct{animation:pulseGreen 1.3s infinite;}
     @keyframes pulseGreen{0%{box-shadow:0 0 0 0 rgba(34,197,94,.55);}70%{box-shadow:0 0 0 14px rgba(34,197,94,0);}100%{box-shadow:0 0 0 0 rgba(34,197,94,0);}}
@@ -119,12 +123,60 @@
     .mediaEl.cover{object-fit:cover;width:100%;height:100%;}
     .mediaCaption{position:absolute;bottom:1.2rem;left:50%;transform:translateX(-50%);background:rgba(2,6,23,.82);border:1px solid rgba(255,255,255,.12);backdrop-filter:blur(10px);padding:.5rem 1rem;border-radius:999px;font-size:clamp(.8rem,1.5vw,1rem);font-weight:900;white-space:nowrap;max-width:88vw;overflow:hidden;text-overflow:ellipsis;}
     #toast{position:fixed;left:50%;top:1rem;transform:translateX(-50%);background:rgba(17,24,39,.92);border:1px solid rgba(255,255,255,.12);padding:.6rem .9rem;border-radius:999px;color:#f9fafb;font-weight:1000;letter-spacing:.06em;z-index:1200;opacity:0;pointer-events:none;transition:opacity .25s ease;box-shadow:var(--shadow);}
+    /* ===== 文字サイズ調整パネル ===== */
+    #szPanel{
+      position:fixed; right:1rem; top:4rem; z-index:1300;
+      width:260px;
+      background:rgba(10,14,30,.96); border:1px solid rgba(255,255,255,.14);
+      border-radius:1.1rem; box-shadow:0 1.2rem 4rem rgba(0,0,0,.7);
+      backdrop-filter:blur(12px);
+      padding:.8rem .9rem;
+      display:none;
+    }
+    #szPanel.show{display:block;}
+    .szHead{display:flex;justify-content:space-between;align-items:center;margin-bottom:.7rem;}
+    .szTitle{font-weight:1000;font-size:.82rem;letter-spacing:.06em;}
+    .szClose{background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:1rem;padding:0;}
+    .szRow{margin-bottom:.65rem;}
+    .szLabel{font-size:.72rem;color:var(--muted);font-weight:900;letter-spacing:.06em;margin-bottom:.3rem;display:flex;justify-content:space-between;}
+    .szSlider{width:100%;accent-color:#0a84ff;cursor:pointer;}
+    .szActions{display:flex;gap:.5rem;margin-top:.8rem;}
+    .szBtn{
+      flex:1;padding:.35rem .5rem;border-radius:.6rem;font-size:.72rem;font-weight:900;
+      border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.08);
+      color:var(--muted);cursor:pointer;
+    }
+    .szBtn:hover{background:rgba(255,255,255,.15);}
     #buildTag{position:fixed;right:.6rem;bottom:.6rem;opacity:.42;font-size:.64rem;z-index:60;background:rgba(0,0,0,.40);border:1px solid rgba(255,255,255,.07);padding:.28rem .52rem;border-radius:999px;backdrop-filter:blur(8px);pointer-events:none;}
   </style>
 </head>
 <body>
   <div id="buildTag">build: 2026-03-01 / exp-display-v2 / display</div>
   <div id="toast">解答終了 → 公開</div>
+
+  <!-- 文字サイズ調整パネル -->
+  <div id="szPanel">
+    <div class="szHead">
+      <div class="szTitle">⚙ 文字サイズ調整</div>
+      <button class="szClose" id="szClose">✕</button>
+    </div>
+    <div class="szRow">
+      <div class="szLabel"><span>問題文</span><span id="szQVal">—</span></div>
+      <input type="range" class="szSlider" id="szQ" min="1.0" max="5.0" step="0.1" value="2.8">
+    </div>
+    <div class="szRow">
+      <div class="szLabel"><span>選択肢</span><span id="szCVal">—</span></div>
+      <input type="range" class="szSlider" id="szC" min="0.8" max="3.5" step="0.1" value="1.5">
+    </div>
+    <div class="szRow">
+      <div class="szLabel"><span>テキスト回答</span><span id="szTVal">—</span></div>
+      <input type="range" class="szSlider" id="szT" min="0.8" max="3.0" step="0.1" value="1.1">
+    </div>
+    <div class="szActions">
+      <button class="szBtn" id="szSave">💾 保存</button>
+      <button class="szBtn" id="szReset">↩ リセット</button>
+    </div>
+  </div>
   <div id="qrLayer">
     <div class="qrBox">
       <div class="qrTitle">参加用QRコード</div>
@@ -147,6 +199,7 @@
         <button class="sBtn" id="ttsBtn">🗣 読み上げOFF</button>
         <button class="sBtn" id="ttsSpeakBtn">🔘 今すぐ読む</button>
         <button id="revealBtn">📊 集計を表示</button>
+        <button class="sBtn" id="szBtn">⚙ 文字サイズ</button>
       </div>
     </div>
     <div class="stage">
@@ -174,7 +227,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getDatabase, ref, onValue, update, set } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+    import { getDatabase, ref, onValue, update } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyBke-wTU16skpbK8z80ddK04tE154dHERQ",
@@ -252,36 +305,6 @@
     let ttsAutoKey=null, ttsClosedKey="", ttsOpenTimer=null;
     const OPEN_DELAY=1200;
 
-    // ===== TTS辞書 =====
-    let TTS_REPLACERS=[];
-    function compileTtsDict(list){
-      const esc = s => String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-      return (list||[]).filter(e=>e&&e.from).map(e=>{
-        const to=e.to??"", type=e.type||"text";
-        if(type==="word"){const re=new RegExp("\\b"+esc(e.from)+"\\b","g");return s=>s.replace(re,to);}
-        if(type==="regex"){try{const re=new RegExp(String(e.from),e.flags||"g");return s=>s.replace(re,to);}catch(_){return s=>s;}}
-        return s=>s.split(String(e.from)).join(to); // text
-      });
-    }
-    function ttsNormalize(text){
-      let s=String(text||"").replace(/\s+/g," ").trim();
-      for(const fn of TTS_REPLACERS){try{s=fn(s);}catch(_){}}
-      return s;
-    }
-    async function loadTtsDict(){
-      try{
-        const res=await fetch("./dict/tts-dict.json?v="+Date.now());
-        if(!res.ok) throw new Error(res.status);
-        const data=await res.json();
-        TTS_REPLACERS=compileTtsDict(Array.isArray(data)?data:[]);
-        console.log("[TTS] dict loaded:",TTS_REPLACERS.length,"entries");
-      }catch(e){
-        TTS_REPLACERS=[];
-        console.warn("[TTS] dict load failed (ファイルがなければ正常):",e.message);
-      }
-    }
-    loadTtsDict(); // 起動時に非同期ロード
-
     const waitMs=ms=>new Promise(r=>setTimeout(r,ms));
     function stopTTS(){
       ttsRunId++;
@@ -295,10 +318,7 @@
     function speakOnce(text,runId){
       return new Promise(r=>{
         if(!text||runId!==ttsRunId) return r();
-        // 辞書を通してから読み上げ
-        const normalized=ttsNormalize(text);
-        if(!normalized) return r();
-        const u=new SpeechSynthesisUtterance(normalized);
+        const u=new SpeechSynthesisUtterance(text);
         u.lang="ja-JP"; u.rate=1.0; u.pitch=1.0; u.onend=()=>r(); u.onerror=()=>r();
         if(runId!==ttsRunId) return r();
         try{window.speechSynthesis.speak(u);}catch(_){r();}
@@ -364,6 +384,71 @@
       await unlockSound(); ttsAutoKey=null; stopTTS(); speakCurrent();
     };
 
+    // ===== 文字サイズ調整パネル =====
+    const LS_SZ = "cls_disp_sz_v2";
+    const SZ_DEFAULT = { q:2.8, choice:1.5, text:1.1 };
+
+    function loadSzSettings(){
+      try{
+        const raw = localStorage.getItem(LS_SZ);
+        return raw ? JSON.parse(raw) : {...SZ_DEFAULT};
+      }catch(e){ return {...SZ_DEFAULT}; }
+    }
+    function saveSzSettings(sz){
+      try{ localStorage.setItem(LS_SZ, JSON.stringify(sz)); }catch(e){}
+    }
+    function applySzSettings(sz){
+      const root = document.documentElement.style;
+      root.setProperty("--sz-q",      sz.q      + "rem");
+      root.setProperty("--sz-choice", sz.choice + "rem");
+      root.setProperty("--sz-text",   sz.text   + "rem");
+    }
+    function syncSliders(sz){
+      const qSlider = document.getElementById("szQ");
+      const cSlider = document.getElementById("szC");
+      const tSlider = document.getElementById("szT");
+      if(qSlider){ qSlider.value = sz.q;      document.getElementById("szQVal").textContent = sz.q+"rem"; }
+      if(cSlider){ cSlider.value = sz.choice;  document.getElementById("szCVal").textContent = sz.choice+"rem"; }
+      if(tSlider){ tSlider.value = sz.text;    document.getElementById("szTVal").textContent = sz.text+"rem"; }
+    }
+
+    // 起動時に設定を読み込み適用
+    const _sz = loadSzSettings();
+    applySzSettings(_sz);
+
+    // パネル操作
+    const szPanel = document.getElementById("szPanel");
+    document.getElementById("szBtn").onclick = ()=>{
+      szPanel.classList.toggle("show");
+      if(szPanel.classList.contains("show")) syncSliders(loadSzSettings());
+    };
+    document.getElementById("szClose").onclick = ()=> szPanel.classList.remove("show");
+
+    ["szQ","szC","szT"].forEach(id=>{
+      const el = document.getElementById(id);
+      if(!el) return;
+      el.oninput = ()=>{
+        const sz = loadSzSettings();
+        if(id==="szQ")      { sz.q      = parseFloat(el.value); document.getElementById("szQVal").textContent = sz.q+"rem"; }
+        if(id==="szC")      { sz.choice = parseFloat(el.value); document.getElementById("szCVal").textContent = sz.choice+"rem"; }
+        if(id==="szT")      { sz.text   = parseFloat(el.value); document.getElementById("szTVal").textContent = sz.text+"rem"; }
+        applySzSettings(sz);
+        saveSzSettings(sz); // スライダー操作でリアルタイム保存
+      };
+    });
+    document.getElementById("szSave").onclick = ()=>{
+      const sz = {
+        q:      parseFloat(document.getElementById("szQ").value),
+        choice: parseFloat(document.getElementById("szC").value),
+        text:   parseFloat(document.getElementById("szT").value),
+      };
+      applySzSettings(sz); saveSzSettings(sz);
+      szPanel.classList.remove("show");
+    };
+    document.getElementById("szReset").onclick = ()=>{
+      applySzSettings(SZ_DEFAULT); saveSzSettings(SZ_DEFAULT); syncSliders(SZ_DEFAULT);
+    };
+
     // ===== TOAST =====
     function showToast(msg="解答終了 → 公開"){
       toast.textContent=msg; toast.style.opacity="1";
@@ -413,9 +498,11 @@
           if(remain<=3000&&remain>0&&!countdownPlayed){playSE("countdown");countdownPlayed=true;}
           if(remain>3000) countdownPlayed=false;
           if(remain<=0){const now=Date.now();if(now-lastAutoClosedAt>1500){lastAutoClosedAt=now;
-            // closeAccept 相当: status:closed + phase=explain を確実に書く
-            update(activityRef,{status:"closed"}).catch(()=>{});
-            set(ref(db,`rooms/${room}/quiz/present/phase`),"explain").catch(()=>{});
+            // status と phase を同時に書く（closeAccept 相当）
+            Promise.all([
+              update(activityRef,{status:"closed"}),
+              update(ref(db,`rooms/${room}/quiz/present/phase`),"explain")
+            ]).catch(()=>{});
           }}
         }
       },250);
@@ -432,13 +519,11 @@
       syncRevealUI();
     };
     function shouldHideResults(){
-      // テキストモードはマスク不要（件数は常に見せる）
-      if(currentMode==="text") return false;
       // explain フェーズ → 必ず表示
       if(currentPhase==="explain") return false;
       // index から「グラフ表示」指示 → 表示
       if(manualRevealed) return false;
-      // question 中は隠す
+      // question / open 中は隠す
       return currentPhase==="question";
     }
     function syncRevealUI(){
@@ -519,28 +604,30 @@
     }
 
     function renderTextAnswers(ans){
-      // テキスト回答一覧（右パネルに表示）
+      const vchartWrap=document.getElementById("vchartWrap");
       vchart.innerHTML="";
+      // 上から表示できるようにレイアウト変更
+      if(vchartWrap){vchartWrap.style.overflowY="auto";vchartWrap.style.alignItems="flex-start";}
+      vchart.style.cssText="display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;width:100%;gap:.25rem;padding:.1rem 0;";
       const vals=Object.values(ans||{}).map(v=>{
         if(typeof v==="string") return v;
         if(v&&typeof v==="object"&&v.value!=null) return String(v.value);
         return null;
       }).filter(Boolean);
       const n=vals.length;
-      // 件数表示
       const header=document.createElement("div");
-      header.style.cssText="font-weight:1000;letter-spacing:.08em;color:rgba(203,213,225,.92);margin-bottom:.5rem;font-size:clamp(.75rem,1.1vw,.88rem);";
+      header.style.cssText="font-weight:1000;color:rgba(203,213,225,.92);margin-bottom:.35rem;font-size:.78rem;flex-shrink:0;";
       header.textContent=`文字回答 ${n}件${currentPhase==="explain"?"":" （解答終了で一覧公開）"}`;
       vchart.appendChild(header);
-      // explain フェーズのときだけ一覧表示
       if(currentPhase==="explain"){
-        vals.forEach((t,i)=>{
-          const div=document.createElement("div");
-          div.style.cssText="padding:.3rem .4rem;border-bottom:1px solid rgba(255,255,255,.08);font-size:clamp(.75rem,1.2vw,.9rem);line-height:1.4;";
-          div.textContent=`${i+1}. ${t}`;
-          vchart.appendChild(div);
-        });
-        if(!vals.length){
+        if(vals.length){
+          vals.forEach((t,i)=>{
+            const div=document.createElement("div");
+            div.style.cssText="padding:.22rem .35rem;border-bottom:1px solid rgba(255,255,255,.07);font-size:var(--sz-text);line-height:1.45;word-break:break-word;";
+            div.textContent=(i+1)+". "+t;
+            vchart.appendChild(div);
+          });
+        }else{
           const empty=document.createElement("div");
           empty.style.cssText="color:var(--muted);font-size:.8rem;";
           empty.textContent="（回答なし）";
@@ -549,15 +636,22 @@
       }
     }
 
+    function resetVchartLayout(){
+      const vchartWrap=document.getElementById("vchartWrap");
+      if(vchartWrap){vchartWrap.style.overflowY="";vchartWrap.style.alignItems="";}
+      vchart.style.cssText="";
+    }
+
     function recomputeAndRender(ans){
       const normalized=normalizeAnswers(ans);
       const n=Object.keys(normalized).length;
       countLabel.textContent=`参加中 ${n}人`; qrCount.textContent=`参加中 ${n}人`;
-      // テキストモードは専用表示
+      // テキストモード
       if(currentMode==="text"){
         renderTextAnswers(ans);
         return;
       }
+      resetVchartLayout();
       const cfg=currentConfig||{};
       const keys=(cfg.choices?.length)?cfg.choices.map(x=>String(x).toUpperCase())
                :(currentMode==="ox"?["O","X"]:currentMode==="five"?["A","B","C","D","E"]:[]);
@@ -646,8 +740,6 @@
         answerBox.classList.remove("show");
         answerLine.textContent="";
         explanationLine.textContent="";
-        // lastStatus をリセット → 次の status:open で必ず start音が鳴る
-        lastStatus=null;
       }
       // phase="explain" → body.closed を付けて正解アニメーション発動
       // phase="question" → body.closed を外す
@@ -682,18 +774,14 @@
       // ※ status==="closed" だと次問切替の瞬間も発火してしまう
 
       const qrOn=(a.qr===true)||(a.view==="qr");
+      const qrChanged=qrOn!==prevQrFlag, viewChanged=currentView!==prevView;
       prevQrFlag=qrOn; prevView=currentView;
-      // qrOn の状態を毎回確実に反映（差分チェックなし）
-      if(qrOn){
-        safeDrawQR(); showQR();
-        if(mainGrid) mainGrid.style.visibility="hidden";
-      } else {
+      if(qrOn){safeDrawQR();showQR();if(mainGrid)mainGrid.style.visibility="hidden";}
+      else if(qrChanged||viewChanged){
         hideQR();
-        // phase が question/explain のときだけ mainGrid を見せる
-        // （phase監視側と二重管理を避けるため、ここでは基本的に表示に戻す）
-        if(mainGrid && (currentPhase==="question"||currentPhase==="explain")){
-          mainGrid.style.visibility="visible";
-        }
+        // view="quiz" or "poll" → mainGrid を見せる
+        const showMain = (currentView==="quiz"||currentView==="poll");
+        if(mainGrid) mainGrid.style.visibility = showMain ? "visible" : "hidden";
       }
 
       // revealMode を index から同期（"live"=表示, "closed"=非公開）
