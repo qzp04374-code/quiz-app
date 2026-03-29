@@ -258,6 +258,9 @@
           <button id="timer60Btn">⏱ 60秒</button>
           <button id="timerStopBtn" class="btnRed">⏹ タイマー停止</button>
         </div>
+        <div class="row">
+          <button id="revealGraphBtn" class="btnCyan">📊 グラフ表示</button>
+        </div>
         </section>
 
       <!-- ② 表示フェーズ -->
@@ -391,6 +394,7 @@
     const timer30Btn     = document.getElementById("timer30Btn");
     const timer60Btn     = document.getElementById("timer60Btn");
     const timerStopBtn   = document.getElementById("timerStopBtn");
+    const revealGraphBtn = document.getElementById("revealGraphBtn");
 // preview
     const pvQid = document.getElementById("pvQid");
     const pvQuestion = document.getElementById("pvQuestion");
@@ -410,6 +414,21 @@
     const qidRef      = (room) => ref(db, `rooms/${room}/quiz/current_question_id`);
     const questionRef = (room, qid) => ref(db, `rooms/${room}/questions/${qid}`);
     const presentPhaseRef = (room) => ref(db, `rooms/${room}/quiz/present/phase`);
+
+    // ===== グラフ表示切替（revealMode）- attachRoom より前に宣言必須 =====
+    let graphRevealed = false;
+    function updateRevealBtn(){
+      if(!revealGraphBtn) return;
+      revealGraphBtn.textContent = graphRevealed ? "📊 グラフ隠す" : "📊 グラフ表示";
+      revealGraphBtn.className   = graphRevealed ? "btnGreen" : "btnCyan";
+    }
+    async function toggleRevealGraph(){
+      graphRevealed = !graphRevealed;
+      await update(activityRef(state.room), {
+        revealMode: graphRevealed ? "live" : "closed"
+      });
+      updateRevealBtn();
+    }
 // ===== state =====
     const state = {
       room: null,
@@ -477,6 +496,7 @@
       state.question = null;
       state.nextQid = null;
       state.nextQuestion = null;
+      graphRevealed = false; updateRevealBtn();
 state.unsubA = onValue(activityRef(room), snap=>{
         state.activity = snap.val() || {};
         const s = state.activity?.session ? String(state.activity.session) : "";
@@ -640,7 +660,8 @@ state.unsubA = onValue(activityRef(room), snap=>{
       const hasMedia = !!(q && q.media && q.media.url);
       await update(activityRef(state.room), {
         view:"quiz", qr:false, status:"closed",
-        mode, config, timer:{ running:false }, session
+        mode, config, timer:{ running:false }, session,
+        revealMode:"closed"
       });
       await set(presentPhaseRef(state.room), hasMedia ? "media" : "question");
     }
@@ -703,7 +724,7 @@ state.unsubA = onValue(activityRef(room), snap=>{
       const cur = state.activity?.qr === true;
       if (cur){
         // QR OFF: standbyに戻す
-        await update(activityRef(state.room), { qr:false, view:"standby" });
+        await update(activityRef(state.room), { qr:false, view:"standby", revealMode:"closed" });
         await set(presentPhaseRef(state.room), "standby");
 }else{
         // QR ON: session新規発行
@@ -724,7 +745,8 @@ state.unsubA = onValue(activityRef(room), snap=>{
         mode,
         config,
         timer:{ running:false },
-        session
+        session,
+        revealMode:"closed"
       });
       await set(presentPhaseRef(state.room), "question");
     }
@@ -748,7 +770,7 @@ async function endClass(){
       const ok = confirm("授業を終了します（standbyに戻してanswersも消します）");
       if (!ok) return;
       await clearAnswers();
-      await update(activityRef(state.room), { status:"closed", view:"standby", qr:false });
+      await update(activityRef(state.room), { status:"closed", view:"standby", qr:false, revealMode:"closed" });
       await set(presentPhaseRef(state.room), "standby");
     }
 
@@ -877,6 +899,7 @@ async function endClass(){
     timer30Btn.onclick  = () => startTimer(30);
     timer60Btn.onclick  = () => startTimer(60);
     timerStopBtn.onclick= stopTimer;
+    revealGraphBtn.onclick = toggleRevealGraph;
 endClassBtn.onclick = endClass;
 
     // ===== TTS辞書編集（dict-editor.html を開く） =====
