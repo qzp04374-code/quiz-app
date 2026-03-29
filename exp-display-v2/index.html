@@ -166,6 +166,55 @@
     .pvAnswer{ margin-top:.6rem; font-weight:900; color:var(--o); }
     .pvExp{ margin-top:.4rem; white-space:pre-wrap; opacity:.92; }
 
+    /* ===== 回答集計パネル ===== */
+    #answerPanel{
+      margin-top:1rem;
+      padding:1rem;
+      border-radius:1.2rem;
+      background:var(--panel2);
+      border:1px solid rgba(255,255,255,.08);
+    }
+    .ansPanelHead{
+      display:flex; align-items:center; justify-content:space-between;
+      margin-bottom:.8rem; flex-wrap:wrap; gap:.5rem;
+    }
+    .ansPanelTitle{ font-weight:1000; letter-spacing:.06em; }
+    .ansPanelMeta{ font-size:.78rem; opacity:.75; font-weight:900; }
+    /* 棒グラフ */
+    .ansBar{
+      display:flex; align-items:center; gap:.6rem;
+      margin-bottom:.45rem;
+    }
+    .ansBarLabel{
+      min-width:2.2rem; font-weight:1000; font-size:.88rem;
+      letter-spacing:.06em; text-align:center;
+      padding:.2rem .3rem; border-radius:.4rem;
+      background:rgba(255,255,255,.08); flex-shrink:0;
+    }
+    .ansBarTrack{
+      flex:1; height:1.4rem; border-radius:.4rem;
+      background:rgba(255,255,255,.07); overflow:hidden; position:relative;
+    }
+    .ansBarFill{
+      height:100%; border-radius:.4rem;
+      transition:width .3s ease; min-width:0;
+    }
+    .ansBarCount{
+      min-width:3.5rem; font-size:.8rem; font-weight:900;
+      text-align:right; flex-shrink:0; opacity:.9;
+    }
+    /* テキスト回答一覧 */
+    #ansTextList{
+      max-height:14rem; overflow-y:auto;
+      border-radius:.7rem; border:1px solid rgba(255,255,255,.07);
+      background:rgba(255,255,255,.03); padding:.5rem .7rem;
+      font-size:.82rem; line-height:1.6;
+    }
+    #ansTextList .ansTextItem{
+      padding:.2rem 0; border-bottom:1px solid rgba(255,255,255,.05);
+    }
+    #ansTextList .ansTextItem:last-child{ border-bottom:none; }
+
     #buildTag{
       position:fixed; right:.7rem; bottom:.7rem;
       opacity:.60; font-size:.75rem; z-index:60;
@@ -209,10 +258,7 @@
           <button id="timer60Btn">⏱ 60秒</button>
           <button id="timerStopBtn" class="btnRed">⏹ タイマー停止</button>
         </div>
-        <div class="row">
-          <button id="revealGraphBtn" class="btnCyan">📊 グラフ表示</button>
-        </div>
-      </section>
+        </section>
 
       <!-- ② 表示フェーズ -->
       <section class="group">
@@ -284,6 +330,17 @@
         </section>
       </div>
     </div>
+
+    <!-- ===== 回答集計パネル ===== -->
+    <div id="answerPanel">
+      <div class="ansPanelHead">
+        <div class="ansPanelTitle">📊 回答集計（リアルタイム）</div>
+        <div class="ansPanelMeta" id="ansCountLabel">回答 0人</div>
+      </div>
+      <div id="ansChartArea">
+        <div style="opacity:.45; font-size:.82rem;">出題中に回答が集まると表示されます</div>
+      </div>
+    </div>
   </div>
 
   <script type="module">
@@ -334,9 +391,7 @@
     const timer30Btn     = document.getElementById("timer30Btn");
     const timer60Btn     = document.getElementById("timer60Btn");
     const timerStopBtn   = document.getElementById("timerStopBtn");
-    const revealGraphBtn = document.getElementById("revealGraphBtn");
-
-    // preview
+// preview
     const pvQid = document.getElementById("pvQid");
     const pvQuestion = document.getElementById("pvQuestion");
     const pvChoices = document.getElementById("pvChoices");
@@ -355,23 +410,7 @@
     const qidRef      = (room) => ref(db, `rooms/${room}/quiz/current_question_id`);
     const questionRef = (room, qid) => ref(db, `rooms/${room}/questions/${qid}`);
     const presentPhaseRef = (room) => ref(db, `rooms/${room}/quiz/present/phase`);
-
-    // ===== グラフ表示切替（revealMode）- attachRoom より前に宣言必須 =====
-    let graphRevealed = false;
-    function updateRevealBtn(){
-      if(!revealGraphBtn) return;
-      revealGraphBtn.textContent = graphRevealed ? "📊 グラフ隠す" : "📊 グラフ表示";
-      revealGraphBtn.className = graphRevealed ? "btnGreen" : "btnCyan";
-    }
-    async function toggleRevealGraph(){
-      graphRevealed = !graphRevealed;
-      await update(activityRef(state.room), {
-        revealMode: graphRevealed ? "live" : "closed"
-      });
-      updateRevealBtn();
-    }
-
-    // ===== state =====
+// ===== state =====
     const state = {
       room: null,
       activity: {},
@@ -385,6 +424,7 @@
       unsubQ: null,
       unsubQnext: null,
       unsubPhase: null,
+      unsubAnswers: null,
     };
 
     // ===== utils =====
@@ -428,7 +468,7 @@
       roomSelect.value = room;
 
       // unsubscribe
-      ["unsubA","unsubQid","unsubQ","unsubQnext","unsubPhase"].forEach(k=>{
+      ["unsubA","unsubQid","unsubQ","unsubQnext","unsubPhase","unsubAnswers"].forEach(k=>{
         if (state[k]){ state[k](); state[k]=null; }
       });
 
@@ -437,9 +477,7 @@
       state.question = null;
       state.nextQid = null;
       state.nextQuestion = null;
-      graphRevealed = false; updateRevealBtn();
-
-      state.unsubA = onValue(activityRef(room), snap=>{
+state.unsubA = onValue(activityRef(room), snap=>{
         state.activity = snap.val() || {};
         const s = state.activity?.session ? String(state.activity.session) : "";
         const st = state.activity?.status || "-";
@@ -457,6 +495,11 @@
         state.qid = snap.val() || null;
         updateNextSubscription();
         subscribeQuestion(state.qid);
+      });
+
+      // 回答集計をリアルタイム購読
+      state.unsubAnswers = onValue(answersRef(room), snap => {
+        renderAnswerChart(snap.val() || {});
       });
 
       updateNextSubscription();
@@ -488,6 +531,71 @@
         state.nextQuestion = snap.val() || null;
         renderPreview();
       });
+    }
+
+    // ===== 回答集計表示 =====
+    const COLOR_MAP = {
+      O:"#34c759", X:"#ff3b30", A:"#0a84ff", B:"#30d158",
+      C:"#ff9f0a", D:"#bf5af2", E:"#ff375f"
+    };
+    function renderAnswerChart(answers){
+      const chartArea = document.getElementById("ansChartArea");
+      const countLabel = document.getElementById("ansCountLabel");
+      if(!chartArea||!countLabel) return;
+
+      // 回答を正規化
+      const vals = {};
+      Object.values(answers).forEach(v => {
+        let key = null;
+        if(typeof v === "string") key = v.trim().toUpperCase();
+        else if(v && typeof v === "object" && v.value != null) key = String(v.value).trim();
+        if(key) vals[key] = (vals[key]||0) + 1;
+      });
+      const total = Object.values(vals).reduce((s,n)=>s+n, 0);
+      countLabel.textContent = `回答 ${total}人`;
+
+      const mode = state.activity?.mode || "";
+      const cfg  = state.activity?.config || {};
+
+      // TEXTモード：一覧表示
+      if(mode === "text"){
+        const items = Object.values(answers).map(v => {
+          if(typeof v === "string") return v;
+          if(v && typeof v === "object" && v.value) return String(v.value);
+          return null;
+        }).filter(Boolean);
+        chartArea.innerHTML = `<div id="ansTextList">${
+          items.length
+            ? items.map((t,i)=>`<div class="ansTextItem">${i+1}. ${t.replace(/</g,"&lt;")}</div>`).join("")
+            : "<div style='opacity:.45;'>（まだ回答がありません）</div>"
+        }</div>`;
+        return;
+      }
+
+      // OX / 5択：棒グラフ
+      let keys = (cfg.choices && cfg.choices.length)
+        ? cfg.choices.map(k=>String(k).toUpperCase())
+        : mode==="ox" ? ["O","X"]
+        : mode==="five" ? ["A","B","C","D","E"]
+        : Object.keys(vals);
+
+      if(!keys.length){ chartArea.innerHTML = "<div style='opacity:.45;font-size:.82rem;'>出題中に回答が集まると表示されます</div>"; return; }
+
+      const max = Math.max(...keys.map(k=>vals[k]||0), 1);
+      chartArea.innerHTML = keys.map(k => {
+        const n   = vals[k] || 0;
+        const pct = total ? Math.round(n/total*100) : 0;
+        const w   = Math.round(n/max*100);
+        const lbl = k==="O"?"○":k==="X"?"✕":k;
+        const col = COLOR_MAP[k] || "#94a3b8";
+        return `<div class="ansBar">
+          <div class="ansBarLabel" style="color:${col};">${lbl}</div>
+          <div class="ansBarTrack">
+            <div class="ansBarFill" style="width:${w}%;background:${col};opacity:.75;"></div>
+          </div>
+          <div class="ansBarCount">${n}人 (${pct}%)</div>
+        </div>`;
+      }).join("");
     }
 
     function renderPreview(){
@@ -532,8 +640,7 @@
       const hasMedia = !!(q && q.media && q.media.url);
       await update(activityRef(state.room), {
         view:"quiz", qr:false, status:"closed",
-        mode, config, timer:{ running:false }, session,
-        revealMode:"closed"
+        mode, config, timer:{ running:false }, session
       });
       await set(presentPhaseRef(state.room), hasMedia ? "media" : "question");
     }
@@ -554,8 +661,7 @@
       await update(activityRef(state.room), {
         view:"quiz", qr:false,
         status: hasMedia ? "closed" : "open",
-        mode, config, timer:{ running:false }, session,
-        revealMode:"closed"
+        mode, config, timer:{ running:false }, session
       });
       await set(presentPhaseRef(state.room), hasMedia ? "media" : "question");
     }
@@ -563,7 +669,7 @@
     async function openAccept(){
       await ensureSession();
       // view:"quiz", qr:false を明示して display側の isQR を確実に解除
-      await update(activityRef(state.room), { status:"open", qr:false, view:"quiz", revealMode: state.activity?.revealMode || "closed" });
+      await update(activityRef(state.room), { status:"open", qr:false, view:"quiz"});
       await set(presentPhaseRef(state.room), "question");
     }
 
@@ -597,10 +703,9 @@
       const cur = state.activity?.qr === true;
       if (cur){
         // QR OFF: standbyに戻す
-        await update(activityRef(state.room), { qr:false, view:"standby", revealMode:"closed" });
+        await update(activityRef(state.room), { qr:false, view:"standby" });
         await set(presentPhaseRef(state.room), "standby");
-        graphRevealed = false; updateRevealBtn();
-      }else{
+}else{
         // QR ON: session新規発行
         const session = Date.now().toString(36);
         await update(activityRef(state.room), { qr:true, view:"qr", status:"closed", session });
@@ -619,8 +724,7 @@
         mode,
         config,
         timer:{ running:false },
-        session,
-        revealMode:"closed"
+        session
       });
       await set(presentPhaseRef(state.room), "question");
     }
@@ -640,14 +744,11 @@
         timer: { running:false }
       });
     }
-
-    // ===== グラフ表示切替（revealMode）→ 宣言は下のstateブロックへ移動 =====
-
-    async function endClass(){
+async function endClass(){
       const ok = confirm("授業を終了します（standbyに戻してanswersも消します）");
       if (!ok) return;
       await clearAnswers();
-      await update(activityRef(state.room), { status:"closed", view:"standby", qr:false, revealMode:"closed" });
+      await update(activityRef(state.room), { status:"closed", view:"standby", qr:false });
       await set(presentPhaseRef(state.room), "standby");
     }
 
@@ -776,9 +877,7 @@
     timer30Btn.onclick  = () => startTimer(30);
     timer60Btn.onclick  = () => startTimer(60);
     timerStopBtn.onclick= stopTimer;
-    revealGraphBtn.onclick = toggleRevealGraph;
-
-    endClassBtn.onclick = endClass;
+endClassBtn.onclick = endClass;
 
     // ===== TTS辞書編集（dict-editor.html を開く） =====
     const dictEditorBtn2 = document.getElementById("dictEditorBtn");
