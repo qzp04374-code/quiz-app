@@ -460,15 +460,22 @@ function parseCSV(text){
     };
     if (mode) q.mode = mode;
 
-    // choices（five のときだけ作る）
-if (mode === "five"){
-  const choices = {};
-  for (const k of ["A","B","C","D","E"]){
-    const v = pickChoiceValue(headers, cols, k);
-    if (v) choices[k] = v;
-  }
-  if (Object.keys(choices).length) q.choices = choices;
-}
+    // choices（ox: A/B, five: A〜E）
+    if (mode === "ox"){
+      const choices = {};
+      const vA = pickChoiceValue(headers, cols, "A");
+      const vB = pickChoiceValue(headers, cols, "B");
+      if (vA) choices["O"] = vA; // choiceA → O（〇）
+      if (vB) choices["X"] = vB; // choiceB → X（✕）
+      if (Object.keys(choices).length) q.choices = choices;
+    } else if (mode === "five"){
+      const choices = {};
+      for (const k of ["A","B","C","D","E"]){
+        const v = pickChoiceValue(headers, cols, k);
+        if (v) choices[k] = v;
+      }
+      if (Object.keys(choices).length) q.choices = choices;
+    }
 
     // branch（入っているものだけ作る）
     const branch = {};
