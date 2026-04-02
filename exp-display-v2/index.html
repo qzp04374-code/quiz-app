@@ -254,6 +254,9 @@
           <button id="stopBtn" class="btnOrange">解答終了（closed）</button>
         </div>
         <div class="row">
+          <button id="branchSetBtn" class="btnCyan">🔀 分岐セット</button>
+        </div>
+        <div class="row">
           <button id="timer30Btn">⏱ 30秒</button>
           <button id="timer60Btn">⏱ 60秒</button>
           <button id="timerStopBtn" class="btnRed">⏹ タイマー停止</button>
@@ -391,6 +394,7 @@
     const quickTextBtn = document.getElementById("quickTextBtn");
     const importBtn      = document.getElementById("importBtn");
     const mediaEditorBtn = document.getElementById("mediaEditorBtn");
+    const branchSetBtn   = document.getElementById("branchSetBtn");
     const timer30Btn     = document.getElementById("timer30Btn");
     const timer60Btn     = document.getElementById("timer60Btn");
     const timerStopBtn   = document.getElementById("timerStopBtn");
@@ -751,6 +755,69 @@ state.unsubA = onValue(activityRef(room), snap=>{
       await set(presentPhaseRef(state.room), "question");
     }
 
+    // ===== 分岐セット（多数決で次の問題IDを決める） =====
+    function extractAnswerValue(v){
+      if (v == null) return "";
+      if (typeof v === "string") return v;
+      if (typeof v === "object" && typeof v.value === "string") return v.value;
+      return "";
+    }
+    function pickWinnerFromAnswers(mode, answersObj){
+      const keys = (mode === "five") ? ["A","B","C","D","E"] : ["O","X"];
+      const count = Object.fromEntries(keys.map(k => [k, 0]));
+      for (const v of Object.values(answersObj || {})){
+        const s = String(extractAnswerValue(v)).trim().toUpperCase();
+        if (count.hasOwnProperty(s)) count[s]++;
+      }
+      let bestK = keys[0], bestV = -1;
+      for (const k of keys){
+        if ((count[k] ?? 0) > bestV){ bestV = count[k]; bestK = k; }
+      }
+      return { winner: bestK, count };
+    }
+    async function branchSetNextQuestionId(){
+      const room = state.room;
+      if (!room){ alert("ルームが選択されていません"); return; }
+      const qid = state.qid;
+      if (!qid){ alert("出題中の問題がありません"); return; }
+      const q = state.question;
+      if (!q){ alert(`questions/${qid} が見つかりません`); return; }
+      const mode = guessMode(q);
+      if (mode !== "ox" && mode !== "five"){
+        alert(`分岐は ox / five のみ対応です（現在 mode=${mode}）`); return;
+      }
+      const ansSnap = await get(answersRef(room));
+      const answersObj = ansSnap.val() || {};
+      if (!Object.keys(answersObj).length){ alert("まだ回答がありません"); return; }
+      const { winner, count } = pickWinnerFromAnswers(mode, answersObj);
+      const branch = (q.branch && typeof q.branch === "object") ? q.branch : null;
+      const nextId = branch ? branch[winner] : null;
+      if (!nextId){
+        alert(
+          `分岐先が未定義です。
+
+qid=${qid} / mode=${mode} / 多数決=${winner}
+
+` +
+          `questions/${qid}/branch に { "${winner}": "次の問題ID" } を設定してください。
+
+` +
+          `現在の票：${JSON.stringify(count)}`
+        );
+        return;
+      }
+      // 次の問題をセット（goQuestion と同じ処理：closed止まり）
+      await goQuestion(nextId);
+      alert(
+        `分岐セット完了
+${qid} → ${nextId}
+多数決: ${winner}（${JSON.stringify(count)}）
+
+` +
+        `※「回答開始」を押すと出題が始まります。`
+      );
+    }
+
     // ===== タイマー =====
     const timerRef = (room) => ref(db, `rooms/${room}/activity/timer`);
 
@@ -896,6 +963,10 @@ async function endClass(){
       window.open(`./media-editor.html?room=${r}`, "_blank");
     };
 
+    branchSetBtn.onclick = async () => {
+      try{ await branchSetNextQuestionId(); }
+      catch(e){ console.error(e); alert("分岐セットでエラー: "+e.message); }
+    };
     timer30Btn.onclick  = () => startTimer(30);
     timer60Btn.onclick  = () => startTimer(60);
     timerStopBtn.onclick= stopTimer;
