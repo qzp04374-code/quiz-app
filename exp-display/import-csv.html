@@ -455,7 +455,7 @@ function parseCSV(text){
     const mode = getCell(cols, modeIdx).toLowerCase(); // "ox" / "five" / "text" など
     const q = {
       question: getCell(cols, qIdx),
-      answer: getCell(cols, ansIdx),
+      answer: normalizeOXAnswer(getCell(cols, ansIdx), mode),
       explanation: getCell(cols, expIdx),
     };
     if (mode) q.mode = mode;
@@ -497,12 +497,21 @@ if (mode === "five"){
   return { out, count, branchCount };
 }
 
+// ===== OX解答の正規化（A→O, B→X, 〇/○→O, ×/✕→X） =====
+function normalizeOXAnswer(ans, mode){
+  if ((mode||"").toLowerCase() !== "ox") return ans;
+  const a = String(ans||"").trim().toUpperCase();
+  if (a === "A" || a === "〇" || a === "○") return "O";
+  if (a === "B" || a === "×" || a === "✕") return "X";
+  return ans; // O / X はそのまま、空欄もそのまま
+}
+
 // ===== バリデーション関数 =====
 function validateOut(out, rawLines, headers, qidIdx, modeIdx, ansIdx){
   const errors = [];
   const warns  = [];
   const VALID_MODES = ["ox","five","text"];
-  const VALID_OX    = ["O","X","o","x"];
+  const VALID_OX    = ["O","X","o","x","A","B","a","b","〇","×","○","✕"];
   const VALID_FIVE  = ["A","B","C","D","E","a","b","c","d","e"];
 
   // 期待列数：ヘッダ行の列数
@@ -540,11 +549,14 @@ function validateOut(out, rawLines, headers, qidIdx, modeIdx, ansIdx){
     }
 
     // (4) answer チェック
+    // text モードは解答・解説とも空欄OK（模範解答は解説に書いてもよい）
     const ans = getCell(cols, ansIdx).toUpperCase();
-    if (!ans){
+    if (mode === "text"){
+      // テキスト問題は answer 空欄 OK → チェックしない
+    } else if (!ans){
       warns.push({ line:lineNum, qid, msg:`answer が空です`, type:"warn" });
     } else if (mode === "ox" && !VALID_OX.map(x=>x.toUpperCase()).includes(ans)){
-      errors.push({ line:lineNum, qid, msg:`answer が不正です：「${ans}」（ox の場合は O または X）`, type:"error" });
+      errors.push({ line:lineNum, qid, msg:`answer が不正です：「${ans}」（ox の場合は O/X/A/B/〇/×）`, type:"error" });
     } else if (mode === "five" && !VALID_FIVE.map(x=>x.toUpperCase()).includes(ans)){
       errors.push({ line:lineNum, qid, msg:`answer が不正です：「${ans}」（five の場合は A〜E）`, type:"error" });
     }
