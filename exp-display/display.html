@@ -810,6 +810,63 @@
 .tpHint{ margin-top:10px; font-size:12px; color: rgba(203,213,225,85); line-height:1.35; }
     
   </style>
+
+    /* ===== 回答者ID表示（グラフ下） ===== */
+    #vchartWrap{ position:relative; }   /* mask用の既存指定と共存 */
+
+    .idToggleBtn{
+      position:absolute;
+      top:8px; right:8px;
+      background:rgba(2,6,23,.55);
+      border:1px solid rgba(255,255,255,.14);
+      color:rgba(203,213,225,.9);
+      border-radius:999px;
+      padding:4px 10px;
+      font-size:12px;
+      font-weight:900;
+      letter-spacing:.04em;
+      cursor:pointer;
+      user-select:none;
+      z-index:10;
+      transition:border-color .15s;
+    }
+    .idToggleBtn.on{
+      border-color:rgba(34,197,94,.5);
+      color:#4ade80;
+    }
+
+    .idRow{
+      display:flex;
+      flex-wrap:wrap;
+      gap:4px;
+      margin-top:5px;
+      min-height:0;
+      /* 非表示時 */
+      max-height:0;
+      overflow:hidden;
+      opacity:0;
+      transition:max-height .25s ease, opacity .2s ease;
+    }
+    .idRow.show{
+      max-height:200px;
+      opacity:1;
+    }
+
+    .idChip{
+      display:inline-flex;
+      align-items:center;
+      gap:3px;
+      background:rgba(255,255,255,.08);
+      border:1px solid rgba(255,255,255,.10);
+      border-radius:999px;
+      padding:2px 8px;
+      font-size:11px;
+      font-weight:700;
+      color:rgba(203,213,225,.85);
+      letter-spacing:.03em;
+      white-space:nowrap;
+    }
+    .idChip .chipIcon{ font-size:11px; }
   <link rel="icon" href="data:,">
 </head>
 
@@ -863,6 +920,7 @@
       <div class="panel" id="rightPanel">
         <div class="secTitle" id="rightTitle">集計（縦棒）</div>
         <div id="vchartWrap">
+          <button id="idToggleBtn" class="idToggleBtn">👤 ID 表示</button>
           <div id="vchart"></div>
 
           <!-- ★追加：投票中 非公開マスク（MEDIUM演出） -->
@@ -929,6 +987,17 @@
 
     const vchart = document.getElementById("vchart");
     const rightTitle = document.getElementById("rightTitle");
+    const idToggleBtn = document.getElementById("idToggleBtn");
+    let idVisible = false;
+    if (idToggleBtn){
+      idToggleBtn.addEventListener("click", () => {
+        idVisible = !idVisible;
+        idToggleBtn.classList.toggle("on", idVisible);
+        idToggleBtn.textContent = idVisible ? "👤 ID 非表示" : "👤 ID 表示";
+        // 既存の idRow を一括トグル
+        document.querySelectorAll(".idRow").forEach(r => r.classList.toggle("show", idVisible));
+      });
+    }
     
     const resultsMask = document.getElementById("resultsMask");
 
@@ -2061,7 +2130,7 @@ tpQMaxVal.textContent = String(qMax);
       });
     }
     
-    function renderVChart(counts, order){
+    function renderVChart(counts, order, uidMap){
       vchart.innerHTML = "";
     
       const ord = Array.isArray(order) && order.length ? order : Object.keys(counts || {});
@@ -2078,8 +2147,14 @@ tpQMaxVal.textContent = String(qMax);
       const denom = (expectedN > 0 ? Math.max(expectedN, actualTotal) : actualTotal) || 1;
     
       entries.forEach(([lab, val]) => {
+        // 外枠：バー行＋IDチップ行を縦積み
+        const wrap = document.createElement("div");
+        wrap.style.cssText = "display:flex;flex-direction:column;flex:1;max-height:100px;min-height:0;";
+
+        // バー行
         const col = document.createElement("div");
         col.className = "col";
+        col.style.cssText = "flex:1;min-height:0;";
     
         // ラベル（左）
         const label = document.createElement("div");
@@ -2106,8 +2181,26 @@ tpQMaxVal.textContent = String(qMax);
         col.appendChild(label);
         col.appendChild(track);
         col.appendChild(cnt);
+        wrap.appendChild(col);
+
+        // IDチップ行（バーの下）
+        const idRow = document.createElement("div");
+        idRow.className = "idRow" + (idVisible ? " show" : "");
+        const uids = (uidMap && uidMap[lab]) ? uidMap[lab] : [];
+        uids.forEach(uid => {
+          const chip = document.createElement("span");
+          chip.className = "idChip";
+          // 末尾8文字だけ表示（長すぎる uid を短縮）
+          const shortId = String(uid).slice(-8);
+          chip.innerHTML = `<span class="chipIcon">📱</span>${shortId}`;
+          idRow.appendChild(chip);
+        });
+        if (uids.length === 0 && val === 0){
+          // 0人なら何も出さない
+        }
+        wrap.appendChild(idRow);
     
-        vchart.appendChild(col);
+        vchart.appendChild(wrap);
       });
     }
 
@@ -2218,6 +2311,10 @@ tpQMaxVal.textContent = String(qMax);
     (effectiveOrder || []).forEach(c => counts[c] = 0);
 
 
+      // uid → 選択肢キー のマップ（ID表示用）
+      const uidMap = {}; // { "A": ["uid1","uid2"], "B": [...] }
+      effectiveOrder.forEach(k => uidMap[k] = []);
+
       keys.forEach(uid => {
         const v = ans[uid];
         let val = null;
@@ -2225,22 +2322,20 @@ tpQMaxVal.textContent = String(qMax);
         else if (v && typeof v === "object" && typeof v.value === "string") val = v.value;
         if (!val) return;
 
-    let key = String(val).trim().toUpperCase();
+        let key = String(val).trim().toUpperCase();
 
-    // ★集計の基準がOXのときは A/B を O/X に統一
-    if (Array.isArray(effectiveOrder) && effectiveOrder.length === 2 &&
-        effectiveOrder.includes("O") && effectiveOrder.includes("X")){
-      key = mapABtoOXKey(key);
-    }
+        // ★集計の基準がOXのときは A/B を O/X に統一
+        if (Array.isArray(effectiveOrder) && effectiveOrder.length === 2 &&
+            effectiveOrder.includes("O") && effectiveOrder.includes("X")){
+          key = mapABtoOXKey(key);
+        }
 
-    if (counts[key] === undefined){
-      return; // 想定外は無視
-    }
-    counts[key] += 1;
-
+        if (counts[key] === undefined) return;
+        counts[key] += 1;
+        if (uidMap[key]) uidMap[key].push(uid);
       });
 
-      renderVChart(counts, effectiveOrder);
+      renderVChart(counts, effectiveOrder, uidMap);
 
     }
 
