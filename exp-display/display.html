@@ -429,9 +429,47 @@
       line-height:1.35;
       margin-bottom:6px;
     }
+    /* テキスト回答のIDチップ（解答テキスト後ろ） */
+    .textIdChip{
+      display:inline-flex;
+      align-items:center;
+      gap:3px;
+      margin-left:8px;
+      vertical-align:middle;
+      background:rgba(255,255,255,.07);
+      border:1px solid rgba(255,255,255,.18);
+      border-radius:999px;
+      padding:1px 8px 1px 5px;
+      font-size:.72em;
+      font-weight:700;
+      color:rgba(203,213,225,.8);
+      letter-spacing:.03em;
+      white-space:nowrap;
+      line-height:1.5;
+    }
+
     .textItem .no{
       min-width:52px; /* 番号の桁ズレ防止（お好み） */
       font-size:0.95em;
+    }
+
+    /* テキスト回答のIDチップ（解答テキスト後ろ） */
+    .textIdChip{
+      display:inline-flex;
+      align-items:center;
+      gap:3px;
+      margin-left:8px;
+      vertical-align:middle;
+      background:rgba(255,255,255,.07);
+      border:1px solid rgba(255,255,255,.18);
+      border-radius:999px;
+      padding:1px 8px 1px 5px;
+      font-size:.72em;
+      font-weight:700;
+      color:rgba(203,213,225,.8);
+      letter-spacing:.03em;
+      white-space:nowrap;
+      line-height:1.5;
     }
 
     .textItem .no{
@@ -2215,12 +2253,14 @@ tpQMaxVal.textContent = String(qMax);
     function renderTextAnswers(answers){
       textList.innerHTML = "";
       const keys = Object.keys(answers || {});
-      const items = [];
+      const items = []; // { text, uid }
 
       keys.forEach(uid => {
         const v = answers[uid];
-        if (typeof v === "string") items.push(v);
-        else if (v && typeof v === "object" && typeof v.value === "string") items.push(v.value);
+        let text = null;
+        if (typeof v === "string") text = v;
+        else if (v && typeof v === "object" && typeof v.value === "string") text = v.value;
+        if (text !== null) items.push({ text, uid });
       });
 
       if (currentStatus !== "closed"){
@@ -2230,10 +2270,22 @@ tpQMaxVal.textContent = String(qMax);
 
       textTitle.textContent = `文字回答（公開中） / ${items.length} 件`;
 
-      items.forEach((t, idx) => {
+      items.forEach(({ text, uid }, idx) => {
         const div = document.createElement("div");
         div.className = "textItem";
-        div.innerHTML = `<span class="no">${idx+1}.</span>${escapeHtml(String(t||""))}`;
+
+        // roster からアイコン＋タグを取得
+        const r = (typeof rosterCache !== "undefined" && rosterCache[uid]) || {};
+        const emoji = r.emoji || "";
+        const tag   = r.tag   || "";
+        const color = r.color || "rgba(255,255,255,0.2)";
+
+        // IDチップ（解答テキストの後ろ）
+        const chipHtml = (emoji || tag)
+          ? `<span class="textIdChip" style="border-color:${color}66;">${emoji ? `<span>${emoji}</span>` : ""}${tag}</span>`
+          : "";
+
+        div.innerHTML = `<span class="no">${idx+1}.</span>${escapeHtml(String(text||""))}${chipHtml}`;
         textList.appendChild(div);
       });
 
