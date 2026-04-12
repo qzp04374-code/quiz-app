@@ -174,6 +174,8 @@
       box-sizing:border-box;
       min-height:0;
       overflow:hidden;
+      display:flex;
+      flex-direction:column;
     }
 
     .secTitle{
@@ -186,7 +188,7 @@
 
     /* 左（授業モード用） */
     #leftPanel{ display:flex; flex-direction:column; gap:10px; min-height:0; }
-    #leftScroll{ min-height:0; overflow:hidden; }
+    #leftScroll{ min-height:0; overflow:hidden; flex:0 0 auto; }
 
     /* ✅ 書き問題(textmode)は、入り切らない分をスクロールで読む */
     body.textmode #leftScroll{
@@ -214,25 +216,17 @@
       --q-min-px: 20; /* 好みで 18〜24 くらい */
     }
 
+    /* ===== #choices: leftPanel残り全高さ・上詰め・スクロール ===== */
     #choices{
-      margin-top:10px;
+      flex: 1 1 0;                   /* leftPanel の残り高さ全部 */
+      min-height: 0;
       display:grid;
       grid-template-columns: 1fr;
       gap: var(--choicesGap);
-    }
-    /* ===== choices scroll safety ===== */
-    #choices{
-      overflow-y: auto;          /* ✅ 下が切れたらスクロール */
+      align-content: start;          /* ○×2行でも上詰め＝間延びしない */
+      overflow-y: auto;
       overscroll-behavior: contain;
-      padding-right: 10px;       /* スクロールバー分 */
-      max-height: 100%;
-    }
-
-    /* ✅ choices viewport: keep a stable window; overflow scroll handles overrun */
-    #choices{
-      height: calc(100vh - 210px);   /* 画面下縁ギリギリまで使う */
-      min-height: 180px;
-      max-height: calc(100vh - 160px);
+      padding-right: 10px;
     }
 
     /* ✅ choices typography driven by cMin/cMax (no per-row height slider) */
@@ -356,9 +350,9 @@
       flex:1;
       display:flex;
       flex-direction:column;
-      justify-content:space-around;
-      gap:6px;
-      padding:4px 4px 4px;
+      justify-content:space-evenly;  /* 行数に応じて均等分散（2〜5択どれでも自然） */
+      gap:0;
+      padding:6px 4px;
       box-sizing:border-box;
       min-height:0;
     }
@@ -368,21 +362,23 @@
       display:flex;
       flex-direction:row;
       align-items:center;
-      gap:8px;
+      gap:10px;
       min-height:0;
+      flex:1;                        /* 各行が均等に高さを取る */
+      max-height:100px;              /* 2択時に巨大化しすぎない */
     }
     .lab{
-      font-size:16px;
+      font-size:18px;
       font-weight:1000;
       color:var(--muted);
       letter-spacing:.08em;
-      flex:0 0 28px;
+      flex:0 0 32px;
       text-align:center;
     }
     .barTrack{
       flex:1;
-      height:28px;
-      border-radius:8px;
+      height:44px;                   /* バーを太く */
+      border-radius:10px;
       background:rgba(255,255,255,.10);
       position:relative;
       overflow:hidden;
@@ -392,17 +388,17 @@
       position:absolute;
       left:0; top:0; bottom:0;
       width:0%;
-      border-radius:8px;
+      border-radius:10px;
       transition:width .3s ease;
       opacity:.92;
     }
     .barFill{ position:absolute; inset:0; opacity:.95; }
     .count{
-      font-size:13px;
+      font-size:14px;
       font-weight:1000;
       color:#e5e7eb;
       line-height:1.1;
-      flex:0 0 80px;
+      flex:0 0 88px;
       text-align:right;
       white-space:nowrap;
     }
@@ -860,9 +856,8 @@
             <p id="answerLine"></p>
             <p id="explanationLine"></p>
           </div>
-
-          <div id="choices"></div>
         </div>
+        <div id="choices"></div>
       </div>
 
       <div class="panel" id="rightPanel">
@@ -1557,31 +1552,10 @@ ttsBtn.onclick = async () => {
     let lastAnswers = {};
 
     // ===== Auto-fit question text (ONLY question) =====
-    function fitQuestionToLeftScroll({
-      minPx = 28,     // これ以下には縮めない（好みで18〜24）
-      step = 2,       // 2pxずつ縮める
-      maxLoops = 30,  // 無限ループ防止
-    } = {}) {
-    if (!leftScroll || !qEl) return;
-
-      // 前問の縮小が残らないように毎回リセット
-      qEl.style.fontSize = "";
-
-      // DOM反映後に測る
-      requestAnimationFrame(() => {
-        let loops = 0;
-        let fontSize = parseFloat(getComputedStyle(qEl).fontSize);
-
-        // #leftScroll の中身がはみ出している間だけ縮める
-        // overflow:hiddenでもscrollHeightは増えるので判定可能
-        while (leftScroll.scrollHeight > leftScroll.clientHeight &&
-               fontSize > minPx &&
-               loops < maxLoops) {
-          fontSize -= step;
-          qEl.style.fontSize = `${fontSize}px`;
-          loops++;
-        }
-      });
+    function fitQuestionToLeftScroll({ minPx = 28, step = 2, maxLoops = 30 } = {}) {
+      // choices が leftPanel の独立 flex child になったため自動縮小不要
+      // qMax CSS変数（tuneパネル）で直接制御する
+      if (qEl) qEl.style.fontSize = ""; // 前回の残りを消してCSSに任せる
     }
 
     // ===== Fit choices height (scroll-safe) =====
@@ -1597,19 +1571,20 @@ ttsBtn.onclick = async () => {
       if (currentMode === "text" || document.body.classList.contains("textmode")) return;
       if (!cEl) return;
     
-      const fs = parseFloat(getComputedStyle(cEl).fontSize) || 32; // #choicesの実フォントサイズ(px)
-      const min = 22, max = 70; // tpCMaxの範囲に合わせる
+      const fs = parseFloat(getComputedStyle(cEl).fontSize) || 32;
+      const min = 22, max = 70;
       const t = clamp01((fs - min) / (max - min)); // 0=小さい字 / 1=大きい字
-    
-      // 小さい字ほど “詰める”
-      // line-height: 1.06 ～ 1.16（標準も少し狭め）
-      const lh = 1.02 + t * 0.06; // 行間を最小化（文字をより大きく見せる）
-    
-      // 行間だけじゃなく、行間隔・パディングも少し連動
-      const choicesGap = 0.16 + t * 0.10; // em（行間隔を詰める）
-      const cGap  = 0.36 + t * 0.08;      // em
-      const padY  = 0.22 + t * 0.10;      // em（上下パディングを削る）
-      const padX  = 0.50 + t * 0.12;      // em
+
+      // ○×（2択）はさらに詰める
+      const isOX = (currentMode === "ox") ||
+        (Array.isArray(choiceOrder) && choiceOrder.length === 2 &&
+         choiceOrder.includes("O") && choiceOrder.includes("X"));
+
+      const lh         = 1.02 + t * 0.06;
+      const choicesGap = isOX ? (0.08 + t * 0.06) : (0.16 + t * 0.10);
+      const cGap       = 0.36 + t * 0.08;
+      const padY       = isOX ? (0.28 + t * 0.10) : (0.22 + t * 0.10);
+      const padX       = 0.50 + t * 0.12;
     
       const root = document.documentElement.style;
       root.setProperty("--cLH", String(lh.toFixed(3)));
@@ -2024,7 +1999,8 @@ tpQMaxVal.textContent = String(qMax);
 
     function placeAnswerBoxTop(isTop){
       if (!leftScroll) return;
-      if (isTop) leftScroll.insertBefore(answerBox, cEl);
+      // cEl は leftScroll の外に出たので、leftScroll 内の先頭/末尾で管理
+      if (isTop) leftScroll.insertBefore(answerBox, leftScroll.firstChild);
       else leftScroll.appendChild(answerBox);
     }
 
