@@ -1032,6 +1032,10 @@
         idToggleBtn.textContent = idVisible ? "👤 ID 非表示" : "👤 ID 表示";
         // 既存の idRow を一括トグル
         document.querySelectorAll(".idRow").forEach(r => r.classList.toggle("show", idVisible));
+        // テキスト回答の textIdChip を一括トグル
+        document.querySelectorAll(".textIdChip").forEach(c => {
+          c.style.display = idVisible ? "" : "none";
+        });
       });
     }
     
@@ -2282,7 +2286,7 @@ tpQMaxVal.textContent = String(qMax);
 
         // IDチップ（解答テキストの後ろ）
         const chipHtml = (emoji || tag)
-          ? `<span class="textIdChip" style="border-color:${color}66;">${emoji ? `<span>${emoji}</span>` : ""}${tag}</span>`
+          ? `<span class="textIdChip" style="border-color:${color}66;display:${idVisible ? "" : "none"}">${emoji ? `<span>${emoji}</span>` : ""}${tag}</span>`
           : "";
 
         div.innerHTML = `<span class="no">${idx+1}.</span>${escapeHtml(String(text||""))}${chipHtml}`;
