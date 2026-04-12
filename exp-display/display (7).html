@@ -1,0 +1,2548 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ClassSync Display</title>
+
+  <style>
+    :root{
+      --bg:#050608;
+      --panel:rgba(17,24,39,.55);
+      --line:rgba(255,255,255,.10);
+      --ink:#f9fafb;
+      --muted:#cbd5e1;
+
+      /* 色対応：正本（index/studentと一致） */
+      --color-o:#34c759;
+      --color-x:#ff3b30;
+      --color-a:#0a84ff;
+      --color-b:#30d158;
+      --color-c:#ff9f0a;
+      --color-d:#bf5af2;
+      --color-e:#ff375f;
+
+      /* 追加：選択肢の詰まり具合（JSが em / 数値で更新） */
+      --choicesGap: 0.34em; /* 行と行の隙間 */
+      --cLH: 1.12;          /* 行間（小さい字ほど JS で 1.06 付近まで下がる） */
+      --cGap: 0.50em;       /* バッジと本文の間 */
+      --cPadY: 0.44em;      /* 行の上下パディング */
+      --cPadX: 0.70em;      /* 行の左右パディング */
+
+      --ok:#22c55e;
+       /* display側で調整する表示変数（px相当） */
+      --qMax: 68;     /* 問題文の最大 */
+      --cMin: 26;     /* 選択肢文字 最小 */
+      --cMax: 46;     /* 選択肢文字 最大 */
+      --tSize: 28;    /* TEXT回答 文字サイズ */
+}
+
+    body{
+      margin:0;
+      min-height:100vh;
+      background:var(--bg);
+      color:var(--ink);
+      font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",sans-serif;
+      overflow:hidden;
+    }
+
+    #buildTag{
+      position:fixed; right:12px; bottom:10px;
+      opacity:.55; font-size:12px; z-index:9999;
+      background:rgba(0,0,0,.35); border:1px solid rgba(255,255,255,.08);
+      padding:6px 10px; border-radius:999px;
+      backdrop-filter: blur(8px);
+    }
+
+    /* pollモード：左を消して集計全幅 */
+    body.poll #leftPanel{ display:none !important; }
+    body.poll .grid{ grid-template-columns: 1fr !important; }
+    body.poll.closed .grid{ grid-template-columns: 1fr !important; }
+
+    /* textモード：右側を（人数バー＋一覧）に最適化 */
+    /* ===========================
+       TEXTモード：上段＝問題+件数 / 下段＝TEXT一覧(全幅)
+       ※ #textAnswersBox を .grid 直下に移動した前提
+    =========================== */
+    
+    /* text回答一覧は“2段目で全幅”にする */
+    #textAnswersBox{
+      grid-column: 1 / -1;     /* 全列にまたがる */
+    }
+    
+    /* TEXTモード時は grid を2段に：上(問題+件数) / 下(TEXT一覧) */
+    body.textmode .grid{
+      grid-template-rows: minmax(170px, 28vh) 1fr;
+    }
+    
+    /* 上段（左/右）を少し締める：右は件数バー中心 */
+    body.textmode #vchartWrap{
+      flex: 0 0 auto;
+      height: 92px;
+    }
+    body.textmode #vchart{
+      align-items:center;
+      justify-content:flex-start;
+      padding: 10px 12px;
+    }
+    
+    /* 下段（TEXT一覧）は残り全部を使ってスクロール */
+    body.textmode #textAnswersBox{
+      max-height: none !important;  /* 38vh制限を解除 */
+      overflow: auto;
+      min-height: 0;
+    }
+    
+    /* 画面が広いときは2カラムで“読みやすく” */
+    @media (min-width: 1100px){
+      
+      /* ✅ TEXT回答：段組みをやめて「1段（1カラム）」に固定 */
+      body.textmode #textAnswersList{
+        column-count: 1;
+        column-gap: 0;
+      }
+      body.textmode .textItem{
+        break-inside: auto; /* 2カラム用の指定を無効化 */
+      }
+
+    }
+
+    .wrap{
+      height:100vh;
+      display:flex;
+      flex-direction:column;
+      padding:16px 16px 14px;
+      box-sizing:border-box;
+      gap:10px;
+    }
+
+    .topbar{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
+      padding:10px 12px;
+      border-radius:18px;
+      background:var(--panel);
+      border:1px solid var(--line);
+      box-shadow:0 18px 50px rgba(0,0,0,.55);
+    }
+    .room{
+      font-weight:900;
+      letter-spacing:.08em;
+      font-size:18px;
+      white-space:nowrap;
+    }
+    .meta{
+      color:var(--muted);
+      font-size:14px;
+      display:flex;
+      gap:12px;
+      align-items:center;
+      white-space:nowrap;
+    }
+    .soundBtn{
+      background:rgba(2,6,23,.6);
+      border:1px solid rgba(255,255,255,.12);
+      color:#f9fafb;
+      border-radius:999px;
+      padding:8px 10px;
+      font-weight:900;
+      letter-spacing:.06em;
+      cursor:pointer;
+      user-select:none;
+    }
+    .soundBtn.on{
+      border-color: rgba(34,197,94,.45);
+      box-shadow:0 0 0 3px rgba(34,197,94,.15);
+    }
+
+    .grid{
+      flex:1;
+      display:grid;
+      grid-template-columns: 2fr 1fr;
+      gap:10px;
+      min-height:0;
+    }
+
+    .panel{
+      background:var(--panel);
+      border:1px solid var(--line);
+      border-radius:22px;
+      box-shadow:0 18px 50px rgba(0,0,0,.55);
+      padding:14px 14px;
+      box-sizing:border-box;
+      min-height:0;
+      overflow:hidden;
+    }
+
+    .secTitle{
+      margin:0 0 6px 0;
+      font-size:15px;
+      letter-spacing:.10em;
+      color:var(--muted);
+      font-weight:800;
+    }
+
+    /* 左（授業モード用） */
+    #leftPanel{ display:flex; flex-direction:column; gap:10px; min-height:0; }
+    #leftScroll{ min-height:0; overflow:hidden; }
+
+    /* ✅ 書き問題(textmode)は、入り切らない分をスクロールで読む */
+    body.textmode #leftScroll{
+      overflow:auto;
+      padding-right:8px;
+    }
+    /* 解答終了（closed）時は、左側をスクロール可能にして選択肢が切れないようにする */
+    body.closed #leftScroll{
+      overflow:auto;
+      padding-right:8px; /* スクロールバーの余白（任意） */
+    }
+
+    #question{
+      margin:0;
+      font-size: clamp(30px, 4.2vw, calc(var(--qMax) * 1px));
+      line-height:1.12;
+      font-weight:900;
+      letter-spacing:.02em;
+      text-align:left;
+      padding:0 2px;
+    }
+    
+    /* 問題文の縮小下限（JSがここまでしか下げない） */
+    :root{
+      --q-min-px: 20; /* 好みで 18〜24 くらい */
+    }
+
+    #choices{
+      margin-top:10px;
+      display:grid;
+      grid-template-columns: 1fr;
+      gap: var(--choicesGap);
+    }
+    /* ===== choices scroll safety ===== */
+    #choices{
+      overflow-y: auto;          /* ✅ 下が切れたらスクロール */
+      overscroll-behavior: contain;
+      padding-right: 10px;       /* スクロールバー分 */
+      max-height: 100%;
+    }
+
+    /* ✅ choices viewport: keep a stable window; overflow scroll handles overrun */
+    #choices{
+      height: calc(100vh - 210px);   /* 画面下縁ギリギリまで使う */
+      min-height: 180px;
+      max-height: calc(100vh - 160px);
+    }
+
+    /* ✅ choices typography driven by cMin/cMax (no per-row height slider) */
+    #choices{
+      font-size: clamp(calc(var(--cMin) * 1px), 2.2vw, calc(var(--cMax) * 1px));
+    }
+    .choice{
+      display:flex;
+      align-items:flex-start;
+    
+      /* px固定をやめて “文字サイズ連動” にする */
+      gap: var(--cGap);
+      padding: var(--cPadY) var(--cPadX);
+    
+      border-radius: 14px;
+      border: none;
+      background: rgba(2,6,23,.22);
+    
+      /* 行間も連動（好みで 1.12〜1.30） */
+      line-height: var(--cLH);
+    
+      word-break: break-word;
+    }
+    .choice.correct{
+      box-shadow: 0 0 0 3px rgba(34,197,94,22);
+    }
+    .choice > div:last-child{
+      flex:1;
+      white-space: pre-wrap;             /* 改行は保持、ただしバッジ後の強制改行は起こさない */
+      min-width: 0;
+    }
+/* scrollbar（控えめ） */
+    #choices::-webkit-scrollbar{
+      width: 10px;
+    }
+    #choices::-webkit-scrollbar-thumb{
+      background: rgba(255,255,255,.25);
+      border-radius: 6px;
+    }
+
+    .badge{
+      /* 文字サイズに対して比率で決める（= cMax を動かすと全部動く） */
+      height: 1.65em;         /* 行間（縦）が広がる/狭まる */
+      min-width: 2.35em;      /* 横幅も追随 */
+      padding: 0 0.55em;      /* 余白も追随 */
+    
+      border-radius: 999px;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+    
+      font-weight: 1000;
+      letter-spacing: .06em;
+    
+      /* バッジ文字も本文に連動（少し小さめにしたければ 0.90〜0.98） */
+      font-size: 0.98em;
+    
+      color:#0b1220;
+      margin-top: 0.05em;     /* ちょいだけ下げる（任意） */
+      flex: 0 0 auto;
+    }
+    .badge.A{background:var(--color-a);}
+    .badge.B{background:var(--color-b);}
+    .badge.C{background:var(--color-c);}
+    .badge.D{background:var(--color-d); color:#fff;}
+    .badge.E{background:var(--color-e); color:#fff;}
+    .badge.O{background:var(--color-o);}
+    .badge.X{background:var(--color-x); color:#fff;}
+
+    .choice.correct{
+      border:2px solid rgba(34,197,94,.85);
+      box-shadow:0 0 0 3px rgba(34,197,94,.15);
+    }
+    @keyframes pulseGreen {
+      0%   { box-shadow:0 0 0 0 rgba(34,197,94,.55); }
+      70%  { box-shadow:0 0 0 14px rgba(34,197,94,0); }
+      100% { box-shadow:0 0 0 0 rgba(34,197,94,0); }
+    }
+    body.closed .choice.correct{ animation:pulseGreen 1.3s infinite; }
+
+    /* 解説 */
+    #answerBox{
+      display:none;
+      margin-top:10px;
+      padding:14px 14px;
+      border-radius:18px;
+      background:rgba(2,6,23,.78);
+      border:1px solid rgba(34,197,94,.45);
+    }
+    #answerBox.show{ display:block; }
+    #answerLine{
+      font-size:clamp(26px, 3.2vw, 34px);
+      font-weight:1000;
+      color:var(--ok);
+      margin:0 0 8px 0;
+      letter-spacing:.04em;
+    }
+    #explanationLine{
+      margin:0;
+      font-size:clamp(18px, 2.5vw, 26px);
+      line-height:1.40;
+      color:#e5e7eb;
+      white-space:pre-wrap;
+    }
+
+    /* 右：集計（横棒） */
+    #rightPanel{ display:flex; flex-direction:column; gap:10px; min-height:0; }
+    #vchartWrap{
+      flex:1;
+      min-height:0;
+      border-radius:18px;
+      background:rgba(2,6,23,.55);
+      border:1px solid rgba(255,255,255,.08);
+      padding:10px 12px 10px;
+      box-sizing:border-box;
+      display:flex;
+      flex-direction:column;
+      overflow:hidden;
+    }
+    #vchart{
+      flex:1;
+      display:flex;
+      flex-direction:column;
+      justify-content:space-around;
+      gap:6px;
+      padding:4px 4px 4px;
+      box-sizing:border-box;
+      min-height:0;
+    }
+    /* 横棒グラフ：1行 = ラベル + バー + カウント */
+    .col{
+      width:100%;
+      display:flex;
+      flex-direction:row;
+      align-items:center;
+      gap:8px;
+      min-height:0;
+    }
+    .lab{
+      font-size:16px;
+      font-weight:1000;
+      color:var(--muted);
+      letter-spacing:.08em;
+      flex:0 0 28px;
+      text-align:center;
+    }
+    .barTrack{
+      flex:1;
+      height:28px;
+      border-radius:8px;
+      background:rgba(255,255,255,.10);
+      position:relative;
+      overflow:hidden;
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.06);
+    }
+    .bar{
+      position:absolute;
+      left:0; top:0; bottom:0;
+      width:0%;
+      border-radius:8px;
+      transition:width .3s ease;
+      opacity:.92;
+    }
+    .barFill{ position:absolute; inset:0; opacity:.95; }
+    .count{
+      font-size:13px;
+      font-weight:1000;
+      color:#e5e7eb;
+      line-height:1.1;
+      flex:0 0 80px;
+      text-align:right;
+      white-space:nowrap;
+    }
+
+    /* text回答一覧 */
+    #textAnswersBox{
+      display:none;
+      border-radius:18px;
+      background:rgba(2,6,23,.55);
+      border:1px solid rgba(255,255,255,.08);
+      padding:12px 12px;
+      box-sizing:border-box;
+      max-height:38vh;
+      overflow:auto;
+      min-height:0;
+    }
+    #textAnswersBox.show{ display:block; }
+    #textAnswersTitle{
+      font-weight:1000;
+      letter-spacing:.08em;
+      color:rgba(203,213,225,.92);
+      margin:0 0 8px 0;
+      font-size:13px;
+    }
+    /* ✅ TEXT回答を“もっと大きい字”に（プロジェクタ向け） */
+    .textItem{
+      font-size: calc(var(--tSize) * 1px);
+      line-height:1.35;
+      margin-bottom:6px;
+    }
+    .textItem .no{
+      min-width:52px; /* 番号の桁ズレ防止（お好み） */
+      font-size:0.95em;
+    }
+
+    .textItem .no{
+      display:inline-block;
+      min-width:44px;
+      margin-right:8px;
+      color:rgba(203,213,225,.85);
+      font-weight:1000;
+      letter-spacing:.06em;
+    }
+
+    /* QR */
+    #qrLayer{
+      position:fixed;
+      inset:0;
+      background:rgba(0,0,0,.92);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      z-index:999;
+      opacity:1;
+      transition:opacity .45s ease;
+    }
+    #qrLayer.hidden{ opacity:0; pointer-events:none; }
+    .qrBox{
+      width:min(920px, 94vw);
+      border-radius:28px;
+      padding:20px 20px 14px;
+      background:var(--panel);
+      border:1px solid rgba(255,255,255,.10);
+      box-shadow:0 24px 80px rgba(0,0,0,.75);
+      text-align:center;
+    }
+    .qrTitle{
+      margin:0 0 6px 0;
+      font-size:22px;
+      letter-spacing:.10em;
+      font-weight:1000;
+    }
+    .qrHint{
+      margin:0 0 10px 0;
+      color:var(--muted);
+      font-size:16px;
+    }
+    #qrcode{
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      margin:8px 0 8px;
+    }
+    #qrcode canvas{
+  width:520px !important;
+  height:520px !important;
+  border-radius:18px;
+  background:#fff;
+  padding:10px;
+  box-sizing:border-box;
+  image-rendering: pixelated; /* 一部環境で効く */
+}
+@media (max-width: 820px){
+  #qrcode canvas{
+    width: min(520px, 86vw) !important;
+    height: min(520px, 86vw) !important;
+  }
+}
+
+    #qrCount{ margin-top:6px; color:rgba(203,213,225,.9); font-size:14px; }
+
+    #toast{
+      position:fixed;
+      left:50%;
+      top:16px;
+      transform:translateX(-50%);
+      background:rgba(17,24,39,.92);
+      border:1px solid rgba(255,255,255,.12);
+      padding:10px 14px;
+      border-radius:999px;
+      color:#f9fafb;
+      font-weight:1000;
+      letter-spacing:.06em;
+      z-index:1200;
+      opacity:0;
+      pointer-events:none;
+      transition:opacity .25s ease;
+      box-shadow:0 18px 50px rgba(0,0,0,.55);
+    }
+
+    @media (max-width: 980px){
+      .grid{ grid-template-columns: 1fr; }
+      #leftScroll{ overflow:auto; }
+      body.poll #leftPanel{ display:none !important; }
+    }
+
+    /* =========================
+       Timer Progress Bar
+       ========================= */
+    #timerBarWrap{
+      width: 180px;              /* バーの横幅（好みで調整） */
+      height: 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.10);
+      border: 1px solid rgba(255,255,255,.12);
+      overflow: hidden;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.08);
+    }
+
+    #timerBar{
+      height: 100%;
+      width: 0%;
+      border-radius: 999px;
+      transform-origin: left;
+      transition: width .15s linear;
+      background: linear-gradient(90deg,
+        rgba(34,197,94,.95),   /* green */
+        rgba(245,158,11,.95),  /* amber */
+        rgba(239,68,68,.95)    /* red */
+      );
+      box-shadow: 0 10px 28px rgba(0,0,0,.28);
+    }
+
+    /* タイマー動作中は数字を少し強調 */
+    body.timer-running #timerLabel{
+      color:#fff;
+      text-shadow: 0 0 16px rgba(255,255,255,.18);
+    }
+
+    /* 残りわずかの注意喚起（任意：あとでONにできる） */
+    body.timer-urgent #timerBar{
+      animation: timerPulse .7s infinite;
+    }
+    @keyframes timerPulse{
+      0%   { filter: brightness(1.0); }
+      50%  { filter: brightness(1.35); }
+      100% { filter: brightness(1.0); }
+    }
+
+  /* =========================
+   非公開マスク：MEDIUM演出
+   ========================= */
+#vchartWrap{ position:relative; }
+
+.resultsMask{
+  position:absolute; inset:0;
+  display:flex; align-items:center; justify-content:center;
+  border-radius:18px;
+  overflow:hidden;
+
+  background: rgba(2,6,23,.92);
+  backdrop-filter: blur(18px) brightness(.65) saturate(1.00);
+
+  opacity:0;
+  pointer-events:none;
+  transition: opacity .18s ease;
+}
+.resultsMask.show{ opacity:1; pointer-events:auto; }
+
+/* 背景演出（オーロラ） */
+.maskFx{
+  position:absolute; inset:-20%;
+  z-index:0;
+  pointer-events:none;
+  opacity:.42;
+  filter: blur(16px);
+  animation: hueShift 10s linear infinite;
+}
+@keyframes hueShift{
+  0%   { filter: blur(18px) hue-rotate(0deg); }
+  100% { filter: blur(18px) hue-rotate(18deg); }
+}
+
+.maskFx .blob{
+  position:absolute;
+  width: 44vmax; height: 44vmax;
+  border-radius: 999px;
+  mix-blend-mode: screen;
+  opacity:.22;
+  will-change: transform;
+}
+.maskFx .b1{
+  left: -12%; top: 10%;
+  background: radial-gradient(circle at 30% 30%,
+    rgba(10,132,255,.85), rgba(10,132,255,0) 60%);
+  animation: blobFloat1 7.2s ease-in-out infinite;
+}
+.maskFx .b2{
+  right: -14%; top: 18%;
+  background: radial-gradient(circle at 30% 30%,
+    rgba(48,209,88,.82), rgba(48,209,88,0) 60%);
+  animation: blobFloat2 8.2s ease-in-out infinite;
+}
+.maskFx .b3{
+  left: 10%; bottom: -18%;
+  background: radial-gradient(circle at 30% 30%,
+    rgba(191,90,242,.78), rgba(191,90,242,0) 62%);
+  animation: blobFloat3 9.0s ease-in-out infinite;
+}
+@keyframes blobFloat1{
+  0%,100%{ transform: translate(-2%, 0%) scale(1.00); }
+  50%    { transform: translate(8%, 6%)  scale(1.08); }
+}
+@keyframes blobFloat2{
+  0%,100%{ transform: translate(0%, 0%)  scale(1.00); }
+  50%    { transform: translate(-10%, 8%) scale(1.07); }
+}
+@keyframes blobFloat3{
+  0%,100%{ transform: translate(0%, 0%)  scale(1.00); }
+  50%    { transform: translate(6%, -10%) scale(1.10); }
+}
+
+/* 斜めに走るシマー（光の筋） */
+.maskFx .sheen{
+  position:absolute;
+  left:-60%;
+  top:-20%;
+  width:50%;
+  height:160%;
+  transform: rotate(20deg);
+  background: linear-gradient(90deg,
+    rgba(255,255,255,0),
+    rgba(255,255,255,.22),
+    rgba(255,255,255,0)
+  );
+  opacity:.10;
+  animation: sheenMove 2.4s ease-in-out infinite;
+}
+@keyframes sheenMove{
+  0%   { transform: translateX(0) rotate(20deg); }
+  100% { transform: translateX(260%) rotate(20deg); }
+}
+
+/* スキャンライン（少しだけ強め） */
+.resultsMask::before{
+  content:"";
+  position:absolute; inset:-35% 0;
+  background: linear-gradient(180deg,
+    rgba(255,255,255,0) 0%,
+    rgba(255,255,255,.10) 45%,
+    rgba(255,255,255,0) 75%);
+  animation: scan 2.4s linear infinite;
+  opacity:.34;
+  z-index:1;
+}
+@keyframes scan{
+  0%   { transform: translateY(-30%); }
+  100% { transform: translateY(35%); }
+}
+
+/* 微ノイズ（ほんのり動く） */
+.resultsMask::after{
+  content:"";
+  position:absolute; inset:0;
+  background-image:
+    repeating-linear-gradient(
+      0deg,
+      rgba(255,255,255,.04) 0px,
+      rgba(255,255,255,.04) 1px,
+      rgba(255,255,255,0) 2px,
+      rgba(255,255,255,0) 5px
+    );
+  opacity:.12;
+  mix-blend-mode: overlay;
+  animation: noiseDrift .9s steps(2) infinite;
+  z-index:2;
+}
+@keyframes noiseDrift{
+  0%   { transform: translate(0,0); }
+  100% { transform: translate(-10px, 8px); }
+}
+
+/* 前面カード */
+.maskInner{
+  position:relative;
+  z-index:3;
+  text-align:center;
+  padding:18px 16px;
+  border-radius:18px;
+  border:1px solid rgba(255,255,255,.14);
+  background: rgba(17,24,39,.56);
+  box-shadow:
+    0 26px 86px rgba(0,0,0,.58),
+    0 0 0 1px rgba(10,132,255,.10),
+    0 0 44px rgba(10,132,255,.14);
+  animation: innerPulse 2.6s ease-in-out infinite;
+}
+@keyframes innerPulse{
+  0%,100%{ transform: translateY(0); filter: brightness(1.00); }
+  50%    { transform: translateY(-2px); filter: brightness(1.06); }
+}
+
+.maskTitle{
+  font-weight:1100;
+  letter-spacing:.12em;
+  font-size:22px;
+  color:#fff;
+  text-shadow: 0 0 18px rgba(255,255,255,.14);
+}
+.maskSub{
+  margin-top:8px;
+  font-weight:900;
+  letter-spacing:.08em;
+  color:rgba(203,213,225,.88);
+  font-size:14px;
+}
+
+/* “ウニ…” */
+.uni{ display:flex; gap:8px; justify-content:center; margin-top:14px; }
+.uni span{
+  width:11px; height:11px; border-radius:999px;
+  background:rgba(255,255,255,.75);
+  box-shadow: 0 0 20px rgba(255,255,255,.22);
+  animation: uni 0.85s infinite ease-in-out;
+}
+.uni span:nth-child(2){ animation-delay:.10s; opacity:.88; }
+.uni span:nth-child(3){ animation-delay:.20s; opacity:.78; }
+.uni span:nth-child(4){ animation-delay:.30s; opacity:.68; }
+.uni span:nth-child(5){ animation-delay:.40s; opacity:.58; }
+@keyframes uni{
+  0%,100%{ transform: translateY(0) scale(.98); }
+  50%    { transform: translateY(-7px) scale(1.12); }
+}
+
+/* 動きを止めたい環境配慮 */
+@media (prefers-reduced-motion: reduce){
+  .maskFx, .maskFx .blob, .maskFx .sheen,
+  .resultsMask::before, .resultsMask::after,
+  .maskInner, .uni span{
+    animation: none !important;
+  }
+}
+
+/* ===== Display tuning panel (localStorage) ===== */
+#tunePanel{
+  position: fixed;
+  right: 14px;
+  top: 76px;
+  width: 360px;
+  max-width: calc(100vw - 28px);
+  background: rgba(17,24,39,92);
+  border: 1px solid rgba(255,255,255,14);
+  border-radius: 18px;
+  box-shadow: 0 22px 70px rgba(0,0,0,65);
+  padding: 12px 12px;
+  z-index: 1300;
+  display: none;
+  backdrop-filter: blur(10px);
+}
+#tunePanel.show{ display:block; }
+
+.tpHead{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.tpTitle{ font-weight:1000; letter-spacing:.06em; font-size:13px; color:rgba(226,232,240,95); }
+.tpClose{
+  border:1px solid rgba(255,255,255,18);
+  background: rgba(2,6,23,45);
+  color:#fff;
+  border-radius: 999px;
+  padding: 6px 10px;
+  cursor:pointer;
+  font-weight:900;
+}
+.tpRow{ margin-top:10px; display:grid; grid-template-columns: 1fr; gap:6px; }
+.tpLab{ font-size:12px; color: rgba(203,213,225,90); font-weight:900; letter-spacing:.06em; }
+.tpVal{ font-size:12px; color: rgba(203,213,225,90); font-weight:900; text-align:right; }
+.tpRow input[type="range"]{ width:100%; }
+.tpFoot{ margin-top:12px; display:flex; flex-wrap:wrap; gap:8px; }
+.tpBtn{
+  border:1px solid rgba(255,255,255,18);
+  background: rgba(34,197,94,16);
+  color:#fff;
+  border-radius: 12px;
+  padding: 8px 10px;
+  cursor:pointer;
+  font-weight:1000;
+  letter-spacing:.04em;
+}
+.tpBtn.ghost{ background: rgba(2,6,23,35); }
+.tpHint{ margin-top:10px; font-size:12px; color: rgba(203,213,225,85); line-height:1.35; }
+    
+  </style>
+  <link rel="icon" href="data:,">
+</head>
+
+<body>
+  <div id="buildTag">build: 2026-01-06 / tts-runid-stable</div>
+  <div id="toast">解答終了 → 公開</div>
+
+  <div id="qrLayer">
+    <div class="qrBox">
+      <div class="qrTitle">参加用QRコード</div>
+      <div class="qrHint">スマホで読み取って参加</div>
+      <div id="qrcode"></div>
+      <div id="qrCount">参加中 0人</div>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div class="topbar">
+      <div class="room" id="roomLabel">ROOM</div>
+      <div class="meta">
+        <span id="statusLabel">status: -</span>
+        <span id="countLabel">参加中 0人</span>
+        <span id="timerLabel" style="font-weight:1000;">⏱ --:--</span>
+
+        <div id="timerBarWrap" aria-hidden="true">
+          <div id="timerBar"></div>
+        </div>
+        
+        <button id="soundBtn" class="soundBtn">🔈 音OFF（タップでON）</button>
+        <button id="ttsBtn" class="soundBtn">🗣 読み上げOFF</button>
+        <button id="ttsSpeakBtn" class="soundBtn">🔘 読む</button>
+        <button id="tuneBtn" class="soundBtn">⚙ 表示調整</button>
+
+      </div>
+    </div>
+
+    <div class="grid" id="mainGrid">
+      <div class="panel" id="leftPanel">
+        <div class="secTitle">問題</div>
+        <div id="leftScroll">
+          <p id="question">（問題を待っています…）</p>
+
+          <div id="answerBox">
+            <p id="answerLine"></p>
+            <p id="explanationLine"></p>
+          </div>
+
+          <div id="choices"></div>
+        </div>
+      </div>
+
+      <div class="panel" id="rightPanel">
+        <div class="secTitle" id="rightTitle">集計（縦棒）</div>
+        <div id="vchartWrap">
+          <div id="vchart"></div>
+
+          <!-- ★追加：投票中 非公開マスク（MEDIUM演出） -->
+          <div id="resultsMask" class="resultsMask" aria-hidden="true">
+            <div class="maskFx" aria-hidden="true">
+              <span class="blob b1"></span>
+              <span class="blob b2"></span>
+              <span class="blob b3"></span>
+              <span class="sheen"></span>
+            </div>
+
+            <div class="maskInner">
+              <div class="maskTitle">投票中…</div>
+              <div class="maskSub">結果は「解答終了」で公開</div>
+
+              <div class="uni" aria-hidden="true">
+                <span></span><span></span><span></span><span></span><span></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- ★ここに移動：TEXT回答を“全幅の広い段”で表示 -->
+      <div id="textAnswersBox">
+        <div id="textAnswersTitle">文字回答（解答終了で表示）</div>
+        <div id="textAnswersList"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getDatabase, ref, onValue, update } from
+      "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBke-wTU16skpbK8z80ddK04tE154dHERQ",
+      authDomain: "satosan-41eac.firebaseapp.com",
+      databaseURL: "https://satosan-41eac-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "satosan-41eac"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db  = getDatabase(app);
+
+    const url = new URL(location.href);
+    const room = url.searchParams.get("room") || "kyoto-01";
+
+    const roomLabel   = document.getElementById("roomLabel");
+    const statusLabel = document.getElementById("statusLabel");
+    const countLabel  = document.getElementById("countLabel");
+    const timerLabel  = document.getElementById("timerLabel");
+    const timerBar = document.getElementById("timerBar");
+    
+    const leftScroll = document.getElementById("leftScroll");
+    const qEl = document.getElementById("question");
+    const cEl = document.getElementById("choices");
+
+    const answerBox = document.getElementById("answerBox");
+    const answerLine = document.getElementById("answerLine");
+    const explanationLine = document.getElementById("explanationLine");
+
+    const vchart = document.getElementById("vchart");
+    const rightTitle = document.getElementById("rightTitle");
+    
+    const resultsMask = document.getElementById("resultsMask");
+
+    const textBox = document.getElementById("textAnswersBox");
+    const textList = document.getElementById("textAnswersList");
+    const textTitle = document.getElementById("textAnswersTitle");
+
+    const qrLayer = document.getElementById("qrLayer");
+    const qrDiv   = document.getElementById("qrcode");
+    const qrCount = document.getElementById("qrCount");
+
+    const toast  = document.getElementById("toast");
+
+    /* =========================================================
+   固定メモ（壊さない最優先事項）
+   - displayは「構造（activity / question）」で描画を決める
+   - answersはUI構造を決めない（数えるだけ／正規ソースは rooms/{room}/answers）
+   - quiz：集計のchoice順は currentQuestion.choices を優先（問題と集計の一致を保証）
+   - poll：集計のchoice順は activity.config.choices（なければ mode から補完）
+   - view/mode/status が変わったら必ず再描画（poll TEXTのclosed表示も含む）
+   - pollに入ったら quizの問題購読は必ず解除（unsubQ）
+   ========================================================= */
+
+    // ===== Sound: poyon.mp3（同ディレクトリ） =====
+    const soundBtn = document.getElementById("soundBtn");
+    const se = new Audio("./poyon.mp3");
+    se.preload = "auto";
+    se.volume = 0.6;
+
+    // ===== SE: closed gong（同ディレクトリ）=====
+    const gong = new Audio("./gong.mp3"); // ※ファイル名は gong.mp3 推奨
+    gong.preload = "auto";
+    gong.volume = 0.8;
+
+    // ===== SE: countdown（同ディレクトリ）=====
+    const cd = new Audio("./countdown.mp3");
+    cd.preload = "auto";
+    cd.volume = 0.7;
+
+    let soundEnabled = false;
+    let soundUnlocked = false;
+    let lastAnswerTotal = 0;
+
+    async function unlockSound(){
+      if (soundUnlocked) return true;
+      try{
+        await se.play();
+        se.pause();
+        se.currentTime = 0;
+        soundUnlocked = true;
+        soundEnabled = true;
+        soundBtn.classList.add("on");
+        soundBtn.textContent = "🔊 音ON";
+        return true;
+      }catch(e){
+        soundUnlocked = false;
+        soundEnabled = false;
+        soundBtn.classList.remove("on");
+        soundBtn.textContent = "🔈 音OFF（タップでON）";
+        return false;
+      }
+    }
+    
+    // ★追加：出題開始SE（start.mp3）
+    const startSe = new Audio("./start.mp3");
+    startSe.preload = "auto";
+    startSe.volume = 0.85;
+    
+    function playStart(){
+      if (!soundEnabled || !soundUnlocked) return;
+      try{
+        startSe.currentTime = 0;
+        startSe.play().catch(()=>{});
+      }catch(_){}
+    }
+
+    soundBtn.onclick = async () => { await unlockSound(); };
+    (function addOneShotUnlock(){
+      const handler = async () => {
+        await unlockSound();
+        window.removeEventListener("pointerdown", handler, true);
+        window.removeEventListener("keydown", handler, true);
+      };
+      window.addEventListener("pointerdown", handler, true);
+      window.addEventListener("keydown", handler, true);
+    })();
+
+    function playPoyon(){
+      if (!soundEnabled || !soundUnlocked) return;
+      try{
+        se.currentTime = 0;
+        se.play().catch(()=>{});
+      }catch(_){}
+    }
+
+    function playGong(){
+      if (!soundEnabled || !soundUnlocked) return;
+      try{
+        gong.currentTime = 0;
+        gong.play().catch(()=>{});
+      }catch(_){}
+    }
+
+    function playCountdown(){
+    if (!soundEnabled || !soundUnlocked) return;
+    try{
+      cd.currentTime = 0;
+      cd.play().catch(()=>{});
+    }catch(_){}
+  }
+
+    // ===== TTS（Web Speech API）======
+    const ttsBtn = document.getElementById("ttsBtn");
+    const ttsSpeakBtn = document.getElementById("ttsSpeakBtn");
+
+    let ttsEnabled = false;      // 読み上げ機能ON/OFF
+    let ttsUnlocked = false;     // ユーザー操作済み扱い（自動読み上げ許可）
+    let ttsSpeaking = false;     // 連打防止
+    let ttsAutoSpokenKey = null; // 同一出題で1回だけ
+    let ttsRunId = 0; // ★追加：読み上げの世代ID（古い処理を殺す）
+    // ★追加：open後に読み上げ開始するまでの待ち時間
+    const OPEN_READ_DELAY_MS = 1000;
+    let ttsOpenReadyAt = 0;          // Date.now()で比較
+    let ttsOpenDelayTimer = null;    // setTimeout保持
+
+    let ttsClosedKey = "";      // closed読み上げの多重防止（qidごと）
+    let ttsReadClosed = true;   // 必要ならON/OFF
+
+    // ===== TTS DICT (dict/tts-dict.json) =====
+    let TTS_DICT = [];        // 生データ（JSON）
+    let TTS_REPLACERS = [];   // コンパイル済み（関数配列）
+
+    async function loadTtsDict(){
+      try{
+        // キャッシュ事故回避：毎回ユニークに（運用に合わせて固定vでもOK）
+        const res = await fetch("./dict/tts-dict.json?v=" + Date.now());
+        if (!res.ok) throw new Error("dict fetch failed: " + res.status);
+        const data = await res.json();
+        TTS_DICT = Array.isArray(data) ? data : [];
+        TTS_REPLACERS = compileTtsDict(TTS_DICT);
+        console.log("[TTS] dict loaded:", TTS_REPLACERS.length);
+      }catch(e){
+        console.warn("[TTS] dict load failed:", e);
+        TTS_DICT = [];
+        TTS_REPLACERS = [];
+      }
+    }
+
+    function compileTtsDict(list){
+      const out = [];
+
+      const esc = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+      for (const e of (list || [])){
+        if (!e || !e.from) continue;
+        const to = (e.to ?? "");
+        const type = e.type || "text"; // ★追加：type省略はtext扱い
+
+        if (type === "text"){
+          const from = String(e.from);
+          out.push((s) => s.split(from).join(to));
+          continue;
+        }
+
+        if (type === "word"){
+          const from = esc(e.from);
+          const re = new RegExp("\\b" + from + "\\b", "g");
+          out.push((s) => s.replace(re, to));
+          continue;
+        }
+
+        if (type === "regex"){
+        try{
+            const re = new RegExp(String(e.from), e.flags || "g");
+            out.push((s) => s.replace(re, to));
+          }catch(err){
+            console.warn("[TTS] bad regex entry:", e, err);
+          }
+          continue;
+        }
+      }
+      return out;
+    }
+
+    function ttsNormalize(text){
+      let s = String(text || "");
+
+      // ここで最低限の読み上げ整形（必要なら増やす）
+      s = s.replace(/\s+/g, " ").trim();
+
+      // 辞書適用
+      for (const fn of (TTS_REPLACERS || [])){
+        try{ s = fn(s); }catch(_){}
+      }
+      return s;
+    }
+
+    // 起動時に1回ロード（awaitしない＝displayが止まらない）
+    loadTtsDict();
+
+    // 出題時の「無音時間」設定（ms）
+    // ※テキスト入力(mode=text)は選択肢がないので、ここは使われません
+    const TTS_GAP = {
+      qToChoicesMs: 800,  // 問題→選択肢の間
+      choiceGapMs: 450,   // 選択肢→選択肢の間
+      jingleDelayMs: 220, // ジングル後の間（短め）
+    };
+
+    // sleep
+    const waitMs = (ms) => new Promise(r => setTimeout(r, ms));
+
+    // 「読み上げ前ジングル」：既存の poyon.mp3 を流用（ファイル追加なし）
+    async function playTtsJingle(){
+      // ジングル自体は任意：音ON時だけ鳴る
+      if (!soundEnabled || !soundUnlocked) return;
+      try{
+        const j = new Audio("./poyon.mp3");
+        j.preload = "auto";
+        j.volume = 0.45;
+        j.currentTime = 0;
+        j.play().catch(()=>{});
+        await waitMs(TTS_GAP.jingleDelayMs);
+      }catch(_){}
+    }
+
+    function stopTTS(){
+  // ★重要：進行中の読み上げをすべて無効化
+  ttsRunId++;
+
+  // ★遅延読み上げ予約が残っていたら止める
+  try{
+    if (ttsOpenDelayTimer){ clearTimeout(ttsOpenDelayTimer); ttsOpenDelayTimer = null; }
+    ttsOpenReadyAt = 0;
+  }catch(_){}
+
+  try{ window.speechSynthesis.cancel(); }catch(_){}
+
+  // ★ここが核心：OFFやキャンセル後にロック状態が残らないよう解除
+  ttsSpeaking = false;
+}
+
+    // Web Speech：1発話をPromise化
+    function speakOnce(text, runId){
+
+      text = ttsNormalize(text); // ★追加：読み上げ辞書を必ず通す
+      
+      return new Promise((resolve) => {
+        if (!text) return resolve();
+        if (runId !== ttsRunId) return resolve(); // ★古い世代なら即終了
+
+        const u = new SpeechSynthesisUtterance(text);
+        u.lang = "ja-JP";
+        u.rate = 1.0;
+        u.pitch = 1.0;
+
+        u.onend = () => resolve();
+        u.onerror = () => resolve();
+
+        // speak直前にも確認（混入防止）
+        if (runId !== ttsRunId) return resolve();
+
+        try{
+          window.speechSynthesis.speak(u);
+        }catch(_){
+          resolve();
+        }
+      });
+    }
+    
+    function speakLabelJa(key){
+      const k = String(key || "").trim().toUpperCase();
+      if (k === "O" || k === "〇") return "まる";
+      if (k === "X" || k === "×") return "ばつ";
+      if (k === "A") return "エー";
+      if (k === "B") return "ビー";
+      if (k === "C") return "シー";
+      if (k === "D") return "ディー";
+      if (k === "E") return "イー";
+      return k;
+    }
+
+    function getCorrectKeyForSpeak(){
+      if (!currentQuestion) return null;
+
+      let ck = currentQuestion.answer ? String(currentQuestion.answer).trim().toUpperCase() : null;
+
+      // AB→OX 変換（あなたの表示ロジックと合わせる）
+      try{
+        const norm = normalizeChoicesObj(currentQuestion.choices || {});
+        if (norm && norm.mapAB && ck) ck = mapABtoOXKey(ck);
+      }catch(_){}
+
+      if (ck === "〇") ck = "O";
+      if (ck === "×") ck = "X";
+      return ck;
+    }
+
+    async function speakClosedAnswerOnly(){
+      if (!ttsReadClosed) return;
+      if (!ttsEnabled || !ttsUnlocked) return;
+      if (isQR) return;
+      if (currentView !== "quiz") return;
+      if (!(currentMode === "ox" || currentMode === "five")) return;
+    
+      if (!latestQid) return;
+      const key = `${latestQid}::closed`;
+      if (ttsClosedKey === key) return;
+      ttsClosedKey = key;
+    
+      const ck = getCorrectKeyForSpeak();
+      if (!ck) return;
+    
+      // 解説テキスト（あなたの表示行を読む：無ければ空でOK）
+      let ex = "";
+      try{
+        ex = (explanationLine?.textContent || "").trim();
+        ex = ex.replace(/^解説[:：]\s*/, "");
+      }catch(_){}
+    
+      // ★追加：五択のとき、正解の選択肢本文を拾う（表示DOMから＝ズレ防止）
+      let choiceText = "";
+      try{
+        if (currentMode === "five" && /^[A-E]$/.test(String(ck))){
+          const rows = Array.from(cEl?.querySelectorAll?.(".choice") || []);
+          for (const row of rows){
+            const badge = (row.querySelector(".badge")?.textContent || "").trim().toUpperCase();
+            const text  = (row.children?.[1]?.textContent || "").trim(); // 2つ目が本文（既存設計）
+            if (badge === String(ck) && text){
+              choiceText = text;
+              break;
+            }
+          }
+        }
+      }catch(_){}
+    
+      // 混ざり防止：必ず停止→runIdで守る
+      stopTTS();
+      const myRun = ttsRunId;
+      await waitMs(2000);
+      if (myRun !== ttsRunId) return;
+    
+      // ★変更：正解記号のあとに、該当する選択肢文も読む
+      if (choiceText){
+        await speakOnce(`正解は、${speakLabelJa(ck)}。${choiceText}。`, myRun);
+      }else{
+        await speakOnce(`正解は、${speakLabelJa(ck)}。`, myRun);
+      }
+      if (myRun !== ttsRunId) return;
+    
+      if (ex){
+        await speakOnce(`解説。${ex}`, myRun);
+      }
+    }
+  
+    // 今の問題から「読み上げ用セグメント」を作る
+    function buildTtsSegments(isOpen){
+      // 画面表示（DOM）から取る：表示＝読み上げを一致させる
+      const qText = (qEl?.textContent || "").trim();
+      if (!qText) return [];
+
+      const segments = [];
+      segments.push({ type:"say", text: `問題。${qText}` });
+
+      // text入力（選択肢なし）ならここで終了（classでも判定してズレ耐性を上げる）
+      if (currentMode === "text" || document.body.classList.contains("textmode")) return segments;
+
+      // choices DOM（#choices）から拾う：前問の取りこぼし防止
+      const rows = Array.from(cEl?.querySelectorAll?.(".choice") || []);
+      if (!rows.length) return segments; // 選択肢が表示されてないなら読まない
+
+      // 出題時(open)のみ：問題→選択肢の無音
+      if (isOpen) segments.push({ type:"pause", ms:TTS_GAP.qToChoicesMs });
+
+      rows.forEach((row, idx) => {
+        // .badge と本文を読む（renderChoicesが作る構造に合わせる）
+        const badge = (row.querySelector(".badge")?.textContent || "").trim();
+        const text  = (row.children?.[1]?.textContent || "").trim(); // 2つ目が本文
+        const line = text ? `${badge}。${text}` : `${badge}`;
+        if (line) segments.push({ type:"say", text: line });
+
+        // 出題時(open)のみ：選択肢間の無音（最後は不要）
+        if (isOpen && idx < rows.length - 1){
+          segments.push({ type:"pause", ms:TTS_GAP.choiceGapMs });
+        }
+      });
+
+      return segments;
+    }
+
+// 実行：ジングル→読み上げ（無音挿入含む）
+async function speakCurrent({ withJingle=true, auto=false } = {}){
+  if (!ttsEnabled) return;
+  if (!ttsUnlocked) return;
+  if (ttsSpeaking) return;
+
+  if (currentView !== "quiz") return;
+  if (isQR === true) return;
+
+  const isOpen = (currentStatus === "open");
+
+  // ★追加：選択肢が描画される前に読んでしまう事故を防ぐ
+  if (isOpen && (currentMode === "ox" || currentMode === "five")){
+    await waitForChoicesRendered(700);
+  }
+  const segs = buildTtsSegments(isOpen);
+  if (!segs.length) return;
+
+  // ★開始時に前の読み上げを完全停止（世代も更新）
+  stopTTS();
+  const myRun = ttsRunId;
+
+  ttsSpeaking = true;
+  try{
+    // cancel 直後に少し待つと混ざりが減る（ブラウザ差対策）
+    await waitMs(60);
+    if (myRun !== ttsRunId) return;
+
+    if (withJingle) await playTtsJingle();
+    if (myRun !== ttsRunId) return;
+
+    for (const s of segs){
+      if (myRun !== ttsRunId) return;
+
+      if (s.type === "pause"){
+        await waitMs(s.ms);
+        continue;
+      }
+
+      // say
+      await speakOnce(s.text, myRun);
+    }
+  }finally{
+    // 自分が最新世代のときだけ解除
+    if (myRun === ttsRunId) ttsSpeaking = false;
+  }
+}
+
+// 自動読み上げ（「openになった出題」を1回だけ）
+// 自動読み上げ（「openになった出題」を1回だけ）
+// ★変更：open直後は3秒待ってから読む
+function maybeAutoSpeak(){
+  if (!ttsEnabled || !ttsUnlocked) return;
+  if (currentView !== "quiz") return;
+  if (isQR === true) return;
+  if (currentStatus !== "open") return;
+  if (!currentQuestion) return;
+  if (currentQid !== latestQid) return;
+
+  // 「同じ出題(open)」で二重に読まない（qidが分かればqid優先）
+  const qidKey = (latestQid || "") + ":open";
+  if (ttsAutoSpokenKey === qidKey) return;
+
+  // ★open後3秒待ち（まだ時間なら予約して終わり）
+  const now = Date.now();
+  if (ttsOpenReadyAt && now < ttsOpenReadyAt){
+    const wait = ttsOpenReadyAt - now;
+    if (ttsOpenDelayTimer) clearTimeout(ttsOpenDelayTimer);
+    ttsOpenDelayTimer = setTimeout(() => {
+      ttsOpenDelayTimer = null;
+      maybeAutoSpeak();
+    }, Math.max(0, wait));
+    return;
+  }
+
+  // ★ここまで来たら読み上げOK
+  ttsAutoSpokenKey = qidKey;
+
+  // start.mp3 を鳴らすので、TTS側のジングルは無しが自然（好みでtrueでもOK）
+  speakCurrent({ withJingle:false, auto:true });
+}
+
+// ボタン：読み上げON/OFF
+ttsBtn.onclick = async () => {
+  if (ttsEnabled){
+    ttsEnabled = false;
+    ttsBtn.classList.remove("on");
+    ttsBtn.textContent = "🗣 読み上げOFF";
+    stopTTS();
+    return;
+  }
+  // ON
+  ttsEnabled = true;
+  ttsUnlocked = true; // ユーザー操作済み扱い（自動読み上げ許可）
+  ttsAutoSpokenKey = null;   // ★追加：ONにしたら自動の「1回だけ」判定をリセット
+  ttsClosedKey = "";         // ★追加（任意）：closed読み上げの多重防止もリセットしたい場合
+  ttsBtn.classList.add("on");
+  ttsBtn.textContent = "🗣 読み上げON";
+
+  // ついでに音も解放（ジングルを鳴らしたい場合）
+  await unlockSound();
+
+  // 今open中なら、その問題を即読んでもOK（好み）
+  maybeAutoSpeak();
+};
+
+// ボタン：手動で読む（出題中じゃなくても読めるが、無音挿入はopen時だけ）
+  // 変更前：ttsSpeakBtn.onclick = async () => {
+   if (ttsSpeakBtn && ttsBtn){
+    ttsSpeakBtn.onclick = async () => {
+      ttsEnabled = true;
+      ttsUnlocked = true;
+      ttsBtn.classList.add("on");
+      ttsBtn.textContent = "🗣 読み上げON";
+
+      await unlockSound();
+      ttsAutoSpokenKey = null;   // ★追加：手動は必ず読ませたいのでリセット
+      stopTTS();                 // ★追加：残留タイマー/発話を確実に掃除してから読む
+      await speakCurrent({ withJingle:true, auto:false });
+    };
+  }
+
+    function uiLabel(key){
+      const k = String(key).trim().toUpperCase();
+      if (k === "O") return "○";
+      if (k === "X") return "✕";
+      return k;
+    }
+
+    // ===== ABのみ問題を OX に統一する（display側の正規化）=====
+    function isABOnlyChoices(obj){
+      if (!obj || typeof obj !== "object") return false;
+      const ks = Object.keys(obj).map(k => String(k).trim().toUpperCase()).sort();
+      return ks.length === 2 && ks[0] === "A" && ks[1] === "B";
+    }
+
+    function mapABtoOXKey(k){
+      const key = String(k).trim().toUpperCase();
+      if (key === "A") return "O";
+      if (key === "B") return "X";
+      return key;
+    }
+
+    function normalizeChoicesObj(choicesObj){
+      // A/Bのみなら O/X に変換して返す（表示も集計も統一）
+      if (!isABOnlyChoices(choicesObj)) return { obj: choicesObj, mapAB: false };
+
+      const A = choicesObj.A ?? choicesObj.a ?? "";
+      const B = choicesObj.B ?? choicesObj.b ?? "";
+      return {
+        mapAB: true,
+        obj: { O: A, X: B }
+      };
+    }
+
+    async function waitForChoicesRendered(timeoutMs = 700){
+      // textは選択肢なし
+      if (currentMode === "text" || document.body.classList.contains("textmode")) return;
+
+      // 期待数：choiceOrder があるならそれを優先、無ければ mode で推定
+      const expected =
+        (Array.isArray(choiceOrder) && choiceOrder.length) ? choiceOrder.length :
+        (currentMode === "ox" ? 2 : currentMode === "five" ? 5 : 0);
+
+      if (!expected) return;
+
+      const start = performance.now();
+      while (performance.now() - start < timeoutMs){
+        const rows = cEl?.querySelectorAll?.(".choice") || [];
+        if (rows.length >= expected) return;   // 揃った
+        await waitMs(40);
+      }
+    }
+
+    roomLabel.textContent = `ROOM: ${room}`;
+
+    const activityRef = ref(db, `rooms/${room}/activity`);
+    const qidRef      = ref(db, `rooms/${room}/quiz/current_question_id`);
+    const answersRef  = ref(db, `rooms/${room}/answers`);
+    const qRef = (qid) => ref(db, `rooms/${room}/questions/${qid}`);
+
+    // display起動で強制QR
+    update(activityRef, { qr: true }).catch(()=>{});
+
+    let currentSession = ""; // ★追加：activity.session を保持
+
+    function buildStudentUrl(session){
+    const base = `https://qzp04374-code.github.io/quiz-app/exp-display/student.html?room=${encodeURIComponent(room)}`;
+    return session ? `${base}&s=${encodeURIComponent(session)}` : base;
+    }
+       
+    function safeDrawQR(){
+      try{
+        if (!qrDiv) return;
+        qrDiv.innerHTML = "";
+
+        // QRCode.js が落ちてる／読み込み失敗でも全停止させない
+        if (!window.QRCode){
+          qrDiv.innerHTML = `<div style="color:#fca5a5;font-weight:800;">
+            QRライブラリ未読込（qrcode.min.js）<br>Consoleを確認
+          </div>`;
+          return;
+        }
+
+        // eslint-disable-next-line no-undef
+        new window.QRCode(qrDiv, { text: buildStudentUrl(currentSession), width: 520, height: 520 });
+      }catch(e){
+        console.error("QR draw failed:", e);
+        try{
+          qrDiv.innerHTML = `<div style="color:#fca5a5;font-weight:800;">
+            QR生成に失敗（Console参照）
+          </div>`;
+        }catch(_){}
+      }
+    }    
+
+    // 早めに1回、load後にもう1回（CDN遅延にも強くする）
+    safeDrawQR();
+    window.addEventListener("load", safeDrawQR);
+
+    let isQR = true;
+    let currentStatus = "-";
+    let lastStatus = null;
+
+    let currentMode = null;
+    let currentView = "quiz";
+    let choiceOrder = ["A","B","C","D","E"];
+    let currentQuestion = null;
+    let currentRevealMode = "live"; // ★追加：live / closed
+    
+    let expectedN = 0;              // ★追加：100%人数（母数）。0なら従来どおり「投票数=母数」
+    let lastAnswers = {};
+
+    // ===== Auto-fit question text (ONLY question) =====
+    function fitQuestionToLeftScroll({
+      minPx = 28,     // これ以下には縮めない（好みで18〜24）
+      step = 2,       // 2pxずつ縮める
+      maxLoops = 30,  // 無限ループ防止
+    } = {}) {
+    if (!leftScroll || !qEl) return;
+
+      // 前問の縮小が残らないように毎回リセット
+      qEl.style.fontSize = "";
+
+      // DOM反映後に測る
+      requestAnimationFrame(() => {
+        let loops = 0;
+        let fontSize = parseFloat(getComputedStyle(qEl).fontSize);
+
+        // #leftScroll の中身がはみ出している間だけ縮める
+        // overflow:hiddenでもscrollHeightは増えるので判定可能
+        while (leftScroll.scrollHeight > leftScroll.clientHeight &&
+               fontSize > minPx &&
+               loops < maxLoops) {
+          fontSize -= step;
+          qEl.style.fontSize = `${fontSize}px`;
+          loops++;
+        }
+      });
+    }
+
+    // ===== Fit choices height (scroll-safe) =====
+    function fitChoicesHeight(){
+      // choices window is fixed-height; keep overflow scroll.
+      return;
+    }
+
+    function clamp01(x){ return Math.max(0, Math.min(1, x)); }
+
+    function updateChoiceSpacing(){
+      // textmodeは選択肢なし（触らない）
+      if (currentMode === "text" || document.body.classList.contains("textmode")) return;
+      if (!cEl) return;
+    
+      const fs = parseFloat(getComputedStyle(cEl).fontSize) || 32; // #choicesの実フォントサイズ(px)
+      const min = 22, max = 70; // tpCMaxの範囲に合わせる
+      const t = clamp01((fs - min) / (max - min)); // 0=小さい字 / 1=大きい字
+    
+      // 小さい字ほど “詰める”
+      // line-height: 1.06 ～ 1.16（標準も少し狭め）
+      const lh = 1.02 + t * 0.06; // 行間を最小化（文字をより大きく見せる）
+    
+      // 行間だけじゃなく、行間隔・パディングも少し連動
+      const choicesGap = 0.16 + t * 0.10; // em（行間隔を詰める）
+      const cGap  = 0.36 + t * 0.08;      // em
+      const padY  = 0.22 + t * 0.10;      // em（上下パディングを削る）
+      const padX  = 0.50 + t * 0.12;      // em
+    
+      const root = document.documentElement.style;
+      root.setProperty("--cLH", String(lh.toFixed(3)));
+      root.setProperty("--choicesGap", `${choicesGap.toFixed(3)}em`);
+      root.setProperty("--cGap", `${cGap.toFixed(3)}em`);
+      root.setProperty("--cPadY", `${padY.toFixed(3)}em`);
+      root.setProperty("--cPadX", `${padX.toFixed(3)}em`);
+    }
+
+    // 連続呼び出しをまとめる（描画のたびに暴れないように）
+    let _fitReq = 0;
+    function requestFitQuestion() {
+      cancelAnimationFrame(_fitReq);
+      _fitReq = requestAnimationFrame(() => {
+    
+        const isTextMode =
+          (typeof currentMode !== "undefined" && currentMode === "text") ||
+          document.body.classList.contains("textmode");
+    
+        // ✅ 書き問題(textmode)は「自動縮小」をしない（qMaxが素直に効くように）
+        if (isTextMode) {
+          if (typeof qEl !== "undefined" && qEl) qEl.style.fontSize = ""; // 前回の縮小残りを消す
+          return;
+        }
+    
+        // quiz（選択肢あり）のときだけ従来通り
+        fitQuestionToLeftScroll({ minPx: 30 });
+    
+        // ✅ 1フレーム後に choices 高さを計算（DOM反映後でズレない）
+        requestAnimationFrame(() => {
+          fitChoicesHeight();
+          updateChoiceSpacing(); // ★追加：選択肢の行間/隙間を文字サイズ連動で更新
+        });
+      });          
+    }
+
+    // ===== 最強セット（安全版）：1回だけイベント登録して再フィット =====
+    let _refitBound = false;
+    
+    function refitNow(){
+      requestFitQuestion();
+      if (typeof updateChoiceSpacing === "function") updateChoiceSpacing();
+    
+      // モニタ移動直後の「遅れてサイズ確定」対策（保険）
+      setTimeout(() => {
+        requestFitQuestion();
+        if (typeof updateChoiceSpacing === "function") updateChoiceSpacing();
+      }, 120);
+    }
+    
+    function bindRefitEventsOnce(){
+      if (_refitBound) return;
+      _refitBound = true;
+    
+      window.addEventListener("resize", refitNow);
+    
+      if (window.visualViewport){
+        window.visualViewport.addEventListener("resize", refitNow);
+      }
+    
+      window.addEventListener("focus", refitNow);
+      document.addEventListener("fullscreenchange", refitNow);
+      window.addEventListener("pageshow", refitNow);
+    }
+    
+    // ★起動時に1回だけ登録
+    bindRefitEventsOnce();
+
+    // ===== Display tuning (per QID, localStorage) =====
+    const tuneBtn   = document.getElementById("tuneBtn");
+    const tunePanel = document.getElementById("tunePanel");
+    const tuneClose = document.getElementById("tuneClose");
+    
+    const tpQMax = document.getElementById("tpQMax");
+    const tpCMax = document.getElementById("tpCMax");
+const tpQMaxVal = document.getElementById("tpQMaxVal");
+    const tpCMaxVal = document.getElementById("tpCMaxVal");
+    const tpTSize    = document.getElementById("tpTSize");
+    const tpTSizeVal = document.getElementById("tpTSizeVal");
+const tpSave     = document.getElementById("tpSave");
+    const tpSetDefault = document.getElementById("tpSetDefault"); // ★追加
+    const tpResetQ   = document.getElementById("tpResetQ");
+    const tpResetAll = document.getElementById("tpResetAll");
+    const tpHint     = document.getElementById("tpHint");
+    
+    let _tuneDefaults = null;
+    
+    function getDefaultKey(room){
+      return `cls:disp:default:${String(room || "room")}`;
+    }
+    
+    function loadRoomDefault(room){
+      try{
+        const raw = localStorage.getItem(getDefaultKey(room));
+        if (!raw) return null;
+        const obj = JSON.parse(raw);
+        return { qMax: Number(obj.qMax), cMax: Number(obj.cMax), tSize: obj.tSize ? Number(obj.tSize) : NaN };
+      }catch(e){
+        return null;
+      }
+    }
+    
+    function saveRoomDefault(room, t){
+      try{
+        localStorage.setItem(getDefaultKey(room), JSON.stringify({
+          qMax: Math.round(Number(t.qMax)),
+          cMax: Math.round(Number(t.cMax)),
+          tSize: Math.round(Number(t.tSize || 28)),
+          at: Date.now()
+        }));
+        return true;
+      }catch(e){
+        return false;
+      }
+    }
+    
+    function readDefaultsOnce(){
+      if (_tuneDefaults) return _tuneDefaults;
+    
+      const roomName = (typeof room !== "undefined") ? room : "room";
+    
+      // ★優先：この端末で固定したデフォルト
+      const saved = loadRoomDefault(roomName);
+      if (saved && Number.isFinite(saved.qMax) && Number.isFinite(saved.cMax)){
+        _tuneDefaults = saved;
+        return _tuneDefaults;
+      }
+    
+      // ★なければCSSの初期値
+      const cs = getComputedStyle(document.documentElement);
+      _tuneDefaults = {
+        qMax: Number(cs.getPropertyValue("--qMax").trim()) || 64,
+        cMax: Number(cs.getPropertyValue("--cMax").trim()) || 46,
+        tSize: Number(cs.getPropertyValue("--tSize").trim()) || 28
+      };
+      return _tuneDefaults;
+    }
+    
+    function setCssVars(t){
+      if (!t) return;
+      const root = document.documentElement.style;
+      if (Number.isFinite(t.qMax)) root.setProperty("--qMax", String(Math.round(t.qMax)));
+      if (Number.isFinite(t.cMax)) root.setProperty("--cMax", String(Math.round(t.cMax)));
+      if (Number.isFinite(t.tSize)) root.setProperty("--tSize", String(Math.round(t.tSize)));
+}
+    
+    function getTuneKey(room, qid){
+      const r = String(room || "room");
+      const q = String(qid || "__noqid__");
+      return `cls:disp:tune:${r}:${q}`;
+    }
+    
+    function loadTune(room, qid){
+      try{
+        const raw = localStorage.getItem(getTuneKey(room, qid));
+        if (!raw) return null;
+        const obj = JSON.parse(raw);
+        return { qMax: Number(obj.qMax), cMax: Number(obj.cMax), tSize: obj.tSize ? Number(obj.tSize) : NaN };
+      }catch(e){
+        console.warn("tune load failed:", e);
+        return null;
+      }
+    }
+    
+    function saveTune(room, qid, t){
+      try{
+        localStorage.setItem(getTuneKey(room, qid), JSON.stringify({
+          qMax: Math.round(Number(t.qMax)),
+          cMax: Math.round(Number(t.cMax)),
+          tSize: Math.round(Number(t.tSize || 28)),
+          at: Date.now(),
+        }));
+        return true;
+      }catch(e){
+        console.warn("tune save failed:", e);
+        return false;
+      }
+    }
+    
+    function deleteTune(room, qid){
+      try{ localStorage.removeItem(getTuneKey(room, qid)); }catch(e){}
+    }
+    
+    function deleteAllTunes(room){
+      const prefix = `cls:disp:tune:${String(room || "room")}:`;
+      try{
+        const keys = [];
+        for (let i=0; i<localStorage.length; i++){
+          const k = localStorage.key(i);
+          if (k && k.startsWith(prefix)) keys.push(k);
+        }
+        keys.forEach(k => localStorage.removeItem(k));
+      }catch(e){}
+    }
+    
+    function reflectUiFromCss(){
+      const cs = getComputedStyle(document.documentElement);
+      const qMax = Number(cs.getPropertyValue("--qMax").trim()) || 64;
+      const cMax = Number(cs.getPropertyValue("--cMax").trim()) || 46;
+tpQMax.value = String(qMax);
+      tpCMax.value = String(cMax);
+tpQMaxVal.textContent = String(qMax);
+      tpCMaxVal.textContent = String(cMax);
+      const tSize = Number(cs.getPropertyValue("--tSize").trim()) || 28;
+      if (tpTSize) { tpTSize.value = String(tSize); tpTSizeVal.textContent = String(tSize); }
+}
+    
+    function reflectVals(){
+      tpQMaxVal.textContent = tpQMax.value;
+      tpCMaxVal.textContent = tpCMax.value;
+      if (tpTSize && tpTSizeVal) tpTSizeVal.textContent = tpTSize.value;
+}
+    
+    function applyTuneForCurrentQid(){
+      // room 変数は、このファイルでは `room` が存在します:contentReference[oaicite:8]{index=8}
+      const roomName = (typeof room !== "undefined") ? room : "room";
+      const qid = (typeof currentQid !== "undefined") ? currentQid : null;
+    
+      const d = readDefaultsOnce();
+      const t = loadTune(roomName, qid);
+    
+      if (t && Number.isFinite(t.qMax) && Number.isFinite(t.cMax)){
+        setCssVars(t);
+        if (tpHint) tpHint.textContent = `適用中：QID=${qid || "-"}（保存済み）`;
+      }else{
+        setCssVars(d);
+        if (tpHint) tpHint.textContent = `初期値：QID=${qid || "-"}（未保存）`;
+      }
+    
+      reflectUiFromCss();
+      requestFitQuestion();
+      
+    }
+    
+    // UI events
+    if (tuneBtn && tunePanel && tuneClose){
+      tuneBtn.addEventListener("click", () => {
+        tunePanel.classList.toggle("show");
+        reflectUiFromCss();
+      });
+      tuneClose.addEventListener("click", () => tunePanel.classList.remove("show"));
+    }
+    
+    [tpQMax, tpCMax, tpTSize].forEach(inp => {
+      if (!inp) return;
+      inp.addEventListener("input", () => {
+        reflectVals();
+        setCssVars({
+          qMax: Number(tpQMax.value),
+          cMax: Number(tpCMax.value),
+          tSize: Number(tpTSize ? tpTSize.value : 28),
+        });
+        requestFitQuestion();
+      });
+    });
+    
+    if (tpSave){
+      tpSave.addEventListener("click", () => {
+        const roomName = (typeof room !== "undefined") ? room : "room";
+        const qid = (typeof currentQid !== "undefined") ? currentQid : null;
+    
+        const ok = saveTune(roomName, qid, {
+          qMax: Number(tpQMax.value),
+          cMax: Number(tpCMax.value),
+          tSize: Number(tpTSize ? tpTSize.value : 28),});
+        if (tpHint) tpHint.textContent = ok ? `保存しました：QID=${qid || "-"}（この端末のみ）` : "保存に失敗しました";
+        applyTuneForCurrentQid();
+      });
+    }
+    if (tpSetDefault){
+      tpSetDefault.addEventListener("click", () => {
+        const roomName = (typeof room !== "undefined") ? room : "room";
+    
+        const ok = saveRoomDefault(roomName, {
+          qMax: Number(tpQMax.value),
+          cMax: Number(tpCMax.value),
+          tSize: Number(tpTSize ? tpTSize.value : 28)
+        });
+    
+        // ★readDefaultsOnce のキャッシュを更新
+        _tuneDefaults = { qMax: Number(tpQMax.value), cMax: Number(tpCMax.value), tSize: Number(tpTSize ? tpTSize.value : 28) };
+    
+        if (tpHint) tpHint.textContent = ok
+          ? "デフォルト固定しました（この端末のみ）"
+          : "デフォルト固定に失敗しました";
+    
+        applyTuneForCurrentQid();
+      });
+    }
+
+    if (tpResetQ){
+      tpResetQ.addEventListener("click", () => {
+        const roomName = (typeof room !== "undefined") ? room : "room";
+        const qid = (typeof currentQid !== "undefined") ? currentQid : null;
+        deleteTune(roomName, qid);
+        if (tpHint) tpHint.textContent = `初期化しました：QID=${qid || "-"}`;
+        applyTuneForCurrentQid();
+      });
+    }
+    
+    if (tpResetAll){
+      tpResetAll.addEventListener("click", () => {
+        const roomName = (typeof room !== "undefined") ? room : "room";
+        deleteAllTunes(roomName);
+        if (tpHint) tpHint.textContent = "このROOMの保存を全て初期化しました";
+        applyTuneForCurrentQid();
+      });
+    }
+
+    // ===== Timer =====
+    let timerState = null;
+    let timerInterval = null;
+    let lastAutoClosedAt = 0;
+    let lastCountdownSec = null; // 直前に鳴らした秒（3/2/1の連打防止）
+    let countdownPlayed = false; // 残り3秒で1回だけ鳴らす用
+
+    function fmt2(n){ return String(n).padStart(2,"0"); }
+    function fmtRemain(ms){
+      const s = Math.max(0, Math.ceil(ms/1000));
+      const m = Math.floor(s/60);
+      const r = s % 60;
+      return `${fmt2(m)}:${fmt2(r)}`;
+    }
+
+    function stopTimerTick() {
+      if (timerInterval){ clearInterval(timerInterval); timerInterval = null; }
+      if (timerLabel) timerLabel.textContent = "⏱ --:--";
+
+      // ★追加
+      if (timerBar) timerBar.style.width = "0%";
+      document.body.classList.remove("timer-running", "timer-urgent");
+
+      lastCountdownSec = null;
+      countdownPlayed = false;
+    }
+
+    function ensureTimerTick(){
+      if (timerInterval) return;
+  
+      timerInterval = setInterval(async () => {
+        if (!timerState || !timerState.running || !timerState.endsAt){
+          ;
+          return;
+        }
+
+        const remain = timerState.endsAt - Date.now();
+
+        // ===== 残り3秒に入った瞬間に1回だけカウントダウン音（mp3内で 3,2,1,0）=====
+        if (timerState.autoClose && currentStatus === "open" && isQR === false){
+          if (remain <= 3000 && remain > 0 && !countdownPlayed){
+            playCountdown();
+            countdownPlayed = true;
+          }
+          // 3秒より前に戻ったら（次のタイマー開始など）リセット
+            if (remain > 3000) countdownPlayed = false;
+        }
+
+          // 表示更新
+          if (timerLabel) timerLabel.textContent = `⏱ ${fmtRemain(remain)}`;
+
+        // ★残り%でバーを縮める
+        if (timerBar && timerState && timerState.durationSec){
+          const totalMs = timerState.durationSec * 1000;
+          const ratio = Math.max(0, Math.min(1, remain / totalMs)); // 1→0
+          timerBar.style.width = `${Math.round(ratio * 100)}%`;
+
+          // 残り10秒で点滅（要らなければ消してOK）
+          document.body.classList.toggle("timer-urgent", remain <= 10_000 && remain > 0);
+        }
+
+        // 0秒で自動 close（open かつ QRでない時だけ）
+        if (remain <= 0 && timerState.autoClose && currentStatus === "open" && isQR === false){
+          const now = Date.now();
+          // 連打防止
+          if (now - lastAutoClosedAt > 1500){
+            lastAutoClosedAt = now;
+            await update(activityRef, { status:"closed" }).catch(()=>{});
+          }
+        }
+      }, 250);
+    } 
+     
+    /* ★Q1欠落対策：最後のQIDを保持し、poll→quizで必ず表示処理を回す */
+    let latestQid = null;
+    let subscribedQid = null;
+    let currentQid = null; // ★追加：currentQuestionが対応しているQID
+    let unsubQ = null;
+
+    function defaultChoicesFromMode(mode){
+      if (mode === "ox") return ["O","X"];
+      if (mode === "five") return ["A","B","C","D","E"];
+      return ["A","B","C","D","E"];
+    }
+
+    function showToast(){
+      toast.style.opacity = "1";
+      setTimeout(()=> toast.style.opacity = "0", 1200);
+    }
+
+    function showQR(){
+      isQR = true;
+      qrLayer.classList.remove("hidden");
+      document.getElementById("mainGrid").style.visibility = "hidden";
+    }
+    function hideQRWithFade(){
+      isQR = false;
+      qrLayer.classList.add("hidden");
+      setTimeout(()=>{
+        if (!isQR) document.getElementById("mainGrid").style.visibility = "visible";
+      }, 460);
+    }
+
+    function placeAnswerBoxTop(isTop){
+      if (!leftScroll) return;
+      if (isTop) leftScroll.insertBefore(answerBox, cEl);
+      else leftScroll.appendChild(answerBox);
+    }
+
+    function updateAnswerUI(){
+      const q = currentQuestion;
+      const shouldShow = (currentStatus === "closed") && q && (q.answer || q.explanation);
+      placeAnswerBoxTop(currentStatus === "closed");
+
+      if (!shouldShow){
+        answerBox.classList.remove("show");
+        answerLine.textContent = "";
+        explanationLine.textContent = "";
+        return;
+      }
+      answerBox.classList.add("show");
+      let ans = q.answer ? String(q.answer).trim().toUpperCase() : "";
+      const normAns = normalizeChoicesObj(q.choices || {});
+      if (normAns.mapAB && ans) ans = mapABtoOXKey(ans);
+
+      answerLine.textContent = ans ? `正解：${uiLabel(ans)}` : "正解：—";
+      explanationLine.textContent = q.explanation ? `解説：${q.explanation}` : "";
+    }
+
+    function colorOf(label){
+      const css = getComputedStyle(document.documentElement);
+      switch(String(label).trim().toUpperCase()){
+        case "O": return css.getPropertyValue("--color-o");
+        case "X": return css.getPropertyValue("--color-x");
+        case "A": return css.getPropertyValue("--color-a");
+        case "B": return css.getPropertyValue("--color-b");
+        case "C": return css.getPropertyValue("--color-c");
+        case "D": return css.getPropertyValue("--color-d");
+        case "E": return css.getPropertyValue("--color-e");
+        default:  return "#94a3b8";
+      }
+    }
+
+    function renderChoices(choicesObj, correctKey, showCorrect){
+      cEl.innerHTML = "";
+      const entries = Object.entries(choicesObj || {});
+      entries.forEach(([k, v]) => {
+        const key = String(k).trim().toUpperCase();
+        const row = document.createElement("div");
+        row.className = "choice";
+        if (showCorrect && correctKey && key === correctKey) row.classList.add("correct");
+
+        const b = document.createElement("div");
+        b.className = `badge ${key}`;
+        b.textContent = uiLabel(key);
+
+        const t = document.createElement("div");
+        t.className = "choiceText";
+        t.textContent = v;
+
+        row.appendChild(b);
+        row.appendChild(t);
+        cEl.appendChild(row);
+      });
+    }
+    
+    function renderVChart(counts, order){
+      vchart.innerHTML = "";
+    
+      const ord = Array.isArray(order) && order.length ? order : Object.keys(counts || {});
+      if (!ord.length){
+        vchart.innerHTML = `<div style="color:rgba(203,213,225,.9);">（集計待ち）</div>`;
+        return;
+      }
+    
+      const entries = ord.map(k => [String(k).toUpperCase(), Number((counts||{})[k]||0)]);
+      const max = Math.max(...entries.map(([,v])=>v), 1);
+    
+      // 母数：expectedN が入っていればそれを優先
+      const actualTotal = entries.reduce((s,[,v]) => s + (Number(v)||0), 0);
+      const denom = (expectedN > 0 ? Math.max(expectedN, actualTotal) : actualTotal) || 1;
+    
+      entries.forEach(([lab, val]) => {
+        const col = document.createElement("div");
+        col.className = "col";
+    
+        // ラベル（左）
+        const label = document.createElement("div");
+        label.className = "lab";
+        label.textContent = uiLabel(lab);
+    
+        // バートラック（中央）
+        const track = document.createElement("div");
+        track.className = "barTrack";
+    
+        const bar = document.createElement("div");
+        bar.className = "bar";
+        const widthPct = Math.round((val / max) * 100);
+        bar.style.width = `${widthPct}%`;
+        bar.style.background = colorOf(lab);
+        track.appendChild(bar);
+    
+        // カウント（右）
+        const cnt = document.createElement("div");
+        cnt.className = "count";
+        const pct = Math.round((val / denom) * 100);
+        cnt.textContent = `${val}（${pct}%）`;
+    
+        col.appendChild(label);
+        col.appendChild(track);
+        col.appendChild(cnt);
+    
+        vchart.appendChild(col);
+      });
+    }
+
+    function escapeHtml(str){
+      return str
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#39;");
+    }
+
+    function renderTextAnswers(answers){
+      textList.innerHTML = "";
+      const keys = Object.keys(answers || {});
+      const items = [];
+
+      keys.forEach(uid => {
+        const v = answers[uid];
+        if (typeof v === "string") items.push(v);
+        else if (v && typeof v === "object" && typeof v.value === "string") items.push(v.value);
+      });
+
+      if (currentStatus !== "closed"){
+        textTitle.textContent = `文字回答（解答終了で表示） / 現在 ${items.length} 件`;
+        return;
+      }
+
+      textTitle.textContent = `文字回答（公開中） / ${items.length} 件`;
+
+      items.forEach((t, idx) => {
+        const div = document.createElement("div");
+        div.className = "textItem";
+        div.innerHTML = `<span class="no">${idx+1}.</span>${escapeHtml(String(t||""))}`;
+        textList.appendChild(div);
+      });
+
+      if (items.length === 0){
+        const div = document.createElement("div");
+        div.className = "textItem";
+        div.innerHTML = `<span class="no">—</span>（回答なし）`;
+        textList.appendChild(div);
+      }
+    }
+
+        function getEffectiveChoiceOrder(){
+      // quiz中は「今表示している問題」のchoicesを最優先（=右の集計も必ず一致させる）
+      if (currentView === "quiz" && currentQuestion && currentQuestion.choices && typeof currentQuestion.choices === "object"){
+        const norm = normalizeChoicesObj(currentQuestion.choices || {});
+        const ord = Object.keys(norm.obj || {}).map(k => String(k).trim().toUpperCase());
+        if (ord.length) return ord;
+      }
+      // poll/standby等は従来通り activity由来
+      return Array.isArray(choiceOrder) ? choiceOrder : [];
+    }
+
+    function shouldHideResults(){
+      // textは元々「closedで一覧公開」なので、ここでは従来仕様を優先して隠さない
+      if (currentMode === "text") return false;
+      return (currentRevealMode === "closed") && (currentStatus === "open") && (isQR === false);
+    }
+    
+    function syncRevealUI(){
+      const hide = shouldHideResults();
+      if (resultsMask) resultsMask.classList.toggle("show", hide);
+    
+      // タイトルも切り替える（見た目で分かるように）
+      rightTitle.textContent =
+        (currentMode === "text") ? "文字入力（件数＋一覧）" :
+        hide ? "集計（非公開）" : "集計（縦棒）";
+    }
+
+    function recomputeAndRenderFromAnswers(ans){
+      const keys = Object.keys(ans || {});
+      const n = keys.length;
+
+      const denomN = (expectedN > 0 ? Math.max(expectedN, n) : 0);
+      countLabel.textContent = (expectedN > 0) ? `参加中 ${n} / ${denomN}人` : `参加中 ${n}人`;
+      qrCount.textContent    = countLabel.textContent;
+
+      const isText = (currentMode === "text");
+      if (isText){
+        vchart.innerHTML = `
+          <div style="width:100%; display:flex; align-items:center; justify-content:space-between; gap:12px;">
+            <div style="font-weight:1000; letter-spacing:.10em; color:rgba(203,213,225,.92);">
+              文字入力
+              <div style="margin-top:6px; font-size:14px; color:rgba(203,213,225,.85);">
+                ${currentStatus === "closed" ? "公開中" : "受付中（解答終了で公開）"}
+              </div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:14px; color:rgba(203,213,225,.85); font-weight:900; letter-spacing:.08em;">件数</div>
+              <div style="font-size:44px; font-weight:1100; line-height:1; color:#fff;">${n}</div>
+            </div>
+          </div>
+        `;
+        textBox.classList.add("show");
+        renderTextAnswers(ans);
+        return;
+      }
+
+      textBox.classList.remove("show");
+      textList.innerHTML = "";
+
+    const effectiveOrder = getEffectiveChoiceOrder();
+
+    const counts = {};
+    (effectiveOrder || []).forEach(c => counts[c] = 0);
+
+
+      keys.forEach(uid => {
+        const v = ans[uid];
+        let val = null;
+        if (typeof v === "string") val = v;
+        else if (v && typeof v === "object" && typeof v.value === "string") val = v.value;
+        if (!val) return;
+
+    let key = String(val).trim().toUpperCase();
+
+    // ★集計の基準がOXのときは A/B を O/X に統一
+    if (Array.isArray(effectiveOrder) && effectiveOrder.length === 2 &&
+        effectiveOrder.includes("O") && effectiveOrder.includes("X")){
+      key = mapABtoOXKey(key);
+    }
+
+    if (counts[key] === undefined){
+      return; // 想定外は無視
+    }
+    counts[key] += 1;
+
+      });
+
+      renderVChart(counts, effectiveOrder);
+
+    }
+
+    /* ★QIDを表示処理に回す関数（poll中にQIDが来ても保持して、quizに戻ったら必ず適用） */
+function applyCurrentQid(){
+  // quiz以外（poll/standby/qr）に入ったら、前の問題購読を必ず止める
+  if (currentView !== "quiz"){
+    if (unsubQ) { unsubQ(); unsubQ = null; }
+    subscribedQid = null;
+    currentQid = null;
+    return;
+  }
+
+  const qid = latestQid;
+
+  // qidが無い
+  if (!qid){
+    subscribedQid = null;
+    currentQid = null;
+    currentQuestion = null;
+    qEl.textContent = "（問題を待っています…）";
+    cEl.innerHTML = "";
+    updateAnswerUI();
+    applyTuneForCurrentQid();
+    requestFitQuestion();
+    return;
+  }
+
+  // 同じqidで購読が生きている：購読は張り直さないが、再描画はする
+  if (qid === subscribedQid && unsubQ) {
+    if (currentQuestion) {
+      cEl.innerHTML = ""; // 前の選択肢DOM残り事故防止
+
+      const isTextMode = (currentMode === "text") || document.body.classList.contains("textmode");
+      if (isTextMode){
+        choiceOrder = [];
+        renderChoices({}, null, false);
+      } else {
+        const norm = normalizeChoicesObj(currentQuestion.choices || {});
+        const choicesForUI = norm.obj;
+
+        // choiceOrder更新（表示と集計一致）
+        if (choicesForUI && typeof choicesForUI === "object"){
+          const ord = Object.keys(choicesForUI).map(k => String(k).trim().toUpperCase());
+          if (ord.length) choiceOrder = ord;
+        }
+
+        let ck = currentQuestion.answer ? String(currentQuestion.answer).trim().toUpperCase() : null;
+        if (norm.mapAB && ck) ck = mapABtoOXKey(ck);
+
+        renderChoices(choicesForUI || {}, ck, currentStatus === "closed");
+      }
+
+      updateAnswerUI();
+      maybeAutoSpeak();
+      recomputeAndRenderFromAnswers(lastAnswers);
+      applyTuneForCurrentQid();
+      requestFitQuestion();
+    }
+    return;
+  }
+
+  // ここから「新しいqid」：購読を張り直す
+  if (unsubQ) { unsubQ(); unsubQ = null; }
+  subscribedQid = qid;
+
+  unsubQ = onValue(qRef(qid), snap => {
+    const q = snap.val();
+    if (!q){
+      currentQid = null;
+      currentQuestion = null;
+      qEl.textContent = "（問題データが見つかりません）";
+      cEl.innerHTML = "";
+      updateAnswerUI();
+      requestFitQuestion();
+      return;
+    }
+
+    currentQid = qid;
+    currentQuestion = q;
+
+    qEl.textContent = q.question || "";
+    cEl.innerHTML = ""; // 前問DOMを必ず消す
+
+    const isTextMode = (currentMode === "text") || document.body.classList.contains("textmode");
+    if (isTextMode){
+      choiceOrder = [];
+      renderChoices({}, null, false);
+      updateAnswerUI();
+      maybeAutoSpeak();
+      recomputeAndRenderFromAnswers(lastAnswers);
+      applyTuneForCurrentQid();
+      requestFitQuestion();
+      return;
+    }
+
+    const norm = normalizeChoicesObj(q.choices || {});
+    const choicesForUI = norm.obj;
+    
+    if (choicesForUI && typeof choicesForUI === "object"){
+      const ord = Object.keys(choicesForUI).map(k => String(k).trim().toUpperCase());
+      if (ord.length) choiceOrder = ord;
+    }
+    
+    let ck = q.answer ? String(q.answer).trim().toUpperCase() : null;
+    if (norm.mapAB && ck) ck = mapABtoOXKey(ck);
+    
+    renderChoices(choicesForUI || {}, ck, currentStatus === "closed");
+    updateAnswerUI();
+    maybeAutoSpeak();
+    recomputeAndRenderFromAnswers(lastAnswers);
+    
+    // ★追加：新QIDの最初の描画でも tuning を確実に適用
+    applyTuneForCurrentQid();
+    
+    requestFitQuestion();
+
+  });
+}
+    
+// activity
+onValue(activityRef, snap => {
+  const a = snap.val() || {};
+  currentStatus = a.status || "-";
+  currentMode = a.mode || null;
+  currentRevealMode = (a.revealMode === "closed") ? "closed" : "live";
+  // ★ここに追加
+  currentSession = String(a.session || "");
+  expectedN = Math.max(0, Math.floor(Number(a.expectedN || 0)));
+
+  // ★安全弁：cElが存在するときだけ消す（存在しないと全停止→QRが出ない）
+  if (currentMode === "text" && typeof cEl !== "undefined" && cEl) {
+    cEl.innerHTML = "";
+    choiceOrder = [];
+  }
+
+  currentView = a.view || "qr";
+  timerState = a.timer || null;
+  if (timerState && timerState.running && timerState.endsAt) ensureTimerTick();
+  else stopTimerTick();
+  document.body.classList.toggle("timer-running", !!(timerState && timerState.running && timerState.endsAt));
+
+  statusLabel.textContent = `status: ${currentStatus}`;
+  document.body.classList.toggle("poll", currentView === "poll");
+  document.body.classList.toggle("closed", currentStatus === "closed");
+  document.body.classList.toggle("textmode", currentMode === "text");
+
+  rightTitle.textContent =
+   (currentMode === "text") ? "文字入力（件数＋一覧）" : "集計（縦棒）";
+
+  // ✅QR判定：ONなら表示、ONでなければ必ず非表示（固まり防止）
+  const qrOn =
+    (a.qr === true) ||
+    (a.qr === "true") ||
+    (a.view === "qr");
+  
+  if (qrOn) {
+    safeDrawQR(); // ★追加：session反映して描き直す
+    showQR();
+  } else {
+    hideQRWithFade();
+  }
+
+  const cfgChoices = (a.config && Array.isArray(a.config.choices)) ? a.config.choices : null;
+  if (cfgChoices && cfgChoices.length){
+    choiceOrder = cfgChoices.map(x => String(x).trim().toUpperCase());
+  } else if (currentMode){
+    choiceOrder = defaultChoicesFromMode(currentMode);
+  }
+  
+  // ★configがABのみでも display上はOXへ統一（A/B → O/X）
+  if (choiceOrder.length === 2 && choiceOrder.includes("A") && choiceOrder.includes("B")){
+    choiceOrder = ["O","X"];
+  }
+  // ★追加：openに切り替わった瞬間（出題開始）
+  if (lastStatus !== "open" && currentStatus === "open") {
+    playStart();
+  
+    // ★予約は maybeAutoSpeak が担当（一本化）
+    ttsOpenReadyAt = Date.now() + OPEN_READ_DELAY_MS;
+    if (ttsOpenDelayTimer) { clearTimeout(ttsOpenDelayTimer); ttsOpenDelayTimer = null; }
+    maybeAutoSpeak(); // ←ここで呼ぶだけ
+  }
+
+  if (lastStatus !== "closed" && currentStatus === "closed") {
+    showToast();
+　　playGong();
+    speakClosedAnswerOnly(); // ★ここ
+  }
+  lastStatus = currentStatus;
+  // ★追加：openでなくなったら予約を解除
+  if (currentStatus !== "open") {
+    ttsOpenReadyAt = 0;
+    if (ttsOpenDelayTimer) { clearTimeout(ttsOpenDelayTimer); ttsOpenDelayTimer = null; }
+  }
+
+  if (currentView === "poll"){
+    if (unsubQ) { unsubQ(); unsubQ = null; }
+    currentQuestion = null;
+    qEl.textContent = "（口頭Q&A：集計のみ）";
+    cEl.innerHTML = "";
+        
+    // ★追加：pollへ入った瞬間に、現answersで即描画（TEXTも含む）
+    recomputeAndRenderFromAnswers(lastAnswers);
+    updateAnswerUI();
+  } else if (currentView === "standby"){
+    currentQuestion = null;
+    qEl.textContent = "（スタンバイ中… 先生の操作を待っています）";
+    cEl.innerHTML = "";
+    updateAnswerUI();
+  } else {
+    updateAnswerUI();
+  }
+
+  // ★重要：poll→quizになった瞬間に、保持していたQIDを必ず反映（Q1欠落を防ぐ）
+  applyCurrentQid();
+
+  // 即再描画
+  if (a.qr !== true){
+    // view/mode/statusが変わったタイミングで即描画（TEXTのclosed表示を確実に反映）
+    recomputeAndRenderFromAnswers(lastAnswers);
+  }
+  syncRevealUI();
+});
+
+ // qid：常に保持し、quiz状態なら即適用
+ onValue(qidRef, snap => {
+   latestQid = snap.val() || null;
+   applyCurrentQid();      
+ });
+
+    // answers：保存＋音＋再描画
+    onValue(answersRef, snap => {
+      const ans = snap.val() || {};
+      lastAnswers = ans;
+
+      const n = Object.keys(ans).length;
+      if (n > lastAnswerTotal) playPoyon();
+      lastAnswerTotal = n;
+
+      recomputeAndRenderFromAnswers(ans);
+    });
+
+    </script>
+
+    <!-- ===== Display tuning panel (per QID, localStorage) ===== -->
+    <div id="tunePanel" aria-hidden="true">
+      <div class="tpHead">
+        <div class="tpTitle">表示微調整（このPCのローカル保存）</div>
+        <button id="tuneClose" class="tpClose">✕</button>
+      </div>
+  
+      <div class="tpRow">
+        <div class="tpLab">問題文 最大（qMax）</div>
+        <input id="tpQMax" type="range" min="38" max="90" step="1">
+        <div class="tpVal"><span id="tpQMaxVal"></span>px</div>
+      </div>
+  
+      <div class="tpRow">
+        <div class="tpLab">選択肢 最大（cMax）</div>
+        <input id="tpCMax" type="range" min="22" max="70" step="1">
+        <div class="tpVal"><span id="tpCMaxVal"></span>px</div>
+      </div>
+
+      <div class="tpRow">
+        <div class="tpLab">TEXT回答 文字サイズ（tSize）</div>
+        <input id="tpTSize" type="range" min="16" max="56" step="1">
+        <div class="tpVal"><span id="tpTSizeVal"></span>px</div>
+      </div>
+<div class="tpFoot">
+        <button id="tpSave" class="tpBtn">保存（この問題だけ）</button>
+        <button id="tpResetQ" class="tpBtn ghost">この問題を初期化</button>
+        <button id="tpResetAll" class="tpBtn ghost">全部初期化</button>
+        <button id="tpSetDefault" class="tpBtn">デフォルト固定</button>
+      </div>
+  
+      <div class="tpHint" id="tpHint"></div>
+    </div>
+
+</body>
+</html>
