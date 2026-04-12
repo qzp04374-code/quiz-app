@@ -1564,6 +1564,7 @@ ttsBtn.onclick = async () => {
     const activityRef = ref(db, `rooms/${room}/activity`);
     const qidRef      = ref(db, `rooms/${room}/quiz/current_question_id`);
     const answersRef  = ref(db, `rooms/${room}/answers`);
+    const rosterRef   = ref(db, `rooms/${room}/activity/roster`);
     const qRef = (qid) => ref(db, `rooms/${room}/questions/${qid}`);
 
     // display起動で強制QR
@@ -2185,17 +2186,17 @@ tpQMaxVal.textContent = String(qMax);
         const idRow = document.createElement("div");
         idRow.className = "idRow" + (idVisible ? " show" : "");
         const uids = (uidMap && uidMap[lab]) ? uidMap[lab] : [];
-        uids.forEach(uid => {
+        uids.forEach(entry => {
           const chip = document.createElement("span");
           chip.className = "idChip";
-          // 末尾8文字だけ表示（長すぎる uid を短縮）
-          const shortId = String(uid).slice(-8);
-          chip.innerHTML = `<span class="chipIcon">📱</span>${shortId}`;
+          // entry は { uid, emoji, tag, color } または後方互換で string
+          const emoji = entry.emoji || "📱";
+          const tag   = entry.tag   || String(entry.uid || entry).slice(-6);
+          const color = entry.color || null;
+          if (color) chip.style.borderColor = color + "66";
+          chip.innerHTML = `<span class="chipIcon">${emoji}</span>${tag}`;
           idRow.appendChild(chip);
         });
-        if (uids.length === 0 && val === 0){
-          // 0人なら何も出さない
-        }
         wrap.appendChild(idRow);
     
         vchart.appendChild(wrap);
@@ -2330,7 +2331,15 @@ tpQMaxVal.textContent = String(qMax);
 
         if (counts[key] === undefined) return;
         counts[key] += 1;
-        if (uidMap[key]) uidMap[key].push(uid);
+        if (uidMap[key]){
+          const r = rosterCache[uid] || {};
+          uidMap[key].push({
+            uid,
+            emoji: r.emoji || "📱",
+            tag:   r.tag   || uid.slice(-6),
+            color: r.color || null
+          });
+        }
       });
 
       renderVChart(counts, effectiveOrder, uidMap);
@@ -2566,6 +2575,12 @@ onValue(activityRef, snap => {
  });
 
     // answers：保存＋音＋再描画
+    // ===== roster 購読: uid → { emoji, tag, color } =====
+    let rosterCache = {}; // { uid: { emoji, tag, color } }
+    onValue(rosterRef, snap => {
+      rosterCache = snap.exists() ? (snap.val() || {}) : {};
+    });
+
     onValue(answersRef, snap => {
       const ans = snap.val() || {};
       lastAnswers = ans;
