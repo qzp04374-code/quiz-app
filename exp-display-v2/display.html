@@ -11,10 +11,67 @@
       --ink:#f9fafb; --muted:rgba(203,213,225,.85); --shadow:0 1.4rem 5rem rgba(0,0,0,.70);
       --color-o:#34c759; --color-x:#ff3b30; --color-a:#0a84ff; --color-b:#30d158;
       --color-c:#ff9f0a; --color-d:#bf5af2; --color-e:#ff375f;
+      --bar-track:rgba(255,255,255,.12); --bar-inset:rgba(255,255,255,.06);
+      --count-color:#e5e7eb; --lab-color:var(--muted);
       /* 文字サイズ変数（JS で上書き） */
       --sz-q: 2.8rem;       /* 問題文 */
       --sz-choice: 1.5rem;  /* 選択肢 */
       --sz-text: 1.1rem;    /* テキスト回答 */
+    }
+    /* ===== ライトモード ===== */
+    body.light-mode{
+      --bg:#f0f2f5; --panel:rgba(255,255,255,.90); --line:rgba(0,0,0,.10);
+      --ink:#111827; --muted:#4b5563; --shadow:0 4px 24px rgba(0,0,0,.10);
+      --bar-track:rgba(0,0,0,.08); --bar-inset:rgba(0,0,0,.04);
+      --count-color:#1f2937; --lab-color:#4b5563;
+    }
+    body.light-mode{
+      background:var(--bg);
+    }
+    body.light-mode .topbar{ background:rgba(255,255,255,.75); }
+    body.light-mode .panel{ background:rgba(255,255,255,.90); box-shadow:0 4px 24px rgba(0,0,0,.10); }
+    body.light-mode #vchartWrap{ background:rgba(255,255,255,.80); border-color:rgba(0,0,0,.10); }
+    body.light-mode .pill{ background:rgba(0,0,0,.06); border-color:rgba(0,0,0,.12); }
+    body.light-mode .sBtn{ background:rgba(0,0,0,.06); border-color:rgba(0,0,0,.12); }
+    body.light-mode #themeBtn{ background:rgba(255,255,255,.80); border-color:rgba(0,0,0,.14); color:#374151; }
+    /* ===== テーマ切替ボタン ===== */
+    #themeBtn{
+      position:fixed; top:.5rem; left:50%; transform:translateX(-50%);
+      background:rgba(2,6,23,.55); border:1px solid rgba(255,255,255,.16);
+      color:rgba(203,213,225,.9); border-radius:999px; padding:.3rem 1rem;
+      font-size:.72rem; font-weight:900; letter-spacing:.06em;
+      cursor:pointer; user-select:none; z-index:9998;
+      backdrop-filter:blur(8px); transition:background .2s,border-color .2s,color .2s;
+    }
+    /* ===== ID表示 ===== */
+    .idToggleBtn{
+      position:absolute; top:.5rem; right:.5rem;
+      background:rgba(2,6,23,.55); border:1px solid rgba(255,255,255,.14);
+      color:rgba(203,213,225,.9); border-radius:999px;
+      padding:.25rem .65rem; font-size:.72rem; font-weight:900;
+      cursor:pointer; user-select:none; z-index:10; transition:border-color .15s;
+    }
+    .idToggleBtn.on{ border-color:rgba(34,197,94,.5); color:#4ade80; }
+    .idRow{
+      display:flex; flex-wrap:wrap; gap:.25rem; margin-top:.3rem;
+      max-height:0; overflow:hidden; opacity:0;
+      transition:max-height .25s ease,opacity .2s ease;
+    }
+    .idRow.show{ max-height:120px; opacity:1; }
+    .idChip{
+      display:inline-flex; align-items:center; gap:.2rem;
+      background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.10);
+      border-radius:999px; padding:.1rem .5rem;
+      font-size:.68rem; font-weight:700; color:rgba(203,213,225,.85);
+      white-space:nowrap;
+    }
+    .textIdChip{
+      display:inline-flex; align-items:center; gap:.2rem;
+      margin-left:.5rem; vertical-align:middle;
+      background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.18);
+      border-radius:999px; padding:.05rem .45rem .05rem .3rem;
+      font-size:.72em; font-weight:700; color:rgba(203,213,225,.8);
+      white-space:nowrap; line-height:1.5;
     }
     *{box-sizing:border-box;}
     html,body{height:100%;margin:0;overflow:hidden;}
@@ -74,12 +131,14 @@
     .right{padding:.9rem;display:flex;flex-direction:column;gap:.55rem;min-height:0;}
     .rtitle{font-weight:1000;letter-spacing:.08em;font-size:clamp(.75rem,1.1vw,.88rem);color:var(--muted);flex-shrink:0;}
     #vchartWrap{flex:1;min-height:0;border-radius:1.1rem;background:rgba(2,6,23,.55);border:1px solid rgba(255,255,255,.08);padding:.8rem .65rem .5rem;display:flex;flex-direction:column;overflow:hidden;position:relative;}
-    #vchart{flex:1;display:flex;align-items:flex-end;justify-content:space-around;gap:.5rem;padding:.4rem .2rem .1rem;min-height:0;}
-    .col{width:100%;max-width:84px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:.3rem;}
-    .count{font-size:clamp(.65rem,1vw,.84rem);font-weight:1000;color:#e5e7eb;min-height:1rem;text-align:center;white-space:nowrap;}
-    .bar{width:100%;border-radius:.7rem .7rem .3rem .3rem;background:rgba(255,255,255,.12);position:relative;overflow:hidden;height:12px;transition:height .25s ease;}
+    /* 横棒グラフ：上寄せ・固定行高 */
+    #vchart{flex:0 0 auto;display:flex;flex-direction:column;justify-content:flex-start;gap:10px;padding:.3rem .2rem;min-height:0;}
+    .col{width:100%;display:flex;flex-direction:row;align-items:center;gap:.55rem;min-height:0;height:44px;}
+    .lab{font-size:clamp(.8rem,1.2vw,1rem);font-weight:1000;color:var(--lab-color,var(--muted));letter-spacing:.08em;flex:0 0 2rem;text-align:center;}
+    .barTrack{flex:1;height:44px;border-radius:.55rem;background:var(--bar-track,rgba(255,255,255,.12));position:relative;overflow:hidden;box-shadow:inset 0 1px 0 var(--bar-inset,rgba(255,255,255,.06));}
+    .bar{position:absolute;left:0;top:0;bottom:0;width:0%;border-radius:.55rem;transition:width .3s ease;opacity:.92;}
     .barFill{position:absolute;inset:0;opacity:.95;}
-    .lab{font-size:clamp(.8rem,1.2vw,.95rem);font-weight:1000;color:var(--muted);letter-spacing:.08em;}
+    .count{font-size:clamp(.65rem,1vw,.82rem);font-weight:1000;color:var(--count-color,#e5e7eb);flex:0 0 5.5rem;text-align:right;white-space:nowrap;}
     /* ===== RESULTS MASK ===== */
     .resultsMask{position:absolute;inset:0;border-radius:1.1rem;overflow:hidden;display:flex;align-items:center;justify-content:center;background:rgba(2,6,23,.92);backdrop-filter:blur(18px) brightness(.65);opacity:0;pointer-events:none;transition:opacity .18s ease;}
     .resultsMask.show{opacity:1;pointer-events:auto;}
@@ -151,6 +210,7 @@
   </style>
 </head>
 <body>
+  <button id="themeBtn">☀️ 明るい表示</button>
   <div id="buildTag">build: 2026-03-01 / exp-display-v2 / display</div>
   <div id="toast">解答終了 → 公開</div>
 
@@ -211,6 +271,7 @@
       <section class="panel right">
         <div class="rtitle" id="rightTitle">集計</div>
         <div id="vchartWrap">
+          <button id="idToggleBtn" class="idToggleBtn">👤 ID 表示</button>
           <div id="vchart"></div>
           <div id="resultsMask" class="resultsMask">
             <div class="maskFx"><span class="blob b1"></span><span class="blob b2"></span><span class="blob b3"></span><span class="sheen"></span></div>
@@ -274,6 +335,7 @@
     const qidRef      = ref(db, `rooms/${room}/quiz/current_question_id`);
     const phaseRef    = ref(db, `rooms/${room}/quiz/present/phase`);
     const qRef = qid => ref(db, `rooms/${room}/questions/${qid}`);
+    const rosterRef = ref(db, `rooms/${room}/activity/roster`);
 
     // ===== SOUND（mp3） =====
     const seObj = {};
@@ -538,6 +600,7 @@
     let currentQuestion=null, currentQid=null;
     let latestQid=null, subscribedQid=null, unsubQ=null;
     let lastAnswers={};
+    let rosterCache={};
 
     // ===== HELPERS =====
     function uiLabel(k){return {O:"○",X:"✕"}[String(k).toUpperCase()]||k;}
@@ -583,7 +646,7 @@
       explanationLine.textContent=q.explanation?`解説：${q.explanation}`:"";
     }
 
-    function renderVChart(counts,order){
+    function renderVChart(counts,order,uidMap){
       vchart.innerHTML="";
       const ord=Array.isArray(order)&&order.length?order:Object.keys(counts||{});
       if(!ord.length){vchart.innerHTML=`<div style="color:var(--muted);">（集計待ち）</div>`;return;}
@@ -591,15 +654,35 @@
       const max=Math.max(...entries.map(([,v])=>v),1);
       const total=entries.reduce((s,[,v])=>s+(Number(v)||0),0)||1;
       entries.forEach(([lab,val])=>{
+        // 外枠（バー行＋IDチップ行）
+        const wrap=document.createElement("div");
+        wrap.style.cssText="display:flex;flex-direction:column;min-height:0;";
+        // バー行
         const col=document.createElement("div"); col.className="col";
+        const label=document.createElement("div"); label.className="lab"; label.textContent=uiLabel(lab);
+        const track=document.createElement("div"); track.className="barTrack";
+        const bar=document.createElement("div"); bar.className="bar";
+        bar.style.width=`${Math.round((val/max)*100)}%`;
+        bar.style.background=colorOf(lab);
+        track.appendChild(bar);
         const cnt=document.createElement("div"); cnt.className="count";
         cnt.textContent=`${val}（${Math.round((val/total)*100)}%）`;
-        const bar=document.createElement("div"); bar.className="bar";
-        bar.style.height=`${Math.max(12,Math.round((val/max)*280))}px`;
-        const fill=document.createElement("div"); fill.className="barFill"; fill.style.background=colorOf(lab);
-        bar.appendChild(fill);
-        const label=document.createElement("div"); label.className="lab"; label.textContent=uiLabel(lab);
-        col.appendChild(cnt); col.appendChild(bar); col.appendChild(label); vchart.appendChild(col);
+        col.appendChild(label); col.appendChild(track); col.appendChild(cnt);
+        wrap.appendChild(col);
+        // IDチップ行
+        const idRow=document.createElement("div");
+        idRow.className="idRow"+(idVisible?" show":"");
+        const uids=(uidMap&&uidMap[lab])||[];
+        uids.forEach(entry=>{
+          const chip=document.createElement("span"); chip.className="idChip";
+          const emoji=entry.emoji||"📱"; const tag=entry.tag||String(entry.uid||entry).slice(-6);
+          const color=entry.color||null;
+          if(color) chip.style.borderColor=color+"66";
+          chip.innerHTML=`<span>${emoji}</span>${tag}`;
+          idRow.appendChild(chip);
+        });
+        wrap.appendChild(idRow);
+        vchart.appendChild(wrap);
       });
     }
 
@@ -621,10 +704,20 @@
       vchart.appendChild(header);
       if(currentPhase==="explain"){
         if(vals.length){
-          vals.forEach((t,i)=>{
+          // uid付きで保持して IDチップを付ける
+          const ansEntries=Object.entries(ans||{}).map(([uid,v])=>{
+            let txt=null;
+            if(typeof v==="string") txt=v;
+            else if(v&&typeof v==="object"&&v.value!=null) txt=String(v.value);
+            return txt!=null?{uid,txt}:null;
+          }).filter(Boolean);
+          ansEntries.forEach(({uid,txt},i)=>{
             const div=document.createElement("div");
             div.style.cssText="padding:.22rem .35rem;border-bottom:1px solid rgba(255,255,255,.07);font-size:var(--sz-text);line-height:1.45;word-break:break-word;";
-            div.textContent=(i+1)+". "+t;
+            const r=rosterCache[uid]||{};
+            const emoji=r.emoji||""; const tag=r.tag||""; const color=r.color||"rgba(255,255,255,0.2)";
+            const chipHtml=(emoji||tag)?`<span class="textIdChip" style="border-color:${color}66;display:${idVisible?"":"none"}">${emoji?`<span>${emoji}</span>`:""}${tag}</span>`:"";
+            div.innerHTML=`${i+1}. ${txt.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}${chipHtml}`;
             vchart.appendChild(div);
           });
         }else{
@@ -657,8 +750,15 @@
                :(currentMode==="ox"?["O","X"]:currentMode==="five"?["A","B","C","D","E"]:[]);
       if(!keys.length) return;
       const counts={}; keys.forEach(k=>counts[k]=0);
-      Object.values(normalized).forEach(v=>{if(counts[v]!==undefined)counts[v]++;});
-      renderVChart(counts,keys);
+      const uidMap={}; keys.forEach(k=>uidMap[k]=[]);
+      Object.entries(normalized).forEach(([uid,v])=>{
+        if(counts[v]!==undefined){
+          counts[v]++;
+          const r=rosterCache[uid]||{};
+          uidMap[v].push({uid,emoji:r.emoji||"📱",tag:r.tag||uid.slice(-6),color:r.color||null});
+        }
+      });
+      renderVChart(counts,keys,uidMap);
     }
 
     function renderMedia(){
@@ -801,6 +901,35 @@
 
     // ===== QID =====
     onValue(qidRef,snap=>{latestQid=snap.val()||null;applyCurrentQid();});
+
+    // ===== THEME TOGGLE =====
+    const themeBtn=document.getElementById("themeBtn");
+    let isLight=false;
+    if(themeBtn){
+      themeBtn.addEventListener("click",()=>{
+        isLight=!isLight;
+        document.body.classList.toggle("light-mode",isLight);
+        themeBtn.textContent=isLight?"🌙 暗い表示":"☀️ 明るい表示";
+      });
+    }
+
+    // ===== ID TOGGLE =====
+    const idToggleBtn=document.getElementById("idToggleBtn");
+    let idVisible=false;
+    if(idToggleBtn){
+      idToggleBtn.addEventListener("click",()=>{
+        idVisible=!idVisible;
+        idToggleBtn.classList.toggle("on",idVisible);
+        idToggleBtn.textContent=idVisible?"👤 ID 非表示":"👤 ID 表示";
+        document.querySelectorAll(".idRow").forEach(r=>r.classList.toggle("show",idVisible));
+        document.querySelectorAll(".textIdChip").forEach(c=>c.style.display=idVisible?"":"none");
+      });
+    }
+
+    // ===== ROSTER =====
+    onValue(rosterRef,snap=>{
+      rosterCache=snap.exists()?(snap.val()||{}):{};
+    });
 
     // ===== ANSWERS =====
     onValue(answersRef,snap=>{
