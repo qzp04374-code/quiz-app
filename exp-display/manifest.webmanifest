@@ -2,8 +2,8 @@
   "name": "ClassSYNC",
   "short_name": "ClassSYNC",
   "description": "ClassSYNC classroom control system",
-  "start_url": "./index.html?v=20260415",
-  "scope": "./",
+  "start_url": "/quiz-app/exp-display/index.html?v=20260415",
+  "scope": "/quiz-app/exp-display/"
   "display": "standalone",
   "orientation": "landscape",
   "background_color": "#0f172a",
