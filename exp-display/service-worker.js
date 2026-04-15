@@ -1,15 +1,17 @@
 const CACHE_NAME = "classsync-pwa-v20260415";
+const BASE = "/quiz-app/exp-display/";
+
 const APP_SHELL = [
-  "./",
-  "./index.html?v=20260415",
-  "./student.html?v=20260415",
-  "./display.html?v=20260415",
-  "./offline.html",
-  "./manifest.webmanifest",
-  "./pwa-register.js",
-  "./icons/icon-192.png",
-  "./icons/icon-512.png",
-  "./icons/icon-512-maskable.png"
+  BASE,
+  BASE + "index.html?v=20260415",
+  BASE + "student.html?v=20260415",
+  BASE + "display.html?v=20260415",
+  BASE + "offline.html",
+  BASE + "manifest.webmanifest",
+  BASE + "pwa-register.js",
+  BASE + "icons/icon-192.png",
+  BASE + "icons/icon-512.png",
+  BASE + "icons/icon-512-maskable.png"
 ];
 
 self.addEventListener("install", (event) => {
