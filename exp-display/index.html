@@ -6,6 +6,11 @@
   <title>ClassSync Teacher Control</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&family=DM+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <meta name="theme-color" content="#0f172a" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 
   <style>
     /* ===== RESET & BASE ===== */
@@ -1353,5 +1358,7 @@
     // 起動
     attachRoom(currentRoom);
   </script>
+
+  <script src="./pwa-register.js"></script>
 </body>
 </html>
