@@ -4,6 +4,12 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ClassSync Display</title>
+  <link rel="icon" href="./icons/icon-192.png" type="image/png" />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <meta name="theme-color" content="#0f172a" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 
   <style>
     :root{
@@ -12,6 +18,10 @@
       --line:rgba(255,255,255,.10);
       --ink:#f9fafb;
       --muted:#cbd5e1;
+      --bar-track:rgba(255,255,255,.10);
+      --bar-inset:rgba(255,255,255,.06);
+      --count-color:#e5e7eb;
+      --lab-color:#cbd5e1;
 
       /* 色対応：正本（index/studentと一致） */
       --color-o:#34c759;
@@ -34,6 +44,7 @@
       --qMax: 68;     /* 問題文の最大 */
       --cMin: 26;     /* 選択肢文字 最小 */
       --cMax: 46;     /* 選択肢文字 最大 */
+      --tSize: 28;    /* TEXT回答 文字サイズ */
 }
 
     body{
@@ -43,6 +54,59 @@
       color:var(--ink);
       font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",sans-serif;
       overflow:hidden;
+    }
+
+    /* ===== ライトモード ===== */
+    body.light-mode{
+      --bg:#f0f2f5;
+      --panel:rgba(255,255,255,.88);
+      --line:rgba(0,0,0,.10);
+      --ink:#111827;
+      --muted:#4b5563;
+      --bar-track:rgba(0,0,0,.08);
+      --bar-inset:rgba(0,0,0,.04);
+      --count-color:#1f2937;
+      --lab-color:#4b5563;
+    }
+    body.light-mode #buildTag{
+      background:rgba(255,255,255,.7);
+      border-color:rgba(0,0,0,.10);
+      color:#374151;
+    }
+    body.light-mode .panel{
+      background:rgba(255,255,255,.88);
+      box-shadow:0 4px 24px rgba(0,0,0,.10);
+    }
+    body.light-mode .secTitle{
+      color:#6b7280;
+    }
+    body.light-mode #vchartWrap{
+      background:rgba(255,255,255,.80);
+    }
+
+    /* テーマ切替ボタン */
+    #themeBtn{
+      position:fixed;
+      top:10px; left:50%;
+      transform:translateX(-50%);
+      background:rgba(2,6,23,.55);
+      border:1px solid rgba(255,255,255,.16);
+      color:rgba(203,213,225,.9);
+      border-radius:999px;
+      padding:5px 16px;
+      font-size:12px;
+      font-weight:900;
+      letter-spacing:.06em;
+      cursor:pointer;
+      user-select:none;
+      z-index:9998;
+      backdrop-filter:blur(8px);
+      transition:background .2s, border-color .2s, color .2s;
+    }
+    body.light-mode #themeBtn{
+      background:rgba(255,255,255,.80);
+      border-color:rgba(0,0,0,.14);
+      color:#374151;
     }
 
     #buildTag{
@@ -173,6 +237,8 @@
       box-sizing:border-box;
       min-height:0;
       overflow:hidden;
+      display:flex;
+      flex-direction:column;
     }
 
     .secTitle{
@@ -185,7 +251,7 @@
 
     /* 左（授業モード用） */
     #leftPanel{ display:flex; flex-direction:column; gap:10px; min-height:0; }
-    #leftScroll{ min-height:0; overflow:hidden; }
+    #leftScroll{ min-height:0; overflow:hidden; flex:0 0 auto; }
 
     /* ✅ 書き問題(textmode)は、入り切らない分をスクロールで読む */
     body.textmode #leftScroll{
@@ -213,25 +279,17 @@
       --q-min-px: 20; /* 好みで 18〜24 くらい */
     }
 
+    /* ===== #choices: leftPanel残り全高さ・上詰め・スクロール ===== */
     #choices{
-      margin-top:10px;
+      flex: 1 1 0;                   /* leftPanel の残り高さ全部 */
+      min-height: 0;
       display:grid;
       grid-template-columns: 1fr;
       gap: var(--choicesGap);
-    }
-    /* ===== choices scroll safety ===== */
-    #choices{
-      overflow-y: auto;          /* ✅ 下が切れたらスクロール */
+      align-content: start;          /* ○×2行でも上詰め＝間延びしない */
+      overflow-y: auto;
       overscroll-behavior: contain;
-      padding-right: 10px;       /* スクロールバー分 */
-      max-height: 100%;
-    }
-
-    /* ✅ choices viewport: keep a stable window; overflow scroll handles overrun */
-    #choices{
-      height: min(52vh, 520px);   /* <- ここで“枠”を固定（好みで調整） */
-      min-height: 260px;
-      max-height: min(52vh, 520px);
+      padding-right: 10px;
     }
 
     /* ✅ choices typography driven by cMin/cMax (no per-row height slider) */
@@ -337,7 +395,7 @@
       white-space:pre-wrap;
     }
 
-    /* 右：集計（縦棒） */
+    /* 右：集計（横棒） */
     #rightPanel{ display:flex; flex-direction:column; gap:10px; min-height:0; }
     #vchartWrap{
       flex:1;
@@ -345,56 +403,66 @@
       border-radius:18px;
       background:rgba(2,6,23,.55);
       border:1px solid rgba(255,255,255,.08);
-      padding:12px 10px 8px;
+      padding:10px 12px 10px;
       box-sizing:border-box;
       display:flex;
       flex-direction:column;
       overflow:hidden;
     }
     #vchart{
-      flex:1;
+      flex:0 0 auto;               /* 上寄せ：コンテンツ分だけ高さを取り下は空く */
       display:flex;
-      align-items:flex-end;
-      justify-content:space-around;
-      gap:12px;
-      padding:6px 6px 2px;
+      flex-direction:column;
+      justify-content:flex-start;
+      gap:10px;                    /* 行間を固定10px */
+      padding:6px 4px;
       box-sizing:border-box;
       min-height:0;
     }
+    /* 横棒グラフ：1行 = ラベル + バー + カウント */
     .col{
       width:100%;
-      max-width:84px;
       display:flex;
-      flex-direction:column;
+      flex-direction:row;
       align-items:center;
-      justify-content:flex-end;
-      gap:6px;
+      gap:10px;
+      min-height:0;
+      height:48px;                 /* 固定高さ：5択でも均一・間延びしない */
     }
+    .lab{
+      font-size:18px;
+      font-weight:1000;
+      color:var(--lab-color, var(--muted));
+      letter-spacing:.08em;
+      flex:0 0 32px;
+      text-align:center;
+    }
+    .barTrack{
+      flex:1;
+      height:44px;
+      border-radius:10px;
+      background:var(--bar-track, rgba(255,255,255,.10));
+      position:relative;
+      overflow:hidden;
+      box-shadow:inset 0 1px 0 var(--bar-inset, rgba(255,255,255,.06));
+    }
+    .bar{
+      position:absolute;
+      left:0; top:0; bottom:0;
+      width:0%;
+      border-radius:10px;
+      transition:width .3s ease;
+      opacity:.92;
+    }
+    .barFill{ position:absolute; inset:0; opacity:.95; }
     .count{
       font-size:14px;
       font-weight:1000;
-      color:#e5e7eb;
+      color:var(--count-color, #e5e7eb);
       line-height:1.1;
-      min-height:20px;
-      text-align:center;
+      flex:0 0 88px;
+      text-align:right;
       white-space:nowrap;
-    }
-    .bar{
-      width:100%;
-      border-radius:12px 12px 6px 6px;
-      background:rgba(255,255,255,.12);
-      position:relative;
-      overflow:hidden;
-      height:12px;
-      transition:height .2s ease;
-      box-shadow:0 10px 24px rgba(0,0,0,.35);
-    }
-    .barFill{ position:absolute; inset:0; opacity:.95; }
-    .lab{
-      font-size:16px;
-      font-weight:1000;
-      color:var(--muted);
-      letter-spacing:.08em;
     }
 
     /* text回答一覧 */
@@ -419,13 +487,51 @@
     }
     /* ✅ TEXT回答を“もっと大きい字”に（プロジェクタ向け） */
     .textItem{
-      font-size:clamp(22px, 2.6vw, 32px);
-      line-height:1.45;
-      margin-bottom:10px; /* 少し見やすく */
+      font-size: calc(var(--tSize) * 1px);
+      line-height:1.35;
+      margin-bottom:6px;
     }
+    /* テキスト回答のIDチップ（解答テキスト後ろ） */
+    .textIdChip{
+      display:inline-flex;
+      align-items:center;
+      gap:3px;
+      margin-left:8px;
+      vertical-align:middle;
+      background:rgba(255,255,255,.07);
+      border:1px solid rgba(255,255,255,.18);
+      border-radius:999px;
+      padding:1px 8px 1px 5px;
+      font-size:.72em;
+      font-weight:700;
+      color:rgba(203,213,225,.8);
+      letter-spacing:.03em;
+      white-space:nowrap;
+      line-height:1.5;
+    }
+
     .textItem .no{
       min-width:52px; /* 番号の桁ズレ防止（お好み） */
       font-size:0.95em;
+    }
+
+    /* テキスト回答のIDチップ（解答テキスト後ろ） */
+    .textIdChip{
+      display:inline-flex;
+      align-items:center;
+      gap:3px;
+      margin-left:8px;
+      vertical-align:middle;
+      background:rgba(255,255,255,.07);
+      border:1px solid rgba(255,255,255,.18);
+      border-radius:999px;
+      padding:1px 8px 1px 5px;
+      font-size:.72em;
+      font-weight:700;
+      color:rgba(203,213,225,.8);
+      letter-spacing:.03em;
+      white-space:nowrap;
+      line-height:1.5;
     }
 
     .textItem .no{
@@ -803,11 +909,67 @@
 .tpBtn.ghost{ background: rgba(2,6,23,35); }
 .tpHint{ margin-top:10px; font-size:12px; color: rgba(203,213,225,85); line-height:1.35; }
     
+
+    /* ===== 回答者ID表示（グラフ下） ===== */
+    #vchartWrap{ position:relative; }
+
+    .idToggleBtn{
+      position:absolute;
+      top:8px; right:8px;
+      background:rgba(2,6,23,.55);
+      border:1px solid rgba(255,255,255,.14);
+      color:rgba(203,213,225,.9);
+      border-radius:999px;
+      padding:4px 10px;
+      font-size:12px;
+      font-weight:900;
+      letter-spacing:.04em;
+      cursor:pointer;
+      user-select:none;
+      z-index:10;
+      transition:border-color .15s;
+    }
+    .idToggleBtn.on{
+      border-color:rgba(34,197,94,.5);
+      color:#4ade80;
+    }
+    .idRow{
+      display:flex;
+      flex-wrap:wrap;
+      gap:4px;
+      margin-top:5px;
+      min-height:0;
+      max-height:0;
+      overflow:hidden;
+      opacity:0;
+      transition:max-height .25s ease, opacity .2s ease;
+    }
+    .idRow.show{
+      max-height:200px;
+      opacity:1;
+    }
+    .idChip{
+      display:inline-flex;
+      align-items:center;
+      gap:3px;
+      background:rgba(255,255,255,.08);
+      border:1px solid rgba(255,255,255,.10);
+      border-radius:999px;
+      padding:2px 8px;
+      font-size:11px;
+      font-weight:700;
+      color:rgba(203,213,225,.85);
+      letter-spacing:.03em;
+      white-space:nowrap;
+    }
+    .idChip .chipIcon{ font-size:11px; }
+
   </style>
   <link rel="icon" href="data:,">
 </head>
 
 <body>
+  <button id="themeBtn">☀️ 明るい表示</button>
   <div id="buildTag">build: 2026-01-06 / tts-runid-stable</div>
   <div id="toast">解答終了 → 公開</div>
 
@@ -850,14 +1012,14 @@
             <p id="answerLine"></p>
             <p id="explanationLine"></p>
           </div>
-
-          <div id="choices"></div>
         </div>
+        <div id="choices"></div>
       </div>
 
       <div class="panel" id="rightPanel">
         <div class="secTitle" id="rightTitle">集計（縦棒）</div>
         <div id="vchartWrap">
+          <button id="idToggleBtn" class="idToggleBtn">👤 ID 表示</button>
           <div id="vchart"></div>
 
           <!-- ★追加：投票中 非公開マスク（MEDIUM演出） -->
@@ -924,6 +1086,32 @@
 
     const vchart = document.getElementById("vchart");
     const rightTitle = document.getElementById("rightTitle");
+    const idToggleBtn = document.getElementById("idToggleBtn");
+
+    // ===== テーマ切替 =====
+    const themeBtn = document.getElementById("themeBtn");
+    let isLight = false;
+    if (themeBtn){
+      themeBtn.addEventListener("click", () => {
+        isLight = !isLight;
+        document.body.classList.toggle("light-mode", isLight);
+        themeBtn.textContent = isLight ? "🌙 暗い表示" : "☀️ 明るい表示";
+      });
+    }
+    let idVisible = false;
+    if (idToggleBtn){
+      idToggleBtn.addEventListener("click", () => {
+        idVisible = !idVisible;
+        idToggleBtn.classList.toggle("on", idVisible);
+        idToggleBtn.textContent = idVisible ? "👤 ID 非表示" : "👤 ID 表示";
+        // 既存の idRow を一括トグル
+        document.querySelectorAll(".idRow").forEach(r => r.classList.toggle("show", idVisible));
+        // テキスト回答の textIdChip を一括トグル
+        document.querySelectorAll(".textIdChip").forEach(c => {
+          c.style.display = idVisible ? "" : "none";
+        });
+      });
+    }
     
     const resultsMask = document.getElementById("resultsMask");
 
@@ -1226,54 +1414,67 @@
       if (!ttsEnabled || !ttsUnlocked) return;
       if (isQR) return;
       if (currentView !== "quiz") return;
-      if (!(currentMode === "ox" || currentMode === "five")) return;
-    
+
+      // ★修正：textモードも含む全モードで動作（ox/fiveに限定しない）
+      // ★修正：answer が無くても explanation があれば読む
+
       if (!latestQid) return;
       const key = `${latestQid}::closed`;
       if (ttsClosedKey === key) return;
       ttsClosedKey = key;
-    
-      const ck = getCorrectKeyForSpeak();
-      if (!ck) return;
-    
-      // 解説テキスト（あなたの表示行を読む：無ければ空でOK）
+
+      // 解説テキスト（DOM から取得 ＝ 表示と必ず一致）
       let ex = "";
       try{
         ex = (explanationLine?.textContent || "").trim();
         ex = ex.replace(/^解説[:：]\s*/, "");
       }catch(_){}
-    
-      // ★追加：五択のとき、正解の選択肢本文を拾う（表示DOMから＝ズレ防止）
+
+      // テキストモード：answer が無くても explanation だけ読む
+      const isTextMode = (currentMode === "text") || document.body.classList.contains("textmode");
+      const ck = getCorrectKeyForSpeak();
+
+      // answer も explanation も無い場合は読まない
+      if (!ck && !ex) return;
+
+      // 混ざり防止：必ず停止 → waitMs で DOM 確定を待つ
+      stopTTS();
+      const myRun = ttsRunId;
+      await waitMs(2000);
+      if (myRun !== ttsRunId) return;
+
+      // ① 正解の選択肢本文を DOM から拾う（OX・五択どちらも対応、textモードはスキップ）
       let choiceText = "";
-      try{
-        if (currentMode === "five" && /^[A-E]$/.test(String(ck))){
+      if (ck && !isTextMode){
+        try{
           const rows = Array.from(cEl?.querySelectorAll?.(".choice") || []);
           for (const row of rows){
             const badge = (row.querySelector(".badge")?.textContent || "").trim().toUpperCase();
-            const text  = (row.children?.[1]?.textContent || "").trim(); // 2つ目が本文（既存設計）
+            const bodyEl = row.querySelector(".choiceText") || row.children?.[1];
+            const text   = (bodyEl?.textContent || "").trim();
             if (badge === String(ck) && text){
               choiceText = text;
               break;
             }
           }
-        }
-      }catch(_){}
-    
-      // 混ざり防止：必ず停止→runIdで守る
-      stopTTS();
-      const myRun = ttsRunId;
-      await waitMs(2000);
-      if (myRun !== ttsRunId) return;
-    
-      // ★変更：正解記号のあとに、該当する選択肢文も読む
-      if (choiceText){
-        await speakOnce(`正解は、${speakLabelJa(ck)}。${choiceText}。`, myRun);
-      }else{
-        await speakOnce(`正解は、${speakLabelJa(ck)}。`, myRun);
+        }catch(_){}
       }
-      if (myRun !== ttsRunId) return;
-    
+
+      // ② 正解の読み上げ（answer がある場合のみ）
+      if (ck){
+        const labelJa  = speakLabelJa(ck);
+        const answerSentence = choiceText
+          ? `正解は、${labelJa}。${choiceText}。`
+          : `正解は、${labelJa}。`;
+
+        await speakOnce(answerSentence, myRun);
+        if (myRun !== ttsRunId) return;
+      }
+
+      // ③ 解説の読み上げ（explanation がある場合）
       if (ex){
+        await waitMs(ck ? 400 : 0);
+        if (myRun !== ttsRunId) return;
         await speakOnce(`解説。${ex}`, myRun);
       }
     }
@@ -1492,6 +1693,7 @@ ttsBtn.onclick = async () => {
     const activityRef = ref(db, `rooms/${room}/activity`);
     const qidRef      = ref(db, `rooms/${room}/quiz/current_question_id`);
     const answersRef  = ref(db, `rooms/${room}/answers`);
+    const rosterRef   = ref(db, `rooms/${room}/activity/roster`);
     const qRef = (qid) => ref(db, `rooms/${room}/questions/${qid}`);
 
     // display起動で強制QR
@@ -1547,31 +1749,10 @@ ttsBtn.onclick = async () => {
     let lastAnswers = {};
 
     // ===== Auto-fit question text (ONLY question) =====
-    function fitQuestionToLeftScroll({
-      minPx = 28,     // これ以下には縮めない（好みで18〜24）
-      step = 2,       // 2pxずつ縮める
-      maxLoops = 30,  // 無限ループ防止
-    } = {}) {
-    if (!leftScroll || !qEl) return;
-
-      // 前問の縮小が残らないように毎回リセット
-      qEl.style.fontSize = "";
-
-      // DOM反映後に測る
-      requestAnimationFrame(() => {
-        let loops = 0;
-        let fontSize = parseFloat(getComputedStyle(qEl).fontSize);
-
-        // #leftScroll の中身がはみ出している間だけ縮める
-        // overflow:hiddenでもscrollHeightは増えるので判定可能
-        while (leftScroll.scrollHeight > leftScroll.clientHeight &&
-               fontSize > minPx &&
-               loops < maxLoops) {
-          fontSize -= step;
-          qEl.style.fontSize = `${fontSize}px`;
-          loops++;
-        }
-      });
+    function fitQuestionToLeftScroll({ minPx = 28, step = 2, maxLoops = 30 } = {}) {
+      // choices が leftPanel の独立 flex child になったため自動縮小不要
+      // qMax CSS変数（tuneパネル）で直接制御する
+      if (qEl) qEl.style.fontSize = ""; // 前回の残りを消してCSSに任せる
     }
 
     // ===== Fit choices height (scroll-safe) =====
@@ -1587,19 +1768,20 @@ ttsBtn.onclick = async () => {
       if (currentMode === "text" || document.body.classList.contains("textmode")) return;
       if (!cEl) return;
     
-      const fs = parseFloat(getComputedStyle(cEl).fontSize) || 32; // #choicesの実フォントサイズ(px)
-      const min = 22, max = 70; // tpCMaxの範囲に合わせる
+      const fs = parseFloat(getComputedStyle(cEl).fontSize) || 32;
+      const min = 22, max = 70;
       const t = clamp01((fs - min) / (max - min)); // 0=小さい字 / 1=大きい字
-    
-      // 小さい字ほど “詰める”
-      // line-height: 1.06 ～ 1.16（標準も少し狭め）
-      const lh = 1.06 + t * 0.10;
-    
-      // 行間だけじゃなく、行間隔・パディングも少し連動
-      const choicesGap = 0.26 + t * 0.16; // em
-      const cGap  = 0.46 + t * 0.10;      // em
-      const padY  = 0.38 + t * 0.12;      // em
-      const padX  = 0.62 + t * 0.14;      // em
+
+      // ○×（2択）はさらに詰める
+      const isOX = (currentMode === "ox") ||
+        (Array.isArray(choiceOrder) && choiceOrder.length === 2 &&
+         choiceOrder.includes("O") && choiceOrder.includes("X"));
+
+      const lh         = 1.02 + t * 0.06;
+      const choicesGap = isOX ? (0.08 + t * 0.06) : (0.16 + t * 0.10);
+      const cGap       = 0.36 + t * 0.08;
+      const padY       = isOX ? (0.28 + t * 0.10) : (0.22 + t * 0.10);
+      const padX       = 0.50 + t * 0.12;
     
       const root = document.documentElement.style;
       root.setProperty("--cLH", String(lh.toFixed(3)));
@@ -1677,6 +1859,8 @@ ttsBtn.onclick = async () => {
     const tpCMax = document.getElementById("tpCMax");
 const tpQMaxVal = document.getElementById("tpQMaxVal");
     const tpCMaxVal = document.getElementById("tpCMaxVal");
+    const tpTSize    = document.getElementById("tpTSize");
+    const tpTSizeVal = document.getElementById("tpTSizeVal");
 const tpSave     = document.getElementById("tpSave");
     const tpSetDefault = document.getElementById("tpSetDefault"); // ★追加
     const tpResetQ   = document.getElementById("tpResetQ");
@@ -1694,7 +1878,7 @@ const tpSave     = document.getElementById("tpSave");
         const raw = localStorage.getItem(getDefaultKey(room));
         if (!raw) return null;
         const obj = JSON.parse(raw);
-        return { qMax: Number(obj.qMax), cMax: Number(obj.cMax) };
+        return { qMax: Number(obj.qMax), cMax: Number(obj.cMax), tSize: obj.tSize ? Number(obj.tSize) : NaN };
       }catch(e){
         return null;
       }
@@ -1705,6 +1889,7 @@ const tpSave     = document.getElementById("tpSave");
         localStorage.setItem(getDefaultKey(room), JSON.stringify({
           qMax: Math.round(Number(t.qMax)),
           cMax: Math.round(Number(t.cMax)),
+          tSize: Math.round(Number(t.tSize || 28)),
           at: Date.now()
         }));
         return true;
@@ -1729,7 +1914,8 @@ const tpSave     = document.getElementById("tpSave");
       const cs = getComputedStyle(document.documentElement);
       _tuneDefaults = {
         qMax: Number(cs.getPropertyValue("--qMax").trim()) || 64,
-        cMax: Number(cs.getPropertyValue("--cMax").trim()) || 46
+        cMax: Number(cs.getPropertyValue("--cMax").trim()) || 46,
+        tSize: Number(cs.getPropertyValue("--tSize").trim()) || 28
       };
       return _tuneDefaults;
     }
@@ -1739,6 +1925,7 @@ const tpSave     = document.getElementById("tpSave");
       const root = document.documentElement.style;
       if (Number.isFinite(t.qMax)) root.setProperty("--qMax", String(Math.round(t.qMax)));
       if (Number.isFinite(t.cMax)) root.setProperty("--cMax", String(Math.round(t.cMax)));
+      if (Number.isFinite(t.tSize)) root.setProperty("--tSize", String(Math.round(t.tSize)));
 }
     
     function getTuneKey(room, qid){
@@ -1752,7 +1939,7 @@ const tpSave     = document.getElementById("tpSave");
         const raw = localStorage.getItem(getTuneKey(room, qid));
         if (!raw) return null;
         const obj = JSON.parse(raw);
-        return { qMax: Number(obj.qMax), cMax: Number(obj.cMax) };
+        return { qMax: Number(obj.qMax), cMax: Number(obj.cMax), tSize: obj.tSize ? Number(obj.tSize) : NaN };
       }catch(e){
         console.warn("tune load failed:", e);
         return null;
@@ -1764,6 +1951,7 @@ const tpSave     = document.getElementById("tpSave");
         localStorage.setItem(getTuneKey(room, qid), JSON.stringify({
           qMax: Math.round(Number(t.qMax)),
           cMax: Math.round(Number(t.cMax)),
+          tSize: Math.round(Number(t.tSize || 28)),
           at: Date.now(),
         }));
         return true;
@@ -1797,11 +1985,14 @@ tpQMax.value = String(qMax);
       tpCMax.value = String(cMax);
 tpQMaxVal.textContent = String(qMax);
       tpCMaxVal.textContent = String(cMax);
+      const tSize = Number(cs.getPropertyValue("--tSize").trim()) || 28;
+      if (tpTSize) { tpTSize.value = String(tSize); tpTSizeVal.textContent = String(tSize); }
 }
     
     function reflectVals(){
       tpQMaxVal.textContent = tpQMax.value;
       tpCMaxVal.textContent = tpCMax.value;
+      if (tpTSize && tpTSizeVal) tpTSizeVal.textContent = tpTSize.value;
 }
     
     function applyTuneForCurrentQid(){
@@ -1834,13 +2025,15 @@ tpQMaxVal.textContent = String(qMax);
       tuneClose.addEventListener("click", () => tunePanel.classList.remove("show"));
     }
     
-    [tpQMax, tpCMax].forEach(inp => {
+    [tpQMax, tpCMax, tpTSize].forEach(inp => {
       if (!inp) return;
       inp.addEventListener("input", () => {
         reflectVals();
         setCssVars({
           qMax: Number(tpQMax.value),
-          cMax: Number(tpCMax.value),});
+          cMax: Number(tpCMax.value),
+          tSize: Number(tpTSize ? tpTSize.value : 28),
+        });
         requestFitQuestion();
       });
     });
@@ -1852,7 +2045,8 @@ tpQMaxVal.textContent = String(qMax);
     
         const ok = saveTune(roomName, qid, {
           qMax: Number(tpQMax.value),
-          cMax: Number(tpCMax.value),});
+          cMax: Number(tpCMax.value),
+          tSize: Number(tpTSize ? tpTSize.value : 28),});
         if (tpHint) tpHint.textContent = ok ? `保存しました：QID=${qid || "-"}（この端末のみ）` : "保存に失敗しました";
         applyTuneForCurrentQid();
       });
@@ -1863,11 +2057,12 @@ tpQMaxVal.textContent = String(qMax);
     
         const ok = saveRoomDefault(roomName, {
           qMax: Number(tpQMax.value),
-          cMax: Number(tpCMax.value)
+          cMax: Number(tpCMax.value),
+          tSize: Number(tpTSize ? tpTSize.value : 28)
         });
     
         // ★readDefaultsOnce のキャッシュを更新
-        _tuneDefaults = { qMax: Number(tpQMax.value), cMax: Number(tpCMax.value) };
+        _tuneDefaults = { qMax: Number(tpQMax.value), cMax: Number(tpCMax.value), tSize: Number(tpTSize ? tpTSize.value : 28) };
     
         if (tpHint) tpHint.textContent = ok
           ? "デフォルト固定しました（この端末のみ）"
@@ -2001,7 +2196,8 @@ tpQMaxVal.textContent = String(qMax);
 
     function placeAnswerBoxTop(isTop){
       if (!leftScroll) return;
-      if (isTop) leftScroll.insertBefore(answerBox, cEl);
+      // cEl は leftScroll の外に出たので、leftScroll 内の先頭/末尾で管理
+      if (isTop) leftScroll.insertBefore(answerBox, leftScroll.firstChild);
       else leftScroll.appendChild(answerBox);
     }
 
@@ -2062,7 +2258,7 @@ tpQMaxVal.textContent = String(qMax);
       });
     }
     
-    function renderVChart(counts, order){
+    function renderVChart(counts, order, uidMap){
       vchart.innerHTML = "";
     
       const ord = Array.isArray(order) && order.length ? order : Object.keys(counts || {});
@@ -2074,38 +2270,65 @@ tpQMaxVal.textContent = String(qMax);
       const entries = ord.map(k => [String(k).toUpperCase(), Number((counts||{})[k]||0)]);
       const max = Math.max(...entries.map(([,v])=>v), 1);
     
-      // ★母数：expectedN が入っていればそれを優先（ただし投票数より小さいと100%超えるので max を取る）
+      // 母数：expectedN が入っていればそれを優先
       const actualTotal = entries.reduce((s,[,v]) => s + (Number(v)||0), 0);
       const denom = (expectedN > 0 ? Math.max(expectedN, actualTotal) : actualTotal) || 1;
     
       entries.forEach(([lab, val]) => {
+        // 外枠：バー行＋IDチップ行を縦積み
+        const wrap = document.createElement("div");
+        wrap.style.cssText = "display:flex;flex-direction:column;flex:1;max-height:100px;min-height:0;";
+
+        // バー行
         const col = document.createElement("div");
         col.className = "col";
+        col.style.cssText = "flex:1;min-height:0;";
     
+        // ラベル（左）
+        const label = document.createElement("div");
+        label.className = "lab";
+        label.textContent = uiLabel(lab);
+    
+        // バートラック（中央）
+        const track = document.createElement("div");
+        track.className = "barTrack";
+    
+        const bar = document.createElement("div");
+        bar.className = "bar";
+        const widthPct = Math.round((val / max) * 100);
+        bar.style.width = `${widthPct}%`;
+        bar.style.background = colorOf(lab);
+        track.appendChild(bar);
+    
+        // カウント（右）
         const cnt = document.createElement("div");
         cnt.className = "count";
         const pct = Math.round((val / denom) * 100);
         cnt.textContent = `${val}（${pct}%）`;
     
-        const bar = document.createElement("div");
-        bar.className = "bar";
-        const h = Math.max(12, Math.round((val / max) * 280));
-        bar.style.height = `${h}px`;
-    
-        const fill = document.createElement("div");
-        fill.className = "barFill";
-        fill.style.background = colorOf(lab);
-        bar.appendChild(fill);
-    
-        const label = document.createElement("div");
-        label.className = "lab";
-        label.textContent = uiLabel(lab);
-    
-        col.appendChild(cnt);
-        col.appendChild(bar);
         col.appendChild(label);
+        col.appendChild(track);
+        col.appendChild(cnt);
+        wrap.appendChild(col);
+
+        // IDチップ行（バーの下）
+        const idRow = document.createElement("div");
+        idRow.className = "idRow" + (idVisible ? " show" : "");
+        const uids = (uidMap && uidMap[lab]) ? uidMap[lab] : [];
+        uids.forEach(entry => {
+          const chip = document.createElement("span");
+          chip.className = "idChip";
+          // entry は { uid, emoji, tag, color } または後方互換で string
+          const emoji = entry.emoji || "📱";
+          const tag   = entry.tag   || String(entry.uid || entry).slice(-6);
+          const color = entry.color || null;
+          if (color) chip.style.borderColor = color + "66";
+          chip.innerHTML = `<span class="chipIcon">${emoji}</span>${tag}`;
+          idRow.appendChild(chip);
+        });
+        wrap.appendChild(idRow);
     
-        vchart.appendChild(col);
+        vchart.appendChild(wrap);
       });
     }
 
@@ -2121,12 +2344,14 @@ tpQMaxVal.textContent = String(qMax);
     function renderTextAnswers(answers){
       textList.innerHTML = "";
       const keys = Object.keys(answers || {});
-      const items = [];
+      const items = []; // { text, uid }
 
       keys.forEach(uid => {
         const v = answers[uid];
-        if (typeof v === "string") items.push(v);
-        else if (v && typeof v === "object" && typeof v.value === "string") items.push(v.value);
+        let text = null;
+        if (typeof v === "string") text = v;
+        else if (v && typeof v === "object" && typeof v.value === "string") text = v.value;
+        if (text !== null) items.push({ text, uid });
       });
 
       if (currentStatus !== "closed"){
@@ -2136,10 +2361,22 @@ tpQMaxVal.textContent = String(qMax);
 
       textTitle.textContent = `文字回答（公開中） / ${items.length} 件`;
 
-      items.forEach((t, idx) => {
+      items.forEach(({ text, uid }, idx) => {
         const div = document.createElement("div");
         div.className = "textItem";
-        div.innerHTML = `<span class="no">${idx+1}.</span>${escapeHtml(String(t||""))}`;
+
+        // roster からアイコン＋タグを取得
+        const r = (typeof rosterCache !== "undefined" && rosterCache[uid]) || {};
+        const emoji = r.emoji || "";
+        const tag   = r.tag   || "";
+        const color = r.color || "rgba(255,255,255,0.2)";
+
+        // IDチップ（解答テキストの後ろ）
+        const chipHtml = (emoji || tag)
+          ? `<span class="textIdChip" style="border-color:${color}66;display:${idVisible ? "" : "none"}">${emoji ? `<span>${emoji}</span>` : ""}${tag}</span>`
+          : "";
+
+        div.innerHTML = `<span class="no">${idx+1}.</span>${escapeHtml(String(text||""))}${chipHtml}`;
         textList.appendChild(div);
       });
 
@@ -2216,6 +2453,10 @@ tpQMaxVal.textContent = String(qMax);
     (effectiveOrder || []).forEach(c => counts[c] = 0);
 
 
+      // uid → 選択肢キー のマップ（ID表示用）
+      const uidMap = {}; // { "A": ["uid1","uid2"], "B": [...] }
+      effectiveOrder.forEach(k => uidMap[k] = []);
+
       keys.forEach(uid => {
         const v = ans[uid];
         let val = null;
@@ -2223,22 +2464,28 @@ tpQMaxVal.textContent = String(qMax);
         else if (v && typeof v === "object" && typeof v.value === "string") val = v.value;
         if (!val) return;
 
-    let key = String(val).trim().toUpperCase();
+        let key = String(val).trim().toUpperCase();
 
-    // ★集計の基準がOXのときは A/B を O/X に統一
-    if (Array.isArray(effectiveOrder) && effectiveOrder.length === 2 &&
-        effectiveOrder.includes("O") && effectiveOrder.includes("X")){
-      key = mapABtoOXKey(key);
-    }
+        // ★集計の基準がOXのときは A/B を O/X に統一
+        if (Array.isArray(effectiveOrder) && effectiveOrder.length === 2 &&
+            effectiveOrder.includes("O") && effectiveOrder.includes("X")){
+          key = mapABtoOXKey(key);
+        }
 
-    if (counts[key] === undefined){
-      return; // 想定外は無視
-    }
-    counts[key] += 1;
-
+        if (counts[key] === undefined) return;
+        counts[key] += 1;
+        if (uidMap[key]){
+          const r = rosterCache[uid] || {};
+          uidMap[key].push({
+            uid,
+            emoji: r.emoji || "📱",
+            tag:   r.tag   || uid.slice(-6),
+            color: r.color || null
+          });
+        }
       });
 
-      renderVChart(counts, effectiveOrder);
+      renderVChart(counts, effectiveOrder, uidMap);
 
     }
 
@@ -2471,6 +2718,12 @@ onValue(activityRef, snap => {
  });
 
     // answers：保存＋音＋再描画
+    // ===== roster 購読: uid → { emoji, tag, color } =====
+    let rosterCache = {}; // { uid: { emoji, tag, color } }
+    onValue(rosterRef, snap => {
+      rosterCache = snap.exists() ? (snap.val() || {}) : {};
+    });
+
     onValue(answersRef, snap => {
       const ans = snap.val() || {};
       lastAnswers = ans;
@@ -2502,6 +2755,12 @@ onValue(activityRef, snap => {
         <input id="tpCMax" type="range" min="22" max="70" step="1">
         <div class="tpVal"><span id="tpCMaxVal"></span>px</div>
       </div>
+
+      <div class="tpRow">
+        <div class="tpLab">TEXT回答 文字サイズ（tSize）</div>
+        <input id="tpTSize" type="range" min="16" max="56" step="1">
+        <div class="tpVal"><span id="tpTSizeVal"></span>px</div>
+      </div>
 <div class="tpFoot">
         <button id="tpSave" class="tpBtn">保存（この問題だけ）</button>
         <button id="tpResetQ" class="tpBtn ghost">この問題を初期化</button>
@@ -2512,5 +2771,6 @@ onValue(activityRef, snap => {
       <div class="tpHint" id="tpHint"></div>
     </div>
 
+  <script src="./pwa-register.js"></script>
 </body>
 </html>
