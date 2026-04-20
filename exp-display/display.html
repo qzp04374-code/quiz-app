@@ -1423,16 +1423,15 @@
       if (ttsClosedKey === key) return;
       ttsClosedKey = key;
 
-      // 解説テキスト（DOM から取得 ＝ 表示と必ず一致）
-      let ex = "";
-      try{
-        ex = (explanationLine?.textContent || "").trim();
-        ex = ex.replace(/^解説[:：]\s*/, "");
-      }catch(_){}
-
-      // テキストモード：answer が無くても explanation だけ読む
+      // ★修正：DOMではなく currentQuestion から直接取る
+      // （speakClosedAnswerOnly は updateAnswerUI より先に呼ばれるため DOM はまだ空）
       const isTextMode = (currentMode === "text") || document.body.classList.contains("textmode");
       const ck = getCorrectKeyForSpeak();
+
+      let ex = "";
+      try{
+        ex = (currentQuestion?.explanation || "").trim();
+      }catch(_){}
 
       // answer も explanation も無い場合は読まない
       if (!ck && !ex) return;
