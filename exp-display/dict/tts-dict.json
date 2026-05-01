@@ -1,6 +1,21 @@
 [
   {
     "type": "text",
+    "from": "膝蓋骨",
+    "to": "しつがいこつ"
+  },
+  {
+    "type": "text",
+    "from": "胸骨",
+    "to": "きょうこつ"
+  },
+  {
+    "type": "text",
+    "from": "肋骨",
+    "to": "ろっこつ"
+  },
+  {
+    "type": "text",
     "from": "OSCE",
     "to": "おすきー"
   },
