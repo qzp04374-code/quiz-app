@@ -1414,15 +1414,27 @@
       if (!ttsEnabled || !ttsUnlocked) return;
       if (isQR) return;
       if (currentView !== "quiz") return;
-      if (!(currentMode === "ox" || currentMode === "five")) return;
+
+      // ★修正：textモードも含む全モードで動作（ox/fiveに限定しない）
+      // ★修正：answer が無くても explanation があれば読む
 
       if (!latestQid) return;
       const key = `${latestQid}::closed`;
       if (ttsClosedKey === key) return;
       ttsClosedKey = key;
 
+      // ★修正：DOMではなく currentQuestion から直接取る
+      // （speakClosedAnswerOnly は updateAnswerUI より先に呼ばれるため DOM はまだ空）
+      const isTextMode = (currentMode === "text") || document.body.classList.contains("textmode");
       const ck = getCorrectKeyForSpeak();
-      if (!ck) return;
+
+      let ex = "";
+      try{
+        ex = (currentQuestion?.explanation || "").trim();
+      }catch(_){}
+
+      // answer も explanation も無い場合は読まない
+      if (!ck && !ex) return;
 
       // 混ざり防止：必ず停止 → waitMs で DOM 確定を待つ
       stopTTS();
@@ -1430,39 +1442,37 @@
       await waitMs(2000);
       if (myRun !== ttsRunId) return;
 
-      // ① 正解の選択肢本文を DOM から拾う（OX・五択どちらも対応）
+      // ① 正解の選択肢本文を DOM から拾う（OX・五択どちらも対応、textモードはスキップ）
       let choiceText = "";
-      try{
-        const rows = Array.from(cEl?.querySelectorAll?.(".choice") || []);
-        for (const row of rows){
-          const badge = (row.querySelector(".badge")?.textContent || "").trim().toUpperCase();
-          const bodyEl = row.querySelector(".choiceText") || row.children?.[1];
-          const text   = (bodyEl?.textContent || "").trim();
-          if (badge === String(ck) && text){
-            choiceText = text;
-            break;
+      if (ck && !isTextMode){
+        try{
+          const rows = Array.from(cEl?.querySelectorAll?.(".choice") || []);
+          for (const row of rows){
+            const badge = (row.querySelector(".badge")?.textContent || "").trim().toUpperCase();
+            const bodyEl = row.querySelector(".choiceText") || row.children?.[1];
+            const text   = (bodyEl?.textContent || "").trim();
+            if (badge === String(ck) && text){
+              choiceText = text;
+              break;
+            }
           }
-        }
-      }catch(_){}
+        }catch(_){}
+      }
 
-      // ② 解説テキスト（DOM から取得 ＝ 表示と必ず一致）
-      let ex = "";
-      try{
-        ex = (explanationLine?.textContent || "").trim();
-        ex = ex.replace(/^解説[:：]\s*/, "");
-      }catch(_){}
+      // ② 正解の読み上げ（answer がある場合のみ）
+      if (ck){
+        const labelJa  = speakLabelJa(ck);
+        const answerSentence = choiceText
+          ? `正解は、${labelJa}。${choiceText}。`
+          : `正解は、${labelJa}。`;
 
-      // ③ 読み上げ：「正解は〇〇。（選択肢本文）。解説。〜」
-      const labelJa  = speakLabelJa(ck);
-      const answerSentence = choiceText
-        ? `正解は、${labelJa}。${choiceText}。`
-        : `正解は、${labelJa}。`;
+        await speakOnce(answerSentence, myRun);
+        if (myRun !== ttsRunId) return;
+      }
 
-      await speakOnce(answerSentence, myRun);
-      if (myRun !== ttsRunId) return;
-
+      // ③ 解説の読み上げ（explanation がある場合）
       if (ex){
-        await waitMs(400);
+        await waitMs(ck ? 400 : 0);
         if (myRun !== ttsRunId) return;
         await speakOnce(`解説。${ex}`, myRun);
       }
