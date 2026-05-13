@@ -1168,8 +1168,10 @@
         idVisible = !idVisible;
         idToggleBtn.classList.toggle("on", idVisible);
         idToggleBtn.textContent = idVisible ? "👤 ID 非表示" : "👤 ID 表示";
-        // 既存の idRow を一括トグル
-        document.querySelectorAll(".idRow").forEach(r => r.classList.toggle("show", idVisible));
+        // 未回答者パネルの表示切替（パネルが show 状態のときのみ反映）
+        if (unansweredPanel && unansweredPanel.classList.contains("show")){
+          unansweredChips.style.display = idVisible ? "" : "none";
+        }
         // テキスト回答の textIdChip を一括トグル
         document.querySelectorAll(".textIdChip").forEach(c => {
           c.style.display = idVisible ? "" : "none";
@@ -2379,25 +2381,6 @@ tpQMaxVal.textContent = String(qMax);
         col.appendChild(track);
         col.appendChild(cnt);
         wrap.appendChild(col);
-
-        // IDチップ行（バーの下）
-        const idRow = document.createElement("div");
-        const uids = isUnknown
-          ? (unknownUids || [])
-          : ((uidMap && uidMap[lab]) ? uidMap[lab] : []);
-        idRow.className = "idRow" + (idVisible ? " show" : "");
-        uids.forEach(entry => {
-          const chip = document.createElement("span");
-          chip.className = "idChip";
-          const emoji = entry.emoji || "📱";
-          const tag   = entry.tag   || String(entry.uid || entry).slice(-6);
-          const color = entry.color || null;
-          if (color) chip.style.borderColor = color + "66";
-          chip.innerHTML = `<span class="chipIcon">${emoji}</span>${tag}`;
-          idRow.appendChild(chip);
-        });
-        wrap.appendChild(idRow);
-    
         vchart.appendChild(wrap);
       });
     }
@@ -2523,6 +2506,7 @@ tpQMaxVal.textContent = String(qMax);
           const extraCount  = unknownCount - rosterCount; // roster未登録の未回答者数
           unansweredTitle.textContent = `未回答 ${unknownCount}人`;
           unansweredChips.innerHTML = "";
+          unansweredChips.style.display = idVisible ? "" : "none";
           // roster登録済みの未回答者
           unansweredList.forEach(entry => {
             const chip = document.createElement("span");
