@@ -1,11 +1,11 @@
-const CACHE_NAME = "classsync-pwa-v20260420";
+const CACHE_NAME = "classsync-pwa-v202600513";
 const BASE = "/quiz-app/exp-display/";
 
 const APP_SHELL = [
   BASE,
-  BASE + "index.html?v=20260420",
-  BASE + "student.html?v=20260420",
-  BASE + "display.html?v=20260420",
+  BASE + "index.html?v=20260513",
+  BASE + "student.html?v=20260513",
+  BASE + "display.html?v=20260513",
   BASE + "offline.html",
   BASE + "manifest.webmanifest",
   BASE + "pwa-register.js",
