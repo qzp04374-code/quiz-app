@@ -964,6 +964,61 @@
     }
     .idChip .chipIcon{ font-size:11px; }
 
+    /* ===== 「分からない」バー ===== */
+    .bar-unknown{
+      background: repeating-linear-gradient(
+        45deg,
+        rgba(148,163,184,.25) 0px,
+        rgba(148,163,184,.25) 4px,
+        transparent 4px,
+        transparent 10px
+      ) !important;
+      opacity: .75 !important;
+    }
+    .badge-unknown{
+      background: rgba(148,163,184,.22);
+      color: rgba(203,213,225,.9);
+      border: 1px solid rgba(148,163,184,.30);
+    }
+
+    /* ===== 未回答者パネル ===== */
+    #unansweredPanel{
+      display:none;
+      margin-top:8px;
+      padding:10px 12px;
+      border-radius:14px;
+      background:rgba(239,68,68,.08);
+      border:1px solid rgba(239,68,68,.22);
+      box-sizing:border-box;
+    }
+    #unansweredPanel.show{ display:block; }
+    #unansweredTitle{
+      font-size:12px;
+      font-weight:900;
+      letter-spacing:.08em;
+      color:rgba(239,68,68,.9);
+      margin:0 0 6px 0;
+    }
+    #unansweredChips{
+      display:flex;
+      flex-wrap:wrap;
+      gap:4px;
+    }
+    .unansweredChip{
+      display:inline-flex;
+      align-items:center;
+      gap:3px;
+      background:rgba(239,68,68,.12);
+      border:1px solid rgba(239,68,68,.28);
+      border-radius:999px;
+      padding:2px 8px;
+      font-size:11px;
+      font-weight:700;
+      color:rgba(252,165,165,.9);
+      letter-spacing:.03em;
+      white-space:nowrap;
+    }
+
   </style>
   <link rel="icon" href="data:,">
 </head>
@@ -1041,6 +1096,12 @@
             </div>
           </div>
         </div>
+
+        <!-- ★未回答者パネル -->
+        <div id="unansweredPanel">
+          <div id="unansweredTitle">未回答 —</div>
+          <div id="unansweredChips"></div>
+        </div>
       </div>
       <!-- ★ここに移動：TEXT回答を“全幅の広い段”で表示 -->
       <div id="textAnswersBox">
@@ -1087,6 +1148,9 @@
     const vchart = document.getElementById("vchart");
     const rightTitle = document.getElementById("rightTitle");
     const idToggleBtn = document.getElementById("idToggleBtn");
+    const unansweredPanel = document.getElementById("unansweredPanel");
+    const unansweredTitle = document.getElementById("unansweredTitle");
+    const unansweredChips = document.getElementById("unansweredChips");
 
     // ===== テーマ切替 =====
     const themeBtn = document.getElementById("themeBtn");
@@ -1414,9 +1478,7 @@
       if (!ttsEnabled || !ttsUnlocked) return;
       if (isQR) return;
       if (currentView !== "quiz") return;
-
       // ★修正：textモードも含む全モードで動作（ox/fiveに限定しない）
-      // ★修正：answer が無くても explanation があれば読む
 
       if (!latestQid) return;
       const key = `${latestQid}::closed`;
@@ -1465,7 +1527,6 @@
         const answerSentence = choiceText
           ? `正解は、${labelJa}。${choiceText}。`
           : `正解は、${labelJa}。`;
-
         await speakOnce(answerSentence, myRun);
         if (myRun !== ttsRunId) return;
       }
@@ -2257,7 +2318,7 @@ tpQMaxVal.textContent = String(qMax);
       });
     }
     
-    function renderVChart(counts, order, uidMap){
+    function renderVChart(counts, order, uidMap, unknownCount, unknownUids){
       vchart.innerHTML = "";
     
       const ord = Array.isArray(order) && order.length ? order : Object.keys(counts || {});
@@ -2267,6 +2328,11 @@ tpQMaxVal.textContent = String(qMax);
       }
     
       const entries = ord.map(k => [String(k).toUpperCase(), Number((counts||{})[k]||0)]);
+
+      // ★「分からない」を末尾に追加（母数 > 回答数 の場合のみ）
+      const hasUnknown = (typeof unknownCount === "number") && unknownCount > 0;
+      if (hasUnknown) entries.push(["?", unknownCount]);
+
       const max = Math.max(...entries.map(([,v])=>v), 1);
     
       // 母数：expectedN が入っていればそれを優先
@@ -2274,6 +2340,8 @@ tpQMaxVal.textContent = String(qMax);
       const denom = (expectedN > 0 ? Math.max(expectedN, actualTotal) : actualTotal) || 1;
     
       entries.forEach(([lab, val]) => {
+        const isUnknown = (lab === "?");
+
         // 外枠：バー行＋IDチップ行を縦積み
         const wrap = document.createElement("div");
         wrap.style.cssText = "display:flex;flex-direction:column;flex:1;max-height:100px;min-height:0;";
@@ -2286,17 +2354,18 @@ tpQMaxVal.textContent = String(qMax);
         // ラベル（左）
         const label = document.createElement("div");
         label.className = "lab";
-        label.textContent = uiLabel(lab);
+        label.textContent = isUnknown ? "？" : uiLabel(lab);
+        if (isUnknown) label.style.cssText = "font-size:16px;color:rgba(148,163,184,.7);";
     
         // バートラック（中央）
         const track = document.createElement("div");
         track.className = "barTrack";
     
         const bar = document.createElement("div");
-        bar.className = "bar";
+        bar.className = "bar" + (isUnknown ? " bar-unknown" : "");
         const widthPct = Math.round((val / max) * 100);
         bar.style.width = `${widthPct}%`;
-        bar.style.background = colorOf(lab);
+        if (!isUnknown) bar.style.background = colorOf(lab);
         track.appendChild(bar);
     
         // カウント（右）
@@ -2304,6 +2373,7 @@ tpQMaxVal.textContent = String(qMax);
         cnt.className = "count";
         const pct = Math.round((val / denom) * 100);
         cnt.textContent = `${val}（${pct}%）`;
+        if (isUnknown) cnt.style.color = "rgba(148,163,184,.7)";
     
         col.appendChild(label);
         col.appendChild(track);
@@ -2312,12 +2382,13 @@ tpQMaxVal.textContent = String(qMax);
 
         // IDチップ行（バーの下）
         const idRow = document.createElement("div");
+        const uids = isUnknown
+          ? (unknownUids || [])
+          : ((uidMap && uidMap[lab]) ? uidMap[lab] : []);
         idRow.className = "idRow" + (idVisible ? " show" : "");
-        const uids = (uidMap && uidMap[lab]) ? uidMap[lab] : [];
         uids.forEach(entry => {
           const chip = document.createElement("span");
           chip.className = "idChip";
-          // entry は { uid, emoji, tag, color } または後方互換で string
           const emoji = entry.emoji || "📱";
           const tag   = entry.tag   || String(entry.uid || entry).slice(-6);
           const color = entry.color || null;
@@ -2422,6 +2493,52 @@ tpQMaxVal.textContent = String(qMax);
       countLabel.textContent = (expectedN > 0) ? `参加中 ${n} / ${denomN}人` : `参加中 ${n}人`;
       qrCount.textContent    = countLabel.textContent;
 
+      // ===== 未回答者の計算（rosterCache が母数の場合も対応）=====
+      // rosterCache に登録されているUID全員と、answers のUID差分
+      const answeredUids = new Set(keys);
+      let unansweredList = []; // { uid, emoji, tag, color }
+
+      if (expectedN > 0) {
+        // roster にいる人のうち未回答者
+        Object.entries(rosterCache || {}).forEach(([uid, r]) => {
+          if (!answeredUids.has(uid)){
+            unansweredList.push({
+              uid,
+              emoji: r.emoji || "📱",
+              tag:   r.tag   || uid.slice(-6),
+              color: r.color || null
+            });
+          }
+        });
+        // rosterより expectedN が多い場合（roster未登録の人がいる）は件数だけ確保
+        const rosterUnanswered = unansweredList.length;
+        const extraUnknown = Math.max(0, expectedN - n - rosterUnanswered);
+        // extraUnknown人分は名前が分からないのでリストには出せないが件数に加算
+        // unknownCountはroster未登録含む全未回答数
+        var unknownCount = Math.max(0, expectedN - n);
+      } else {
+        var unknownCount = 0;
+      }
+
+      // 未回答者パネルを更新（常時表示・OX/五択時のみ）
+      const isChoiceMode = (currentMode === "ox" || currentMode === "five") ||
+                           (Array.isArray(choiceOrder) && choiceOrder.length > 0 && currentMode !== "text");
+      if (unansweredPanel){
+        const showPanel = isChoiceMode && expectedN > 0 && unansweredList.length > 0;
+        unansweredPanel.classList.toggle("show", showPanel);
+        if (showPanel){
+          unansweredTitle.textContent = `未回答 ${unansweredList.length}人`;
+          unansweredChips.innerHTML = "";
+          unansweredList.forEach(entry => {
+            const chip = document.createElement("span");
+            chip.className = "unansweredChip";
+            if (entry.color) chip.style.borderColor = entry.color + "55";
+            chip.innerHTML = `<span>${entry.emoji}</span>${entry.tag}`;
+            unansweredChips.appendChild(chip);
+          });
+        }
+      }
+
       const isText = (currentMode === "text");
       if (isText){
         vchart.innerHTML = `
@@ -2484,7 +2601,7 @@ tpQMaxVal.textContent = String(qMax);
         }
       });
 
-      renderVChart(counts, effectiveOrder, uidMap);
+      renderVChart(counts, effectiveOrder, uidMap, unknownCount, unansweredList);
 
     }
 
