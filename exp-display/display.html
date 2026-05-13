@@ -2493,42 +2493,37 @@ tpQMaxVal.textContent = String(qMax);
       countLabel.textContent = (expectedN > 0) ? `参加中 ${n} / ${denomN}人` : `参加中 ${n}人`;
       qrCount.textContent    = countLabel.textContent;
 
-      // ===== 未回答者の計算（rosterCache が母数の場合も対応）=====
-      // rosterCache に登録されているUID全員と、answers のUID差分
+      // ===== 未回答者の計算 =====
       const answeredUids = new Set(keys);
-      let unansweredList = []; // { uid, emoji, tag, color }
+      let unansweredList = []; // rosterCache にいる未回答者
 
-      if (expectedN > 0) {
-        // roster にいる人のうち未回答者
-        Object.entries(rosterCache || {}).forEach(([uid, r]) => {
-          if (!answeredUids.has(uid)){
-            unansweredList.push({
-              uid,
-              emoji: r.emoji || "📱",
-              tag:   r.tag   || uid.slice(-6),
-              color: r.color || null
-            });
-          }
-        });
-        // rosterより expectedN が多い場合（roster未登録の人がいる）は件数だけ確保
-        const rosterUnanswered = unansweredList.length;
-        const extraUnknown = Math.max(0, expectedN - n - rosterUnanswered);
-        // extraUnknown人分は名前が分からないのでリストには出せないが件数に加算
-        // unknownCountはroster未登録含む全未回答数
-        var unknownCount = Math.max(0, expectedN - n);
-      } else {
-        var unknownCount = 0;
-      }
+      // rosterCache にいる人のうち未回答者を列挙
+      Object.entries(rosterCache || {}).forEach(([uid, r]) => {
+        if (!answeredUids.has(uid)){
+          unansweredList.push({
+            uid,
+            emoji: r.emoji || "📱",
+            tag:   r.tag   || uid.slice(-6),
+            color: r.color || null
+          });
+        }
+      });
 
-      // 未回答者パネルを更新（常時表示・OX/五択時のみ）
+      // 未回答数 = 母数 − 回答数（母数が設定されている場合）
+      const unknownCount = (expectedN > 0) ? Math.max(0, expectedN - n) : 0;
+
+      // 未回答者パネルを更新（OX/五択時・母数設定時・未回答がいる場合）
       const isChoiceMode = (currentMode === "ox" || currentMode === "five") ||
                            (Array.isArray(choiceOrder) && choiceOrder.length > 0 && currentMode !== "text");
       if (unansweredPanel){
-        const showPanel = isChoiceMode && expectedN > 0 && unansweredList.length > 0;
+        const showPanel = isChoiceMode && unknownCount > 0;
         unansweredPanel.classList.toggle("show", showPanel);
         if (showPanel){
-          unansweredTitle.textContent = `未回答 ${unansweredList.length}人`;
+          const rosterCount = unansweredList.length;
+          const extraCount  = unknownCount - rosterCount; // roster未登録の未回答者数
+          unansweredTitle.textContent = `未回答 ${unknownCount}人`;
           unansweredChips.innerHTML = "";
+          // roster登録済みの未回答者
           unansweredList.forEach(entry => {
             const chip = document.createElement("span");
             chip.className = "unansweredChip";
@@ -2536,6 +2531,13 @@ tpQMaxVal.textContent = String(qMax);
             chip.innerHTML = `<span>${entry.emoji}</span>${entry.tag}`;
             unansweredChips.appendChild(chip);
           });
+          // roster未登録の未回答者（名前不明）
+          for (let i = 0; i < extraCount; i++){
+            const chip = document.createElement("span");
+            chip.className = "unansweredChip";
+            chip.textContent = "不明";
+            unansweredChips.appendChild(chip);
+          }
         }
       }
 
