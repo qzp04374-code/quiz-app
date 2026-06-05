@@ -741,6 +741,90 @@
       gap: 14px;
     }
 
+    .fixedGroupQRGrid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 18px;
+    }
+
+    .fixedGroupQRCard {
+      background: rgba(255,255,255,.035);
+      border: 1px solid rgba(255,255,255,.09);
+      border-radius: 18px;
+      padding: 14px;
+      text-align: center;
+    }
+
+    .fixedGroupQRTitle {
+      font-size: 16px;
+      font-weight: 900;
+      margin-bottom: 10px;
+      color: #f8fafc;
+    }
+
+    .fixedGroupQRImageBox {
+      background: #fff;
+      border-radius: 14px;
+      padding: 10px;
+      margin: 0 auto 10px;
+      max-width: 170px;
+    }
+
+    .fixedGroupQRImageBox img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    .fixedGroupQRUrl {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: #cbd5e1;
+      background: rgba(0,0,0,.24);
+      border: 1px solid rgba(255,255,255,.08);
+      padding: 8px;
+      border-radius: 10px;
+      word-break: break-all;
+      line-height: 1.45;
+      min-height: 54px;
+    }
+
+    .fixedGroupQRActions {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .fixedGroupQRActions button {
+      width: 100%;
+      min-height: 38px;
+      font-size: 12px;
+      padding: 8px 10px;
+      border-radius: 12px;
+      background: rgba(255,255,255,.08);
+      border: 1px solid rgba(255,255,255,.10);
+    }
+
+    @media (max-width: 1180px) {
+      .fixedGroupQRGrid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 760px) {
+      .fixedGroupQRGrid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 520px) {
+      .fixedGroupQRGrid {
+        grid-template-columns: 1fr;
+      }
+    }
+
     @media (max-width: 980px) {
       .settingGrid {
         grid-template-columns: 1fr;
@@ -785,7 +869,7 @@
 </head>
 
 <body>
-  <div id="buildTag">build: 2026-06-05 / groupshare-start-v20260605gs</div>
+  <div id="buildTag">build: 2026-06-05 / groupshare-fixed-qr-10</div>
 
   <div class="card">
     <div class="page-header">
@@ -937,10 +1021,10 @@
           </section>
 
           <section class="qrCard">
-            <div class="qrTitle">グループ用QR</div>
+            <div class="qrTitle">グループ確認用QR</div>
             <div class="qrDesc">
-              班で1台のタブレット・PCで読み込みます。<br>
-              班内投稿の比較と班まとめに使います。
+              教員確認・テスト用です。班を切り替えられます。<br>
+              学生に配る場合は、GroupShareタブの班別固定QRを使ってください。
             </div>
 
             <div class="qrImageBox">
@@ -969,7 +1053,7 @@
 
         <div class="noticeBox">
           ここでGroupShareを開始すると、学生用QRから開いた <b>student.html</b> が自動的にGroupShare投稿画面になります。<br>
-          グループ用QRから開いた <b>group.html</b> では、班ごとの投稿確認と班まとめができます。
+          班共有用は、下の <b>1班〜10班の固定QR</b> を使ってください。
         </div>
 
         <div class="qrGrid">
@@ -991,12 +1075,12 @@
           <section class="qrCard">
             <div class="qrTitle">画面を開く</div>
             <div class="qrDesc">
-              動作確認用に、現在のルームで学生画面・グループ画面を開きます。
+              動作確認用に、現在のルームで学生画面・グループ確認用画面を開きます。
             </div>
 
             <div class="actionRow">
               <button id="openStudentFromGroupShareBtn" class="blueAction">学生画面を開く</button>
-              <button id="openGroupFromGroupShareBtn" class="greenAction">グループ画面を開く</button>
+              <button id="openGroupFromGroupShareBtn" class="greenAction">グループ確認用を開く</button>
             </div>
           </section>
         </div>
@@ -1007,7 +1091,7 @@
             <div class="mutedText">
               1. 教員がGroupShare開始<br>
               2. 学生が学生用QRから個人投稿<br>
-              3. 各班がグループ用QRから共有画面を開く<br>
+              3. 各班が班別固定QRから共有画面を開く<br>
               4. 班内投稿を比較<br>
               5. 班まとめを保存<br>
               6. 教員が次の段階で全班状況を確認
@@ -1025,6 +1109,18 @@
               ・CSV出力
             </div>
           </section>
+        </div>
+
+        <div class="panelBox">
+          <h3>🧩 班別 固定QR 1〜10班</h3>
+
+          <div class="noticeBox">
+            学生が使う班共有画面です。<br>
+            それぞれのQRは <b>group=1</b> 〜 <b>group=10</b> で班固定されます。<br>
+            学生は他の班へ切り替えできません。
+          </div>
+
+          <div id="fixedGroupQRGrid" class="fixedGroupQRGrid"></div>
         </div>
       </div>
     </section>
@@ -1055,7 +1151,7 @@
           <div class="dummySetting">
             <div class="qrTitle">班数設定予定</div>
             <div class="mutedText">
-              1班〜6班など、授業ごとの班数を設定できるようにします。
+              現在は1班〜10班の固定QRを表示します。今後ここで班数を変更できるようにします。
             </div>
           </div>
 
@@ -1075,6 +1171,7 @@
     import { getDatabase, ref, set, update, remove, onValue, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
     const APP_VERSION = "20260605gs";
+    const GROUP_COUNT = 10;
 
     const firebaseConfig = {
       apiKey: "AIzaSyBke-wTU16skpbK8z80ddK04tE154dHERQ",
@@ -1236,6 +1333,10 @@
       return new URL(`group.html?v=${encodeURIComponent(APP_VERSION)}&room=${encodeURIComponent(currentRoom)}`, getBaseDir()).href;
     }
 
+    function getFixedGroupUrl(groupId){
+      return new URL(`group.html?v=${encodeURIComponent(APP_VERSION)}&room=${encodeURIComponent(currentRoom)}&group=${encodeURIComponent(groupId)}`, getBaseDir()).href;
+    }
+
     function getDisplayUrl(){
       return new URL(`display.html?v=${encodeURIComponent(APP_VERSION)}&room=${encodeURIComponent(currentRoom)}`, getBaseDir()).href;
     }
@@ -1257,6 +1358,55 @@
       if (groupUrlBox) groupUrlBox.textContent = groupUrl;
       if (studentQRImg) studentQRImg.src = qrImageUrl(studentUrl);
       if (groupQRImg) groupQRImg.src = qrImageUrl(groupUrl);
+
+      renderFixedGroupQRs();
+    }
+
+    function renderFixedGroupQRs(){
+      const grid = document.getElementById("fixedGroupQRGrid");
+
+      if (!grid) return;
+
+      let html = "";
+
+      for (let i = 1; i <= GROUP_COUNT; i++){
+        const groupId = String(i);
+        const url = getFixedGroupUrl(groupId);
+        const qr = qrImageUrl(url);
+
+        html += `
+          <section class="fixedGroupQRCard">
+            <div class="fixedGroupQRTitle">${groupId}班</div>
+
+            <div class="fixedGroupQRImageBox">
+              <img src="${qr}" alt="${groupId}班用QRコード">
+            </div>
+
+            <div class="fixedGroupQRUrl">${url}</div>
+
+            <div class="fixedGroupQRActions">
+              <button type="button" data-open-group="${groupId}">開く</button>
+              <button type="button" data-copy-group="${groupId}">URLコピー</button>
+            </div>
+          </section>
+        `;
+      }
+
+      grid.innerHTML = html;
+
+      grid.querySelectorAll("[data-open-group]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const groupId = btn.dataset.openGroup;
+          window.open(getFixedGroupUrl(groupId), "_blank");
+        });
+      });
+
+      grid.querySelectorAll("[data-copy-group]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const groupId = btn.dataset.copyGroup;
+          copyText(getFixedGroupUrl(groupId));
+        });
+      });
     }
 
     async function copyText(text){
