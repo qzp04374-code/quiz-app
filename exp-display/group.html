@@ -720,7 +720,7 @@
       <div id="summaryFields" class="summaryFields"></div>
 
       <div class="summaryActions">
-        <button id="saveSummaryBtn" class="greenBtn">班まとめを保存</button>
+        <button id="saveSummaryBtn" class="greenBtn">教員に提出</button>
         <button id="clearSummaryBtn" class="grayBtn">入力欄をクリア</button>
       </div>
 
@@ -1145,10 +1145,14 @@
         state.selectedGroupId = fixedGroupId;
       }
 
+      const now = Date.now();
+
       const payload = {
         groupId: state.selectedGroupId,
         groupName: currentGroupName(),
-        updatedAt: Date.now()
+        submitted: true,
+        submittedAt: now,
+        updatedAt: now
       };
 
       for (let n = 1; n <= 5; n++){
@@ -1157,19 +1161,20 @@
       }
 
       saveSummaryBtn.disabled = true;
-      saveStatus.textContent = "保存中です…";
+      saveStatus.textContent = "教員に提出中です…";
 
       try {
         await update(summaryRef(state.selectedGroupId), payload);
-        saveStatus.textContent = `保存しました：${timestampToText(payload.updatedAt)}`;
+        saveStatus.textContent = `教員に提出しました：${timestampToText(payload.submittedAt)}`;
+        alert("教員に提出しました。");
       } catch(e) {
         console.error(e);
-        saveStatus.textContent = "保存に失敗しました。通信状態を確認してください。";
-        alert("班まとめの保存に失敗しました。");
+        saveStatus.textContent = "提出に失敗しました。通信状態を確認してください。";
+        alert("教員への提出に失敗しました。");
       } finally {
         saveSummaryBtn.disabled = false;
       }
-    }
+    }    
 
     function clearSummaryInputs(){
       const ok = confirm("入力中の班まとめ欄をクリアしますか？\nFirebase上の保存済みデータは、保存ボタンを押すまで変更されません。");
