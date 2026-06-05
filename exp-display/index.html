@@ -761,6 +761,14 @@
       font-weight: 900;
       margin-bottom: 10px;
       color: #f8fafc;
+      line-height: 1.35;
+    }
+
+    .fixedGroupQRSub {
+      font-size: 11px;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      margin-bottom: 10px;
     }
 
     .fixedGroupQRImageBox {
@@ -869,7 +877,7 @@
 </head>
 
 <body>
-  <div id="buildTag">build: 2026-06-05 / groupshare-fixed-qr-10</div>
+  <div id="buildTag">build: 2026-06-05 / groupshare-animal-qr-10</div>
 
   <div class="card">
     <div class="page-header">
@@ -1053,7 +1061,7 @@
 
         <div class="noticeBox">
           ここでGroupShareを開始すると、学生用QRから開いた <b>student.html</b> が自動的にGroupShare投稿画面になります。<br>
-          班共有用は、下の <b>1班〜10班の固定QR</b> を使ってください。
+          班共有用は、下の <b>動物アイコンつき固定QR</b> を使ってください。
         </div>
 
         <div class="qrGrid">
@@ -1091,7 +1099,7 @@
             <div class="mutedText">
               1. 教員がGroupShare開始<br>
               2. 学生が学生用QRから個人投稿<br>
-              3. 各班が班別固定QRから共有画面を開く<br>
+              3. 各班が動物アイコンつき固定QRから共有画面を開く<br>
               4. 班内投稿を比較<br>
               5. 班まとめを保存<br>
               6. 教員が次の段階で全班状況を確認
@@ -1172,6 +1180,19 @@
 
     const APP_VERSION = "20260605gs";
     const GROUP_COUNT = 10;
+
+    const GROUP_LABELS = {
+      "1": "🐶 いぬ班",
+      "2": "🐱 ねこ班",
+      "3": "🐰 うさぎ班",
+      "4": "🦊 きつね班",
+      "5": "🐼 ぱんだ班",
+      "6": "🐨 こあら班",
+      "7": "🐵 さる班",
+      "8": "🦁 らいおん班",
+      "9": "🐧 ぺんぎん班",
+      "10": "🐢 かめ班"
+    };
 
     const firebaseConfig = {
       apiKey: "AIzaSyBke-wTU16skpbK8z80ddK04tE154dHERQ",
@@ -1345,6 +1366,10 @@
       return `https://api.qrserver.com/v1/create-qr-code/?size=320x320&data=${encodeURIComponent(targetUrl)}`;
     }
 
+    function groupLabel(groupId){
+      return GROUP_LABELS[String(groupId)] || `${groupId}班`;
+    }
+
     function updateJoinUrls(){
       const studentUrl = getStudentUrl();
       const groupUrl = getGroupUrl();
@@ -1371,15 +1396,17 @@
 
       for (let i = 1; i <= GROUP_COUNT; i++){
         const groupId = String(i);
+        const label = groupLabel(groupId);
         const url = getFixedGroupUrl(groupId);
         const qr = qrImageUrl(url);
 
         html += `
           <section class="fixedGroupQRCard">
-            <div class="fixedGroupQRTitle">${groupId}班</div>
+            <div class="fixedGroupQRTitle">${label}</div>
+            <div class="fixedGroupQRSub">group=${groupId}</div>
 
             <div class="fixedGroupQRImageBox">
-              <img src="${qr}" alt="${groupId}班用QRコード">
+              <img src="${qr}" alt="${label}用QRコード">
             </div>
 
             <div class="fixedGroupQRUrl">${url}</div>
