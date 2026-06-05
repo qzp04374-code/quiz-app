@@ -138,6 +138,30 @@
       white-space: nowrap;
     }
 
+    .lockNotice {
+      margin-top: 14px;
+      background: rgba(22,163,74,.10);
+      border: 1px solid rgba(22,163,74,.24);
+      color: #166534;
+      border-radius: 18px;
+      padding: 12px 14px;
+      line-height: 1.7;
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .freeNotice {
+      margin-top: 14px;
+      background: rgba(249,115,22,.10);
+      border: 1px solid rgba(249,115,22,.24);
+      color: #9a3412;
+      border-radius: 18px;
+      padding: 12px 14px;
+      line-height: 1.7;
+      font-size: 13px;
+      font-weight: 900;
+    }
+
     .setupPanel {
       background: var(--paper);
       border: 1px solid var(--border);
@@ -194,6 +218,14 @@
       font-size: 16px;
       padding: 13px 14px;
       box-shadow: inset 0 1px 0 rgba(15,23,42,.02);
+    }
+
+    select:disabled {
+      background: #f1f5f9;
+      color: #475569;
+      opacity: 1;
+      font-weight: 900;
+      cursor: not-allowed;
     }
 
     select:focus,
@@ -615,6 +647,14 @@
         </div>
         <div id="roomBadge" class="roomBadge">room: —</div>
       </div>
+
+      <div id="groupLockNotice" class="lockNotice hidden">
+        この画面は班固定です。他の班へ切り替えることはできません。
+      </div>
+
+      <div id="groupFreeNotice" class="freeNotice hidden">
+        班固定URLではありません。教員確認・テスト用として、班を切り替えられます。
+      </div>
     </section>
 
     <section class="setupPanel">
@@ -687,7 +727,7 @@
       <div id="saveStatus" class="saveStatus">まだ保存していません。</div>
     </section>
 
-    <div id="footerInfo" class="footerInfo">ClassSync GroupShare / build: 2026-06-05</div>
+    <div id="footerInfo" class="footerInfo">ClassSync GroupShare / build: 2026-06-05 / group-lock</div>
   </main>
 
   <script type="module">
@@ -728,6 +768,11 @@
 
     const url = new URL(location.href);
     const roomId = url.searchParams.get("room") || localStorage.getItem("cs_group_room") || "kyoto-01";
+    const groupParamRaw = url.searchParams.get("group");
+    const validGroupIds = DEFAULT_GROUPS.map(g => g.id);
+    const fixedGroupId = validGroupIds.includes(String(groupParamRaw)) ? String(groupParamRaw) : null;
+    const isGroupLocked = fixedGroupId !== null;
+
     localStorage.setItem("cs_group_room", roomId);
 
     const groupSelect = document.getElementById("groupSelect");
@@ -735,6 +780,9 @@
     const reloadBtn = document.getElementById("reloadBtn");
 
     const roomBadge = document.getElementById("roomBadge");
+    const groupLockNotice = document.getElementById("groupLockNotice");
+    const groupFreeNotice = document.getElementById("groupFreeNotice");
+
     const statGroup = document.getElementById("statGroup");
     const statPosts = document.getElementById("statPosts");
     const statSummary = document.getElementById("statSummary");
@@ -757,7 +805,9 @@
       settings: { ...DEFAULT_SETTINGS },
       posts: {},
       summaries: {},
-      selectedGroupId: localStorage.getItem(`cs_group_selected_${roomId}`) || "1",
+      selectedGroupId: isGroupLocked
+        ? fixedGroupId
+        : (localStorage.getItem(`cs_group_selected_${roomId}`) || "1"),
       selectedView: localStorage.getItem(`cs_group_view_${roomId}`) || "student",
 
       unsubSettings: null,
@@ -805,6 +855,7 @@
       try {
         const d = new Date(Number(ts));
         if (Number.isNaN(d.getTime())) return "時刻なし";
+
         return d.toLocaleString("ja-JP", {
           month: "2-digit",
           day: "2-digit",
@@ -844,6 +895,17 @@
       }
 
       groupSelect.value = state.selectedGroupId;
+
+      if (isGroupLocked){
+        groupSelect.disabled = true;
+        groupLockNotice.classList.remove("hidden");
+        groupFreeNotice.classList.add("hidden");
+        groupLockNotice.textContent = `この画面は ${currentGroupName()} 固定です。他の班へ切り替えることはできません。`;
+      } else {
+        groupSelect.disabled = false;
+        groupLockNotice.classList.add("hidden");
+        groupFreeNotice.classList.remove("hidden");
+      }
     }
 
     function applyFieldColors(){
@@ -892,15 +954,16 @@
     function renderStats(){
       const posts = getVisiblePostsForGroup();
       const summary = state.summaries?.[state.selectedGroupId] || {};
-
       const hasSummary = [1,2,3,4,5].some(n => normalizeText(summary[`summary_${n}`]));
 
       statGroup.textContent = currentGroupName();
       statPosts.textContent = String(posts.length);
       statSummary.textContent = hasSummary ? "済" : "未";
 
-      roomBadge.textContent = `room: ${roomId}`;
-      footerInfo.textContent = `ClassSync GroupShare / room:${roomId} / group:${currentGroupName()} / build: 2026-06-05`;
+      const lockedText = isGroupLocked ? ` / fixed:${currentGroupName()}` : " / free-select";
+      roomBadge.textContent = `room: ${roomId}${lockedText}`;
+
+      footerInfo.textContent = `ClassSync GroupShare / room:${roomId} / group:${currentGroupName()}${lockedText} / build: 2026-06-05`;
     }
 
     function renderStudentPosts(){
@@ -1011,6 +1074,11 @@
     }
 
     function renderAll(){
+      if (isGroupLocked){
+        state.selectedGroupId = fixedGroupId;
+      }
+
+      buildGroupOptions();
       applyFieldColors();
       renderStats();
       renderStudentPosts();
@@ -1069,6 +1137,10 @@
     }
 
     async function saveSummary(){
+      if (isGroupLocked){
+        state.selectedGroupId = fixedGroupId;
+      }
+
       const payload = {
         groupId: state.selectedGroupId,
         groupName: currentGroupName(),
@@ -1109,6 +1181,13 @@
     }
 
     groupSelect.onchange = () => {
+      if (isGroupLocked){
+        groupSelect.value = fixedGroupId;
+        state.selectedGroupId = fixedGroupId;
+        renderAll();
+        return;
+      }
+
       state.selectedGroupId = groupSelect.value;
       localStorage.setItem(`cs_group_selected_${roomId}`, state.selectedGroupId);
       renderAll();
@@ -1139,6 +1218,10 @@
     };
 
     async function boot(){
+      if (isGroupLocked){
+        state.selectedGroupId = fixedGroupId;
+      }
+
       roomBadge.textContent = `room: ${roomId}`;
 
       buildGroupOptions();
