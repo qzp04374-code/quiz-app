@@ -27,7 +27,6 @@
       --panel: #111827;
       --panel2: #0a0f1a;
       --glass: rgba(255,255,255,.055);
-      --glass2: rgba(255,255,255,.085);
       --border: rgba(255,255,255,.09);
       --ink: #f0f4ff;
       --muted: #8899bb;
@@ -171,6 +170,38 @@
       backdrop-filter: blur(8px);
     }
 
+    button {
+      font-family: var(--font-body);
+      border: none;
+      font-size: 13px;
+      border-radius: var(--radius-btn);
+      padding: 10px 16px;
+      cursor: pointer;
+      color: #fff;
+      background: var(--glass);
+      font-weight: 700;
+      letter-spacing: .03em;
+      transition: transform .10s ease, filter .12s ease, box-shadow .12s ease, opacity .12s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    button:hover {
+      filter: brightness(1.12);
+    }
+
+    button:active {
+      transform: scale(.97);
+      filter: brightness(.95);
+    }
+
+    button:disabled {
+      opacity: .35;
+      cursor: not-allowed;
+      box-shadow: none !important;
+      transform: none !important;
+      filter: none !important;
+    }
+
     .teacherTabs {
       display: grid;
       grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -248,7 +279,6 @@
       backdrop-filter: blur(16px);
       position: relative;
       overflow: hidden;
-      animation: fadeUp .40s ease both;
     }
 
     .btnGroup::before,
@@ -283,38 +313,6 @@
       font-family: var(--font-mono);
     }
 
-    button {
-      font-family: var(--font-body);
-      border: none;
-      font-size: 13px;
-      border-radius: var(--radius-btn);
-      padding: 10px 16px;
-      cursor: pointer;
-      color: #fff;
-      background: var(--glass);
-      font-weight: 700;
-      letter-spacing: .03em;
-      transition: transform .10s ease, filter .12s ease, box-shadow .12s ease, opacity .12s ease;
-      -webkit-tap-highlight-color: transparent;
-    }
-
-    button:hover {
-      filter: brightness(1.12);
-    }
-
-    button:active {
-      transform: scale(.97);
-      filter: brightness(.95);
-    }
-
-    button:disabled {
-      opacity: .35;
-      cursor: not-allowed;
-      box-shadow: none !important;
-      transform: none !important;
-      filter: none !important;
-    }
-
     .btnRow,
     .pollGrid {
       display: grid;
@@ -344,15 +342,6 @@
         inset 0 1px 0 rgba(255,255,255,.08);
       position: relative;
       overflow: hidden;
-    }
-
-    .controlGroups button::after {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(180deg, rgba(255,255,255,.06) 0%, transparent 60%);
-      pointer-events: none;
-      border-radius: inherit;
     }
 
     .tile {
@@ -405,7 +394,8 @@
       box-shadow: 0 8px 24px rgba(255,159,10,.28) !important;
     }
 
-    #endClassBtn {
+    #endClassBtn,
+    #groupShareEndBtn {
       background: linear-gradient(135deg, #c0362b, var(--red)) !important;
       border-color: rgba(255,69,58,.45) !important;
       box-shadow: 0 8px 24px rgba(255,69,58,.28) !important;
@@ -416,6 +406,12 @@
       background: linear-gradient(135deg, #9333ea, var(--purple)) !important;
       border-color: rgba(191,90,242,.45) !important;
       box-shadow: 0 8px 24px rgba(191,90,242,.25) !important;
+    }
+
+    #groupShareStartBtn {
+      background: linear-gradient(135deg, #166534, #22c55e) !important;
+      border-color: rgba(34,197,94,.45) !important;
+      box-shadow: 0 8px 24px rgba(34,197,94,.24) !important;
     }
 
     #t20Btn,
@@ -512,7 +508,6 @@
       font-family: var(--font-mono);
       font-size: 13px;
       letter-spacing: .04em;
-      transition: background .2s, transform .1s;
     }
 
     .textList {
@@ -577,7 +572,8 @@
       }
     }
 
-    .pvCard {
+    .pvCard,
+    .qrCard {
       background: rgba(255,255,255,.03);
       border: 1px solid var(--border);
       border-radius: 18px;
@@ -650,23 +646,17 @@
       }
     }
 
-    .qrCard {
-      border-radius: 20px;
-      background: rgba(255,255,255,.045);
-      border: 1px solid var(--border);
-      padding: 18px;
-    }
-
     .qrTitle {
       font-size: 17px;
       font-weight: 900;
       margin-bottom: 8px;
     }
 
-    .qrDesc {
+    .qrDesc,
+    .mutedText {
       color: var(--muted);
       font-size: 13px;
-      line-height: 1.7;
+      line-height: 1.8;
       margin-bottom: 14px;
     }
 
@@ -730,6 +720,10 @@
       background: linear-gradient(135deg, #c47400, var(--orange)) !important;
     }
 
+    .redAction {
+      background: linear-gradient(135deg, #c0362b, var(--red)) !important;
+    }
+
     .noticeBox {
       border-radius: 16px;
       padding: 14px 16px;
@@ -739,12 +733,6 @@
       line-height: 1.7;
       font-size: 13px;
       margin-bottom: 14px;
-    }
-
-    .mutedText {
-      color: var(--muted);
-      font-size: 13px;
-      line-height: 1.8;
     }
 
     .settingGrid {
@@ -797,7 +785,7 @@
 </head>
 
 <body>
-  <div id="buildTag">build: 2026-06-05 / teacher-tabs-groupshare-ready</div>
+  <div id="buildTag">build: 2026-06-05 / groupshare-start</div>
 
   <div class="card">
     <div class="page-header">
@@ -923,8 +911,8 @@
         <h3>📱 QR / 参加</h3>
 
         <div class="noticeBox">
-          ここでは、現在選択中のルームに紐づいたQRコードを表示します。<br>
-          学生個人投稿用は <b>student.html</b>、グループ共有用は <b>group.html</b> を開きます。
+          現在選択中のルームに紐づいたQRコードを表示します。<br>
+          学生用は <b>student.html</b>、グループ用は <b>group.html</b> です。
         </div>
 
         <div class="qrGrid">
@@ -932,7 +920,7 @@
             <div class="qrTitle">学生用QR</div>
             <div class="qrDesc">
               学生さんが自分のスマホで読み込みます。<br>
-              通常の回答・今後のGroupShare個人投稿に使います。
+              GroupShare開始中は、このQRだけで投稿画面になります。
             </div>
 
             <div class="qrImageBox">
@@ -951,7 +939,7 @@
             <div class="qrTitle">グループ用QR</div>
             <div class="qrDesc">
               班で1台のタブレット・PCで読み込みます。<br>
-              グループ内の投稿共有・班まとめに使います。
+              班内投稿の比較と班まとめに使います。
             </div>
 
             <div class="qrImageBox">
@@ -979,39 +967,63 @@
         <h3>🧩 GroupShare 管理</h3>
 
         <div class="noticeBox">
-          この画面は、GroupShare機能を追加するための管理場所です。<br>
-          次の段階で、班別投稿数・全投稿一覧・班まとめ一覧をここに表示します。
+          ここでGroupShareを開始すると、学生用QRから開いた <b>student.html</b> が自動的にGroupShare投稿画面になります。<br>
+          グループ用QRから開いた <b>group.html</b> では、班ごとの投稿確認と班まとめができます。
         </div>
 
         <div class="qrGrid">
           <section class="qrCard">
-            <div class="qrTitle">想定する授業の流れ</div>
+            <div class="qrTitle">GroupShare 操作</div>
+            <div class="qrDesc">
+              個人投稿を始めるときは「GroupShare開始」を押してください。<br>
+              終了すると、学生画面は待機状態に戻ります。
+            </div>
+
+            <div class="actionRow">
+              <button id="groupShareStartBtn" class="greenAction">GroupShare開始</button>
+              <button id="groupShareEndBtn" class="redAction">GroupShare終了</button>
+            </div>
+
+            <div id="groupShareStateBox" class="urlBox">状態：—</div>
+          </section>
+
+          <section class="qrCard">
+            <div class="qrTitle">画面を開く</div>
+            <div class="qrDesc">
+              動作確認用に、現在のルームで学生画面・グループ画面を開きます。
+            </div>
+
+            <div class="actionRow">
+              <button id="openStudentFromGroupShareBtn" class="blueAction">学生画面を開く</button>
+              <button id="openGroupFromGroupShareBtn" class="greenAction">グループ画面を開く</button>
+            </div>
+          </section>
+        </div>
+
+        <div class="qrGrid" style="margin-top:16px;">
+          <section class="qrCard">
+            <div class="qrTitle">授業の流れ</div>
             <div class="mutedText">
-              1. 学生が学生用QRから個人投稿<br>
-              2. 班でグループ用QRを読み込む<br>
-              3. group.htmlで班を選択<br>
+              1. 教員がGroupShare開始<br>
+              2. 学生が学生用QRから個人投稿<br>
+              3. 各班がグループ用QRから共有画面を開く<br>
               4. 班内投稿を比較<br>
               5. 班まとめを保存<br>
-              6. 教員がこの画面で全班を確認
+              6. 教員が次の段階で全班状況を確認
             </div>
           </section>
 
           <section class="qrCard">
-            <div class="qrTitle">次に追加する表示</div>
+            <div class="qrTitle">次に追加予定</div>
             <div class="mutedText">
-              ・1班、2班、3班…の投稿数<br>
-              ・各班のまとめ入力状況<br>
+              ・班別投稿数<br>
+              ・班まとめ入力状況<br>
               ・全投稿一覧<br>
               ・班まとめ一覧<br>
               ・非表示 / 削除<br>
               ・CSV出力
             </div>
           </section>
-        </div>
-
-        <div class="actionRow" style="margin-top:18px;">
-          <button id="openGroupFromGroupShareBtn" class="greenAction">グループ画面を開く</button>
-          <button id="openStudentFromGroupShareBtn" class="blueAction">学生画面を開く</button>
         </div>
       </div>
     </section>
@@ -1021,24 +1033,21 @@
         <h3>⚙️ 設定</h3>
 
         <div class="noticeBox">
-          今後、GroupShareの共有欄名・色・班数などをここで設定できるようにします。<br>
-          既存のCSV投入・読み方辞書は、現時点では授業タブのボタンから開けます。
+          今後、共有欄名・色・班数などをここで設定できるようにします。
         </div>
 
         <div class="settingGrid">
           <div class="dummySetting">
             <div class="qrTitle">共有欄設定予定</div>
             <div class="mutedText">
-              共有欄1〜5の名前を設定します。<br>
-              例：AIの説明で参考になった部分 / 疑問点 / 発表に使える一文 など。
+              共有欄1〜5の名前を設定します。
             </div>
           </div>
 
           <div class="dummySetting">
             <div class="qrTitle">色設定予定</div>
             <div class="mutedText">
-              共有欄1〜5の背景色を設定します。<br>
-              学生画面・グループ画面・教員画面で同じ色を使います。
+              共有欄1〜5の背景色を設定します。
             </div>
           </div>
 
@@ -1052,7 +1061,7 @@
           <div class="dummySetting">
             <div class="qrTitle">データ管理予定</div>
             <div class="mutedText">
-              授業終了時のGroupShareデータ削除、CSV出力などをここに整理します。
+              GroupShareデータ削除、CSV出力などを整理します。
             </div>
           </div>
         </div>
@@ -1128,6 +1137,10 @@
       return ref(db, `rooms/${room}/questions/${qid}`);
     }
 
+    function groupShareSettingsRef(room=currentRoom){
+      return ref(db, `rooms/${room}/groupShare/settings`);
+    }
+
     const pvQuestion = document.getElementById("pvQuestion");
     const pvChoices  = document.getElementById("pvChoices");
     const pvAnswer   = document.getElementById("pvAnswer");
@@ -1159,15 +1172,26 @@
       activity: {},
       latestQid: null,
       question: null,
-
       nextQid: null,
       nextQuestion: null,
-
       unsubActivity: null,
       unsubQid: null,
       unsubQuestion: null,
       unsubNextQuestion: null,
       unsubAnswers: null
+    };
+
+    const DEFAULT_GROUPSHARE_SETTINGS = {
+      field_1_label: "共有欄1",
+      field_2_label: "共有欄2",
+      field_3_label: "共有欄3",
+      field_4_label: "共有欄4",
+      field_5_label: "共有欄5",
+      field_1_color: "#E8F3FF",
+      field_2_color: "#EAF8EA",
+      field_3_color: "#FFF7D6",
+      field_4_color: "#FFEAF1",
+      field_5_color: "#F3ECFF"
     };
 
     function setupTeacherTabs(){
@@ -1192,6 +1216,7 @@
           });
 
           updateJoinUrls();
+          updateGroupShareStateBox();
         });
       });
     }
@@ -1497,6 +1522,56 @@
       });
     }
 
+    async function ensureGroupShareSettings(){
+      const snap = await get(groupShareSettingsRef());
+
+      if (snap.exists()) return;
+
+      await set(groupShareSettingsRef(), {
+        ...DEFAULT_GROUPSHARE_SETTINGS,
+        updatedAt: Date.now()
+      });
+    }
+
+    async function startGroupShare(){
+      await ensureGroupShareSettings();
+
+      const aSnap = await get(activityRef());
+      const aNow = aSnap.val() || {};
+      const session = String(aNow.session || "") || Date.now().toString(36);
+
+      await update(activityRef(), {
+        status: "open",
+        qr: false,
+        view: "groupshare",
+        mode: "groupshare",
+        config: {
+          type: "groupshare"
+        },
+        timer: { running:false },
+        session
+      });
+
+      alert("GroupShareを開始しました。学生用QRから投稿画面に入れます。");
+    }
+
+    async function endGroupShare(){
+      const ok = confirm("GroupShareを終了して、学生画面を待機状態に戻しますか？\n投稿データと班まとめは削除されません。");
+
+      if (!ok) return;
+
+      await update(activityRef(), {
+        status: "closed",
+        qr: false,
+        view: "standby",
+        mode: null,
+        config: null,
+        timer: { running:false }
+      });
+
+      alert("GroupShareを終了しました。");
+    }
+
     function extractAnswerValue(v){
       if (v == null) return "";
       if (typeof v === "string") return v;
@@ -1592,6 +1667,22 @@
       );
     }
 
+    function updateGroupShareStateBox(){
+      const el = document.getElementById("groupShareStateBox");
+      if (!el) return;
+
+      const a = state.activity || {};
+      const mode = String(a.mode || "—");
+      const status = String(a.status || "—");
+      const view = String(a.view || "—");
+
+      const isGS = mode === "groupshare" || view === "groupshare";
+
+      el.textContent = isGS
+        ? `状態：GroupShare中 / room:${currentRoom} / status:${status} / view:${view} / mode:${mode}`
+        : `状態：待機中 / room:${currentRoom} / status:${status} / view:${view} / mode:${mode}`;
+    }
+
     function renderPreview(){
       const a = state.activity || {};
       const view = a.view || "quiz";
@@ -1627,9 +1718,26 @@
 
       if (roomMeta) roomMeta.textContent = meta;
 
+      updateGroupShareStateBox();
+
       if (view === "standby"){
         pvQid.textContent = `ID: ${state.latestQid || "—"}`;
         pvQuestion.textContent = "（スタンバイ中… 次の問題を待っています）";
+        pvChoices.innerHTML = "";
+        pvAnswer.textContent = "";
+        pvExplanation.textContent = "";
+
+        pvQidNext.textContent = "ID: —";
+        pvQuestionNext.textContent = "—";
+        pvChoicesNext.innerHTML = "";
+        pvAnswerNext.textContent = "";
+        pvExplanationNext.textContent = "";
+        return;
+      }
+
+      if (view === "groupshare"){
+        pvQid.textContent = `ID: ${state.latestQid || "—"}`;
+        pvQuestion.textContent = "（GroupShare中：学生は個人投稿画面、班端末はgroup.htmlで共有）";
         pvChoices.innerHTML = "";
         pvAnswer.textContent = "";
         pvExplanation.textContent = "";
@@ -1889,6 +1997,7 @@
       });
 
       updateJoinUrls();
+      updateGroupShareStateBox();
       renderPreview();
     }
 
@@ -1985,6 +2094,14 @@
       await remove(ref(db, `rooms/${currentRoom}`));
 
       alert("授業データを削除しました。");
+    };
+
+    document.getElementById("groupShareStartBtn").onclick = async () => {
+      await startGroupShare();
+    };
+
+    document.getElementById("groupShareEndBtn").onclick = async () => {
+      await endGroupShare();
     };
 
     setupTeacherTabs();
