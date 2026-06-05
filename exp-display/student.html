@@ -1,4 +1,4 @@
-  <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
@@ -42,6 +42,19 @@
       --field4: #FFEAF1;
       --field5: #F3ECFF;
 
+      /*
+        display.html 側の選択肢色に合わせたい場合は、
+        ここだけ変更してください。
+      */
+      --choice-o: #22c55e;
+      --choice-x: #ef4444;
+
+      --choice-a: #3b82f6;
+      --choice-b: #a855f7;
+      --choice-c: #f59e0b;
+      --choice-d: #06b6d4;
+      --choice-e: #ec4899;
+
       --radius-xl: 28px;
       --radius-lg: 22px;
       --radius-md: 16px;
@@ -60,6 +73,7 @@
         radial-gradient(circle at 90% 8%, rgba(124,58,237,.12), transparent 30%),
         linear-gradient(180deg, #f8fbff 0%, var(--bg) 100%);
       padding: 16px 10px 34px;
+      overflow-x: hidden;
     }
 
     .app {
@@ -138,12 +152,16 @@
     }
 
     .panel {
-      background: var(--paper);
+      background: rgba(255,255,255,.88);
       border: 1px solid var(--border);
       border-radius: var(--radius-xl);
       padding: 16px;
-      box-shadow: 0 16px 44px rgba(15,23,42,.08);
+      box-shadow:
+        0 16px 44px rgba(15,23,42,.08),
+        inset 0 1px 0 rgba(255,255,255,.82);
+      backdrop-filter: blur(16px);
       margin-bottom: 14px;
+      position: relative;
     }
 
     .notice {
@@ -243,8 +261,9 @@
 
     .choiceGrid {
       display: grid;
-      gap: 12px;
-      margin: 14px 0;
+      gap: 14px;
+      margin: 16px 0;
+      perspective: 900px;
     }
 
     .oxGrid {
@@ -255,40 +274,217 @@
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
+    .fiveGrid .choiceBtn:last-child:nth-child(odd) {
+      grid-column: 1 / -1;
+      max-width: 52%;
+      justify-self: center;
+    }
+
     .choiceBtn {
-      min-height: 110px;
-      border-radius: 28px;
-      background: #e2e8f0;
-      color: #0f172a;
-      border: 3px solid transparent;
-      box-shadow: 0 12px 30px rgba(15,23,42,.10);
-      font-size: clamp(34px, 12vw, 64px);
+      --choice-color: #3b82f6;
+      --choice-color-dark: #1d4ed8;
+
+      position: relative;
+      isolation: isolate;
+      overflow: hidden;
+
+      min-height: 114px;
+      border-radius: 32px;
+      border: 1px solid rgba(255,255,255,.78);
+
+      color: #fff;
+      background:
+        radial-gradient(circle at 30% 18%, rgba(255,255,255,.54), transparent 28%),
+        linear-gradient(145deg, color-mix(in srgb, var(--choice-color) 86%, white), var(--choice-color-dark));
+
+      box-shadow:
+        0 22px 44px rgba(15,23,42,.18),
+        0 8px 16px rgba(15,23,42,.10),
+        inset 0 1px 0 rgba(255,255,255,.68),
+        inset 0 -10px 20px rgba(0,0,0,.14);
+
+      font-size: clamp(36px, 12vw, 68px);
       font-family: var(--font-mono);
       line-height: 1;
+      text-shadow: 0 3px 10px rgba(0,0,0,.22);
+
+      transform: translateZ(0) scale(1);
+      transition:
+        transform .18s cubic-bezier(.2,.9,.2,1),
+        box-shadow .18s ease,
+        filter .18s ease,
+        opacity .18s ease;
+    }
+
+    .choiceBtn::before {
+      content: "";
+      position: absolute;
+      inset: 1px;
+      z-index: -1;
+      border-radius: inherit;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.32), rgba(255,255,255,.06) 42%, rgba(0,0,0,.08)),
+        radial-gradient(circle at 20% 15%, rgba(255,255,255,.55), transparent 24%);
+      pointer-events: none;
+    }
+
+    .choiceBtn::after {
+      content: "";
+      position: absolute;
+      inset: -55%;
+      z-index: 1;
+      background: conic-gradient(
+        from 90deg,
+        transparent,
+        rgba(255,255,255,.94),
+        transparent,
+        rgba(255,255,255,.48),
+        transparent
+      );
+      opacity: 0;
+      transform: rotate(0deg);
+      pointer-events: none;
+      mix-blend-mode: screen;
+    }
+
+    .choiceBtn:active {
+      transform: scale(.96);
+      filter: brightness(1.08) saturate(1.08);
     }
 
     .choiceBtn.selected {
-      color: #fff;
-      border-color: rgba(255,255,255,.95);
-      transform: translateY(-2px);
+      transform: scale(1.065) translateY(-4px);
+      filter: brightness(1.14) saturate(1.18);
+      box-shadow:
+        0 0 0 5px rgba(255,255,255,.86),
+        0 0 30px color-mix(in srgb, var(--choice-color) 58%, white),
+        0 28px 56px rgba(15,23,42,.24),
+        inset 0 1px 0 rgba(255,255,255,.76),
+        inset 0 -10px 20px rgba(0,0,0,.14);
     }
 
-    .choiceBtn[data-value="O"].selected {
-      background: linear-gradient(135deg, #15803d, #22c55e);
+    .choiceBtn.selected::after {
+      opacity: .33;
+      animation: selectedShine 1.8s linear infinite;
     }
 
-    .choiceBtn[data-value="X"].selected {
-      background: linear-gradient(135deg, #b91c1c, #ef4444);
+    .choiceBtn.flySubmit {
+      animation: flyToTeacher .74s cubic-bezier(.18,.95,.28,1) forwards;
+      z-index: 50;
+      pointer-events: none;
     }
 
-    .choiceBtn:not([data-value="O"]):not([data-value="X"]).selected {
-      background: linear-gradient(135deg, #1d4ed8, #7c3aed);
+    .choiceBtn.dimAfterSubmit {
+      opacity: .28;
+      filter: grayscale(.25);
+    }
+
+    .choiceBtn[data-value="O"] {
+      --choice-color: var(--choice-o);
+      --choice-color-dark: #15803d;
+    }
+
+    .choiceBtn[data-value="X"] {
+      --choice-color: var(--choice-x);
+      --choice-color-dark: #b91c1c;
+    }
+
+    .choiceBtn[data-value="A"] {
+      --choice-color: var(--choice-a);
+      --choice-color-dark: #1d4ed8;
+    }
+
+    .choiceBtn[data-value="B"] {
+      --choice-color: var(--choice-b);
+      --choice-color-dark: #7e22ce;
+    }
+
+    .choiceBtn[data-value="C"] {
+      --choice-color: var(--choice-c);
+      --choice-color-dark: #b45309;
+    }
+
+    .choiceBtn[data-value="D"] {
+      --choice-color: var(--choice-d);
+      --choice-color-dark: #0e7490;
+    }
+
+    .choiceBtn[data-value="E"] {
+      --choice-color: var(--choice-e);
+      --choice-color-dark: #be185d;
+    }
+
+    @supports not (color: color-mix(in srgb, red, white)) {
+      .choiceBtn {
+        background:
+          radial-gradient(circle at 30% 18%, rgba(255,255,255,.54), transparent 28%),
+          linear-gradient(145deg, var(--choice-color), var(--choice-color-dark));
+      }
+    }
+
+    @keyframes selectedShine {
+      from {
+        transform: rotate(0deg);
+      }
+
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    @keyframes flyToTeacher {
+      0% {
+        transform: scale(1.065) translateY(-4px) translateZ(0);
+        opacity: 1;
+        filter: brightness(1.15) saturate(1.18);
+      }
+
+      32% {
+        transform: scale(1.24) translateY(-24px) translateZ(80px);
+        opacity: 1;
+        filter: brightness(1.42) saturate(1.28);
+        box-shadow:
+          0 0 0 8px rgba(255,255,255,.82),
+          0 0 46px color-mix(in srgb, var(--choice-color) 48%, white),
+          0 34px 70px rgba(15,23,42,.30);
+      }
+
+      68% {
+        transform: scale(.78) translateY(-120px) translateZ(180px);
+        opacity: .72;
+        filter: brightness(1.55) blur(.5px);
+      }
+
+      100% {
+        transform: scale(.36) translateY(-220px) translateZ(240px);
+        opacity: 0;
+        filter: brightness(1.8) blur(2px);
+      }
     }
 
     .submitArea {
       display: grid;
       gap: 10px;
       margin-top: 14px;
+    }
+
+    #submitAnswerBtn {
+      min-height: 66px;
+      border-radius: 24px;
+      background:
+        radial-gradient(circle at 28% 15%, rgba(255,255,255,.35), transparent 30%),
+        linear-gradient(145deg, #111827, #2563eb);
+      box-shadow:
+        0 18px 36px rgba(37,99,235,.28),
+        inset 0 1px 0 rgba(255,255,255,.28),
+        inset 0 -8px 18px rgba(0,0,0,.18);
+      font-size: 20px;
+      letter-spacing: .06em;
+    }
+
+    #submitAnswerBtn.isSubmitting {
+      pointer-events: none;
+      opacity: .74;
     }
 
     .sentBox {
@@ -444,7 +640,16 @@
       }
 
       .choiceBtn {
-        min-height: 96px;
+        min-height: 100px;
+        border-radius: 28px;
+      }
+
+      .fiveGrid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .fiveGrid .choiceBtn:last-child:nth-child(odd) {
+        max-width: 100%;
       }
     }
   </style>
@@ -609,6 +814,7 @@
       selectedAnswer: "",
       alreadyAnswered: false,
       currentRenderKey: "",
+      isSubmittingAnswer: false,
       unsubActivity: null,
       unsubOwnAnswer: null,
       unsubSettings: null
@@ -780,7 +986,7 @@
         const selected = state.selectedAnswer === value ? "selected" : "";
 
         return `
-          <button class="choiceBtn ${selected}" data-value="${esc(value)}">
+          <button class="choiceBtn ${selected}" data-value="${esc(value)}" type="button">
             ${esc(uiLabel(value))}
           </button>
         `;
@@ -790,9 +996,49 @@
 
       buttons.forEach(btn => {
         btn.addEventListener("click", () => {
+          if (state.isSubmittingAnswer || state.alreadyAnswered) return;
+
           state.selectedAnswer = btn.dataset.value || "";
-          renderAnswerPanel(false);
+
+          buttons.forEach(b => b.classList.remove("selected"));
+          btn.classList.add("selected");
+
+          answerMessage.className = "statusBox";
+          answerMessage.textContent = `${uiLabel(state.selectedAnswer)} を選択中です。`;
         });
+      });
+    }
+
+    function playSubmitFlyAnimation(){
+      return new Promise(resolve => {
+        const selected = choiceArea.querySelector(".choiceBtn.selected");
+
+        if (!selected) {
+          resolve();
+          return;
+        }
+
+        const all = choiceArea.querySelectorAll(".choiceBtn");
+
+        all.forEach(btn => {
+          if (btn !== selected) btn.classList.add("dimAfterSubmit");
+        });
+
+        selected.classList.remove("flySubmit");
+        void selected.offsetWidth;
+        selected.classList.add("flySubmit");
+
+        window.setTimeout(() => {
+          resolve();
+        }, 720);
+      });
+    }
+
+    function resetSubmitAnimationClasses(){
+      const buttons = choiceArea.querySelectorAll(".choiceBtn");
+
+      buttons.forEach(btn => {
+        btn.classList.remove("flySubmit", "dimAfterSubmit");
       });
     }
 
@@ -826,18 +1072,26 @@
         renderChoiceButtons(choices);
       }
 
-      const disabled = state.alreadyAnswered || String(a.status || "").toLowerCase() !== "open";
+      const disabled = state.alreadyAnswered || String(a.status || "").toLowerCase() !== "open" || state.isSubmittingAnswer;
 
       submitAnswerBtn.disabled = disabled;
+
+      if (state.isSubmittingAnswer){
+        submitAnswerBtn.classList.add("isSubmitting");
+      } else {
+        submitAnswerBtn.classList.remove("isSubmitting");
+      }
 
       if (state.alreadyAnswered){
         answerMessage.className = "sentBox";
         answerMessage.textContent = "送信済みです。この問題には回答済みです。";
-      } else {
+      } else if (!state.isSubmittingAnswer) {
         answerMessage.className = "statusBox";
         answerMessage.textContent = isText
           ? "入力してから送信してください。"
-          : "選択してから送信してください。";
+          : state.selectedAnswer
+            ? `${uiLabel(state.selectedAnswer)} を選択中です。`
+            : "選択してから送信してください。";
       }
     }
 
@@ -876,7 +1130,7 @@
 
     function render(){
       roomBadge.textContent = `room: ${roomId}`;
-      footerInfo.textContent = `ClassSync Student / room:${roomId} / user:${userId} / build: 2026-06-05`;
+      footerInfo.textContent = `ClassSync Student / room:${roomId} / user:${userId} / build: 2026-06-05 / ios-choice-motion`;
 
       if (isGroupShareMode()){
         renderGroupShare();
@@ -894,6 +1148,8 @@
     async function submitAnswer(){
       const a = state.activity || {};
       const mode = String(a.mode || "").toLowerCase();
+
+      if (state.isSubmittingAnswer) return;
 
       if (state.alreadyAnswered){
         alert("すでに回答済みです。");
@@ -923,11 +1179,17 @@
         }
       }
 
+      state.isSubmittingAnswer = true;
       submitAnswerBtn.disabled = true;
+      submitAnswerBtn.classList.add("isSubmitting");
       answerMessage.className = "statusBox";
       answerMessage.textContent = "送信中です…";
 
       try {
+        if (mode !== "text"){
+          await playSubmitFlyAnimation();
+        }
+
         await set(ownAnswerRef(), {
           value,
           timestamp: Date.now()
@@ -939,7 +1201,10 @@
         renderAnswerPanel(false);
       } catch(e) {
         console.error(e);
+        state.isSubmittingAnswer = false;
         submitAnswerBtn.disabled = false;
+        submitAnswerBtn.classList.remove("isSubmitting");
+        resetSubmitAnimationClasses();
         answerMessage.className = "statusBox";
         answerMessage.textContent = "送信に失敗しました。通信状態を確認してください。";
         alert("送信に失敗しました。");
@@ -1024,6 +1289,12 @@
 
       state.unsubOwnAnswer = onValue(ownAnswerRef(), snap => {
         state.alreadyAnswered = snap.exists();
+
+        if (state.alreadyAnswered) {
+          state.isSubmittingAnswer = false;
+          submitAnswerBtn.classList.remove("isSubmitting");
+        }
+
         render();
       });
     }
@@ -1046,6 +1317,9 @@
         if (oldKey !== nextKey){
           state.currentRenderKey = nextKey;
           state.selectedAnswer = "";
+          state.isSubmittingAnswer = false;
+          resetSubmitAnimationClasses();
+          submitAnswerBtn.classList.remove("isSubmitting");
         }
 
         render();
