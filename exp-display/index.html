@@ -785,7 +785,7 @@
 </head>
 
 <body>
-  <div id="buildTag">build: 2026-06-05 / groupshare-start</div>
+  <div id="buildTag">build: 2026-06-05 / groupshare-start-v20260605gs</div>
 
   <div class="card">
     <div class="page-header">
@@ -912,7 +912,8 @@
 
         <div class="noticeBox">
           現在選択中のルームに紐づいたQRコードを表示します。<br>
-          学生用は <b>student.html</b>、グループ用は <b>group.html</b> です。
+          学生用は <b>student.html</b>、グループ用は <b>group.html</b> です。<br>
+          キャッシュ対策として、URLには <b>v=20260605gs</b> を付けています。
         </div>
 
         <div class="qrGrid">
@@ -1073,6 +1074,8 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getDatabase, ref, set, update, remove, onValue, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
+    const APP_VERSION = "20260605gs";
+
     const firebaseConfig = {
       apiKey: "AIzaSyBke-wTU16skpbK8z80ddK04tE154dHERQ",
       databaseURL: "https://satosan-41eac-default-rtdb.asia-southeast1.firebasedatabase.app",
@@ -1226,15 +1229,15 @@
     }
 
     function getStudentUrl(){
-      return new URL(`student.html?room=${encodeURIComponent(currentRoom)}`, getBaseDir()).href;
+      return new URL(`student.html?v=${encodeURIComponent(APP_VERSION)}&room=${encodeURIComponent(currentRoom)}`, getBaseDir()).href;
     }
 
     function getGroupUrl(){
-      return new URL(`group.html?room=${encodeURIComponent(currentRoom)}`, getBaseDir()).href;
+      return new URL(`group.html?v=${encodeURIComponent(APP_VERSION)}&room=${encodeURIComponent(currentRoom)}`, getBaseDir()).href;
     }
 
     function getDisplayUrl(){
-      return new URL(`display.html?room=${encodeURIComponent(currentRoom)}`, getBaseDir()).href;
+      return new URL(`display.html?v=${encodeURIComponent(APP_VERSION)}&room=${encodeURIComponent(currentRoom)}`, getBaseDir()).href;
     }
 
     function qrImageUrl(targetUrl){
