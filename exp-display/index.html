@@ -815,20 +815,121 @@
       border: 1px solid rgba(255,255,255,.10);
     }
 
+    .groupProgressGrid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 14px;
+    }
+
+    .groupProgressCard {
+      background: rgba(255,255,255,.04);
+      border: 1px solid rgba(255,255,255,.09);
+      border-radius: 18px;
+      padding: 14px;
+      min-height: 132px;
+    }
+
+    .groupProgressCard.done {
+      border-color: rgba(34,197,94,.36);
+      background: rgba(34,197,94,.08);
+    }
+
+    .groupProgressCard.notYet {
+      border-color: rgba(249,115,22,.34);
+      background: rgba(249,115,22,.07);
+    }
+
+    .groupProgressCard.noPost {
+      border-color: rgba(148,163,184,.24);
+      background: rgba(148,163,184,.05);
+    }
+
+    .groupProgressName {
+      font-size: 16px;
+      font-weight: 900;
+      color: #f8fafc;
+      line-height: 1.35;
+      margin-bottom: 10px;
+    }
+
+    .groupProgressLine {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 13px;
+      color: #cbd5e1;
+      line-height: 1.7;
+      border-top: 1px solid rgba(255,255,255,.07);
+      padding-top: 7px;
+      margin-top: 7px;
+    }
+
+    .groupProgressValue {
+      font-family: var(--font-mono);
+      font-weight: 900;
+      color: #fff;
+      white-space: nowrap;
+    }
+
+    .submitBadge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 28px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 900;
+      margin-top: 8px;
+    }
+
+    .submitBadge.done {
+      background: rgba(34,197,94,.18);
+      color: #86efac;
+      border: 1px solid rgba(34,197,94,.36);
+    }
+
+    .submitBadge.notYet {
+      background: rgba(249,115,22,.16);
+      color: #fdba74;
+      border: 1px solid rgba(249,115,22,.34);
+    }
+
+    .submitBadge.noPost {
+      background: rgba(148,163,184,.13);
+      color: #cbd5e1;
+      border: 1px solid rgba(148,163,184,.24);
+    }
+
+    .groupProgressSummary {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+
+    .groupProgressSummary .pill {
+      background: rgba(255,255,255,.07);
+    }
+
     @media (max-width: 1180px) {
-      .fixedGroupQRGrid {
+      .fixedGroupQRGrid,
+      .groupProgressGrid {
         grid-template-columns: repeat(3, minmax(0, 1fr));
       }
     }
 
     @media (max-width: 760px) {
-      .fixedGroupQRGrid {
+      .fixedGroupQRGrid,
+      .groupProgressGrid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
       }
     }
 
     @media (max-width: 520px) {
-      .fixedGroupQRGrid {
+      .fixedGroupQRGrid,
+      .groupProgressGrid {
         grid-template-columns: 1fr;
       }
     }
@@ -877,7 +978,7 @@
 </head>
 
 <body>
-  <div id="buildTag">build: 2026-06-05 / groupshare-animal-qr-10</div>
+  <div id="buildTag">build: 2026-06-05 / groupshare-progress-list</div>
 
   <div class="card">
     <div class="page-header">
@@ -1004,7 +1105,7 @@
 
         <div class="noticeBox">
           現在選択中のルームに紐づいたQRコードを表示します。<br>
-          学生用は <b>student.html</b>、グループ用は <b>group.html</b> です。<br>
+          学生用は <b>student.html</b>、グループ確認用は <b>group.html</b> です。<br>
           キャッシュ対策として、URLには <b>v=20260605gs</b> を付けています。
         </div>
 
@@ -1093,6 +1194,23 @@
           </section>
         </div>
 
+        <div class="panelBox">
+          <h3>📋 全班進行状況一覧</h3>
+
+          <div class="noticeBox">
+            各班の投稿数と、班まとめが教員に提出されたかを表示します。<br>
+            group.html 側で「教員に提出」を押すと、ここが <b>提出済</b> になります。
+          </div>
+
+          <div id="groupProgressSummary" class="groupProgressSummary">
+            <div class="pill">投稿合計: 0</div>
+            <div class="pill">提出済: 0 / 10</div>
+            <div class="pill">未提出: 10</div>
+          </div>
+
+          <div id="groupProgressGrid" class="groupProgressGrid"></div>
+        </div>
+
         <div class="qrGrid" style="margin-top:16px;">
           <section class="qrCard">
             <div class="qrTitle">授業の流れ</div>
@@ -1101,20 +1219,19 @@
               2. 学生が学生用QRから個人投稿<br>
               3. 各班が動物アイコンつき固定QRから共有画面を開く<br>
               4. 班内投稿を比較<br>
-              5. 班まとめを保存<br>
-              6. 教員が次の段階で全班状況を確認
+              5. 班まとめを教員に提出<br>
+              6. 教員が全班進行状況一覧で確認
             </div>
           </section>
 
           <section class="qrCard">
             <div class="qrTitle">次に追加予定</div>
             <div class="mutedText">
-              ・班別投稿数<br>
-              ・班まとめ入力状況<br>
               ・全投稿一覧<br>
               ・班まとめ一覧<br>
               ・非表示 / 削除<br>
-              ・CSV出力
+              ・CSV出力<br>
+              ・提出リセット
             </div>
           </section>
         </div>
@@ -1262,6 +1379,14 @@
       return ref(db, `rooms/${room}/groupShare/settings`);
     }
 
+    function groupSharePostsRef(room=currentRoom){
+      return ref(db, `rooms/${room}/groupShare/posts`);
+    }
+
+    function groupShareSummariesRef(room=currentRoom){
+      return ref(db, `rooms/${room}/groupShare/summaries`);
+    }
+
     const pvQuestion = document.getElementById("pvQuestion");
     const pvChoices  = document.getElementById("pvChoices");
     const pvAnswer   = document.getElementById("pvAnswer");
@@ -1295,11 +1420,17 @@
       question: null,
       nextQid: null,
       nextQuestion: null,
+
+      groupSharePosts: {},
+      groupShareSummaries: {},
+
       unsubActivity: null,
       unsubQid: null,
       unsubQuestion: null,
       unsubNextQuestion: null,
-      unsubAnswers: null
+      unsubAnswers: null,
+      unsubGroupSharePosts: null,
+      unsubGroupShareSummaries: null
     };
 
     const DEFAULT_GROUPSHARE_SETTINGS = {
@@ -1338,6 +1469,7 @@
 
           updateJoinUrls();
           updateGroupShareStateBox();
+          renderGroupShareProgress();
         });
       });
     }
@@ -1455,39 +1587,14 @@
       const openGroupFromGroupShareBtn = document.getElementById("openGroupFromGroupShareBtn");
       const openStudentFromGroupShareBtn = document.getElementById("openStudentFromGroupShareBtn");
 
-      if (openStudentBtn) {
-        openStudentBtn.onclick = () => window.open(getStudentUrl(), "_blank");
-      }
-
-      if (copyStudentBtn) {
-        copyStudentBtn.onclick = () => copyText(getStudentUrl());
-      }
-
-      if (openGroupBtn) {
-        openGroupBtn.onclick = () => window.open(getGroupUrl(), "_blank");
-      }
-
-      if (copyGroupBtn) {
-        copyGroupBtn.onclick = () => copyText(getGroupUrl());
-      }
-
-      if (openDisplayBtnFromQR) {
-        openDisplayBtnFromQR.onclick = () => window.open(getDisplayUrl(), "_blank");
-      }
-
-      if (setDisplayQRBtn) {
-        setDisplayQRBtn.onclick = async () => {
-          await toggleQR();
-        };
-      }
-
-      if (openGroupFromGroupShareBtn) {
-        openGroupFromGroupShareBtn.onclick = () => window.open(getGroupUrl(), "_blank");
-      }
-
-      if (openStudentFromGroupShareBtn) {
-        openStudentFromGroupShareBtn.onclick = () => window.open(getStudentUrl(), "_blank");
-      }
+      if (openStudentBtn) openStudentBtn.onclick = () => window.open(getStudentUrl(), "_blank");
+      if (copyStudentBtn) copyStudentBtn.onclick = () => copyText(getStudentUrl());
+      if (openGroupBtn) openGroupBtn.onclick = () => window.open(getGroupUrl(), "_blank");
+      if (copyGroupBtn) copyGroupBtn.onclick = () => copyText(getGroupUrl());
+      if (openDisplayBtnFromQR) openDisplayBtnFromQR.onclick = () => window.open(getDisplayUrl(), "_blank");
+      if (setDisplayQRBtn) setDisplayQRBtn.onclick = async () => await toggleQR();
+      if (openGroupFromGroupShareBtn) openGroupFromGroupShareBtn.onclick = () => window.open(getGroupUrl(), "_blank");
+      if (openStudentFromGroupShareBtn) openStudentFromGroupShareBtn.onclick = () => window.open(getStudentUrl(), "_blank");
     }
 
     async function clearAnswers(){
@@ -2115,6 +2222,151 @@
       }).join("") || `<div style="opacity:.75;">まだ回答がありません</div>`;
     }
 
+    function formatGroupShareTime(ts){
+      if (!ts) return "—";
+
+      try {
+        const d = new Date(Number(ts));
+
+        if (Number.isNaN(d.getTime())) return "—";
+
+        return d.toLocaleString("ja-JP", {
+          hour: "2-digit",
+          minute: "2-digit"
+        });
+      } catch(e) {
+        return "—";
+      }
+    }
+
+    function hasSubmittedSummary(summary){
+      if (!summary) return false;
+
+      if (summary.submitted === true) return true;
+
+      for (let i = 1; i <= 5; i++){
+        const text = String(summary[`summary_${i}`] || "").trim();
+        if (text) return true;
+      }
+
+      return false;
+    }
+
+    function countPostsForGroup(groupId){
+      const posts = state.groupSharePosts || {};
+      const target = String(groupId);
+      const targetLabel = groupLabel(target);
+      const oldNumericLabel = `${target}班`;
+
+      let count = 0;
+
+      for (const post of Object.values(posts)){
+        if (!post) continue;
+        if (post.isHidden === true) continue;
+
+        const postGroupId = String(post.groupId || post.group || "");
+        const postGroupName = String(post.groupName || "");
+
+        if (postGroupId === target) {
+          count++;
+          continue;
+        }
+
+        if (postGroupName === targetLabel) {
+          count++;
+          continue;
+        }
+
+        if (postGroupName === oldNumericLabel) {
+          count++;
+          continue;
+        }
+      }
+
+      return count;
+    }
+
+    function renderGroupShareProgress(){
+      const grid = document.getElementById("groupProgressGrid");
+      const summaryBox = document.getElementById("groupProgressSummary");
+
+      if (!grid) return;
+
+      let html = "";
+      let totalPosts = 0;
+      let submittedCount = 0;
+      let noPostCount = 0;
+
+      for (let i = 1; i <= GROUP_COUNT; i++){
+        const groupId = String(i);
+        const label = groupLabel(groupId);
+        const postCount = countPostsForGroup(groupId);
+        const summary = state.groupShareSummaries?.[groupId] || null;
+
+        const submitted = hasSubmittedSummary(summary);
+        const submittedAt = summary?.submittedAt || summary?.updatedAt || null;
+
+        totalPosts += postCount;
+
+        if (submitted) submittedCount++;
+        if (postCount === 0) noPostCount++;
+
+        const cardClass = submitted
+          ? "done"
+          : postCount === 0
+            ? "noPost"
+            : "notYet";
+
+        const badgeClass = submitted
+          ? "done"
+          : postCount === 0
+            ? "noPost"
+            : "notYet";
+
+        const badgeText = submitted
+          ? "提出済"
+          : postCount === 0
+            ? "投稿なし"
+            : "未提出";
+
+        html += `
+          <section class="groupProgressCard ${cardClass}">
+            <div class="groupProgressName">${label}</div>
+
+            <div class="submitBadge ${badgeClass}">${badgeText}</div>
+
+            <div class="groupProgressLine">
+              <span>投稿数</span>
+              <span class="groupProgressValue">${postCount}件</span>
+            </div>
+
+            <div class="groupProgressLine">
+              <span>提出時刻</span>
+              <span class="groupProgressValue">${formatGroupShareTime(submittedAt)}</span>
+            </div>
+
+            <div class="groupProgressLine">
+              <span>group</span>
+              <span class="groupProgressValue">${groupId}</span>
+            </div>
+          </section>
+        `;
+      }
+
+      grid.innerHTML = html;
+
+      if (summaryBox){
+        const notSubmitted = GROUP_COUNT - submittedCount;
+
+        summaryBox.innerHTML = `
+          <div class="pill">投稿合計: ${totalPosts}</div>
+          <div class="pill">提出済: ${submittedCount} / ${GROUP_COUNT}</div>
+          <div class="pill">未提出: ${notSubmitted}</div>
+          <div class="pill">投稿なし: ${noPostCount}</div>
+        `;
+      }
+    }
+
     function attachRoom(room){
       currentRoom = room;
       roomSelect.value = room;
@@ -2144,11 +2396,23 @@
         state.unsubAnswers = null;
       }
 
+      if (state.unsubGroupSharePosts){
+        state.unsubGroupSharePosts();
+        state.unsubGroupSharePosts = null;
+      }
+
+      if (state.unsubGroupShareSummaries){
+        state.unsubGroupShareSummaries();
+        state.unsubGroupShareSummaries = null;
+      }
+
       state.activity = {};
       state.latestQid = null;
       state.question = null;
       state.nextQid = null;
       state.nextQuestion = null;
+      state.groupSharePosts = {};
+      state.groupShareSummaries = {};
 
       state.unsubActivity = onValue(activityRef(room), snap => {
         state.activity = snap.val() || {};
@@ -2176,9 +2440,20 @@
         renderTeacherLive(mode, answersObj);
       });
 
+      state.unsubGroupSharePosts = onValue(groupSharePostsRef(room), snap => {
+        state.groupSharePosts = snap.val() || {};
+        renderGroupShareProgress();
+      });
+
+      state.unsubGroupShareSummaries = onValue(groupShareSummariesRef(room), snap => {
+        state.groupShareSummaries = snap.val() || {};
+        renderGroupShareProgress();
+      });
+
       updateJoinUrls();
       updateGroupShareStateBox();
       renderPreview();
+      renderGroupShareProgress();
     }
 
     roomSelect.onchange = () => {
@@ -2288,6 +2563,7 @@
     setupQRButtons();
     attachRoom(currentRoom);
     updateJoinUrls();
+    renderGroupShareProgress();
   </script>
 
   <script src="./pwa-register.js"></script>
