@@ -1,0 +1,1158 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>ClassSync GroupShare</title>
+
+  <link rel="icon" href="./icons/icon-192.png" type="image/png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&family=DM+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="manifest" href="./manifest.webmanifest" />
+
+  <meta name="theme-color" content="#f8fafc" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
+
+    :root {
+      --bg: #eef4ff;
+      --paper: #ffffff;
+      --ink: #0f172a;
+      --muted: #64748b;
+      --border: rgba(15,23,42,.10);
+      --soft: rgba(15,23,42,.045);
+
+      --blue: #2563eb;
+      --cyan: #0891b2;
+      --green: #16a34a;
+      --orange: #f97316;
+      --red: #dc2626;
+      --purple: #7c3aed;
+
+      --field1: #E8F3FF;
+      --field2: #EAF8EA;
+      --field3: #FFF7D6;
+      --field4: #FFEAF1;
+      --field5: #F3ECFF;
+
+      --radius-xl: 28px;
+      --radius-lg: 22px;
+      --radius-md: 16px;
+      --radius-sm: 12px;
+
+      --font-body: 'Noto Sans JP', sans-serif;
+      --font-mono: 'DM Mono', monospace;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: var(--font-body);
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 20% 0%, rgba(37,99,235,.16), transparent 34%),
+        radial-gradient(circle at 90% 10%, rgba(124,58,237,.12), transparent 30%),
+        linear-gradient(180deg, #f8fbff 0%, var(--bg) 100%);
+      padding: 18px 12px 40px;
+    }
+
+    .app {
+      width: 100%;
+      max-width: 1180px;
+      margin: 0 auto;
+    }
+
+    .hero {
+      background: rgba(255,255,255,.86);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      padding: 18px 16px;
+      box-shadow:
+        0 20px 60px rgba(15,23,42,.10),
+        inset 0 1px 0 rgba(255,255,255,.80);
+      backdrop-filter: blur(14px);
+      margin-bottom: 14px;
+    }
+
+    .heroTop {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brandIcon {
+      width: 46px;
+      height: 46px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, var(--blue), var(--cyan));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 22px;
+      box-shadow: 0 12px 28px rgba(37,99,235,.26);
+      flex-shrink: 0;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(20px, 4.8vw, 34px);
+      letter-spacing: .03em;
+      line-height: 1.15;
+    }
+
+    .sub {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .roomBadge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 9px 13px;
+      border-radius: 999px;
+      background: rgba(37,99,235,.09);
+      border: 1px solid rgba(37,99,235,.18);
+      color: #1d4ed8;
+      font-size: 12px;
+      font-weight: 900;
+      font-family: var(--font-mono);
+      white-space: nowrap;
+    }
+
+    .setupPanel {
+      background: var(--paper);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      padding: 16px;
+      box-shadow: 0 16px 44px rgba(15,23,42,.08);
+      margin-bottom: 14px;
+    }
+
+    .setupGrid {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 14px;
+      align-items: end;
+    }
+
+    @media (max-width: 740px) {
+      .setupGrid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .formLine {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 12px;
+    }
+
+    @media (max-width: 740px) {
+      .formLine {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    label {
+      display: block;
+      font-size: 12px;
+      font-weight: 900;
+      color: #334155;
+      letter-spacing: .04em;
+      margin-bottom: 7px;
+    }
+
+    select,
+    input,
+    textarea {
+      width: 100%;
+      font-family: var(--font-body);
+      border: 1px solid var(--border);
+      background: #fff;
+      color: var(--ink);
+      outline: none;
+      border-radius: 16px;
+      font-size: 16px;
+      padding: 13px 14px;
+      box-shadow: inset 0 1px 0 rgba(15,23,42,.02);
+    }
+
+    select:focus,
+    input:focus,
+    textarea:focus {
+      border-color: rgba(37,99,235,.55);
+      box-shadow:
+        0 0 0 4px rgba(37,99,235,.11),
+        inset 0 1px 0 rgba(15,23,42,.02);
+    }
+
+    textarea {
+      min-height: 112px;
+      resize: vertical;
+      line-height: 1.65;
+    }
+
+    button {
+      font-family: var(--font-body);
+      border: none;
+      cursor: pointer;
+      border-radius: 16px;
+      padding: 13px 16px;
+      font-size: 15px;
+      font-weight: 900;
+      letter-spacing: .03em;
+      color: #fff;
+      background: var(--blue);
+      box-shadow: 0 12px 28px rgba(37,99,235,.22);
+      transition: transform .10s ease, filter .12s ease, box-shadow .12s ease, opacity .12s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    button:hover {
+      filter: brightness(1.04);
+    }
+
+    button:active {
+      transform: scale(.98);
+      filter: brightness(.96);
+    }
+
+    button:disabled {
+      opacity: .45;
+      cursor: not-allowed;
+      transform: none;
+      filter: none;
+      box-shadow: none;
+    }
+
+    .greenBtn {
+      background: linear-gradient(135deg, #15803d, #22c55e);
+      box-shadow: 0 12px 28px rgba(22,163,74,.20);
+    }
+
+    .blueBtn {
+      background: linear-gradient(135deg, #1d4ed8, #2563eb);
+    }
+
+    .grayBtn {
+      background: #475569;
+      box-shadow: 0 12px 28px rgba(71,85,105,.18);
+    }
+
+    .tabPanel {
+      background: var(--paper);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      padding: 14px;
+      box-shadow: 0 16px 44px rgba(15,23,42,.08);
+      margin-bottom: 14px;
+    }
+
+    .tabs {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .tabBtn {
+      min-height: 52px;
+      background: #e2e8f0;
+      color: #334155;
+      box-shadow: none;
+      border: 1px solid rgba(15,23,42,.08);
+    }
+
+    .tabBtn.active {
+      background: linear-gradient(135deg, #1d4ed8, #2563eb);
+      color: #fff;
+      box-shadow: 0 12px 28px rgba(37,99,235,.22);
+    }
+
+    .summaryBar {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    @media (max-width: 740px) {
+      .summaryBar {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .statCard {
+      background: rgba(255,255,255,.86);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 14px;
+      box-shadow: 0 10px 28px rgba(15,23,42,.06);
+    }
+
+    .statLabel {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: .05em;
+      margin-bottom: 6px;
+    }
+
+    .statValue {
+      font-size: 26px;
+      font-weight: 900;
+      font-family: var(--font-mono);
+      color: #0f172a;
+    }
+
+    .viewArea {
+      display: block;
+    }
+
+    .viewArea.hidden {
+      display: none;
+    }
+
+    .emptyBox {
+      background: rgba(255,255,255,.88);
+      border: 1px dashed rgba(100,116,139,.35);
+      border-radius: var(--radius-lg);
+      padding: 28px 18px;
+      text-align: center;
+      color: var(--muted);
+      line-height: 1.8;
+      font-weight: 700;
+    }
+
+    .postList {
+      display: grid;
+      gap: 14px;
+    }
+
+    .postCard {
+      background: var(--paper);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      box-shadow: 0 16px 44px rgba(15,23,42,.08);
+      overflow: hidden;
+    }
+
+    .postHead {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 14px 16px;
+      background: linear-gradient(180deg, rgba(248,250,252,.95), rgba(241,245,249,.82));
+      border-bottom: 1px solid var(--border);
+    }
+
+    .studentName {
+      font-size: 18px;
+      font-weight: 900;
+      color: #0f172a;
+    }
+
+    .postMeta {
+      font-size: 12px;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      margin-top: 4px;
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 30px;
+      padding: 5px 10px;
+      border-radius: 999px;
+      background: rgba(37,99,235,.09);
+      border: 1px solid rgba(37,99,235,.18);
+      color: #1d4ed8;
+      font-size: 12px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .fields {
+      display: grid;
+      gap: 10px;
+      padding: 14px;
+    }
+
+    .fieldBox {
+      border-radius: 18px;
+      padding: 13px 14px;
+      border: 1px solid rgba(15,23,42,.08);
+      min-height: 70px;
+    }
+
+    .fieldLabel {
+      font-weight: 900;
+      color: #0f172a;
+      font-size: 13px;
+      margin-bottom: 7px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .fieldNo {
+      width: 24px;
+      height: 24px;
+      border-radius: 999px;
+      background: rgba(15,23,42,.10);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-family: var(--font-mono);
+      flex-shrink: 0;
+    }
+
+    .fieldText {
+      white-space: pre-wrap;
+      word-break: break-word;
+      color: #1e293b;
+      line-height: 1.7;
+      font-size: 15px;
+    }
+
+    .fieldText.empty {
+      color: rgba(100,116,139,.70);
+      font-style: italic;
+    }
+
+    .compareGrid {
+      display: grid;
+      gap: 14px;
+    }
+
+    .compareCard {
+      background: var(--paper);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      box-shadow: 0 16px 44px rgba(15,23,42,.08);
+      overflow: hidden;
+    }
+
+    .compareTitle {
+      padding: 14px 16px;
+      font-weight: 900;
+      border-bottom: 1px solid rgba(15,23,42,.08);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .compareItems {
+      padding: 14px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .compareItem {
+      background: rgba(255,255,255,.62);
+      border: 1px solid rgba(15,23,42,.08);
+      border-radius: 16px;
+      padding: 12px;
+    }
+
+    .compareName {
+      font-weight: 900;
+      color: #0f172a;
+      margin-bottom: 6px;
+    }
+
+    .compareText {
+      white-space: pre-wrap;
+      word-break: break-word;
+      color: #1e293b;
+      line-height: 1.7;
+      font-size: 15px;
+    }
+
+    .summaryPanel {
+      background: var(--paper);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      padding: 16px;
+      box-shadow: 0 16px 44px rgba(15,23,42,.08);
+      margin-top: 14px;
+    }
+
+    .sectionTitle {
+      margin: 0 0 12px;
+      font-size: 18px;
+      font-weight: 900;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .summaryFields {
+      display: grid;
+      gap: 12px;
+    }
+
+    .summaryField {
+      border-radius: 20px;
+      padding: 13px;
+      border: 1px solid rgba(15,23,42,.08);
+    }
+
+    .summaryActions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 14px;
+    }
+
+    .saveStatus {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.7;
+      margin-top: 10px;
+    }
+
+    .dangerNote {
+      background: rgba(249,115,22,.10);
+      border: 1px solid rgba(249,115,22,.24);
+      color: #9a3412;
+      border-radius: 18px;
+      padding: 12px 14px;
+      line-height: 1.7;
+      font-size: 13px;
+      margin-top: 12px;
+    }
+
+    .footerInfo {
+      text-align: center;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      margin-top: 18px;
+      opacity: .82;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .field1 { background: var(--field1); }
+    .field2 { background: var(--field2); }
+    .field3 { background: var(--field3); }
+    .field4 { background: var(--field4); }
+    .field5 { background: var(--field5); }
+
+    @media (max-width: 560px) {
+      body {
+        padding: 10px 8px 32px;
+      }
+
+      .hero,
+      .setupPanel,
+      .tabPanel,
+      .summaryPanel {
+        border-radius: 22px;
+      }
+
+      .postCard,
+      .compareCard {
+        border-radius: 22px;
+      }
+
+      .heroTop {
+        align-items: flex-start;
+      }
+
+      .roomBadge {
+        width: 100%;
+        justify-content: center;
+      }
+
+      button {
+        width: 100%;
+      }
+
+      .summaryActions button,
+      .setupGrid button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="app">
+    <section class="hero">
+      <div class="heroTop">
+        <div class="brand">
+          <div class="brandIcon">🧩</div>
+          <div>
+            <h1>GroupShare Board</h1>
+            <div class="sub">班で1台開いて、個人投稿を比較し、班まとめを作成します。</div>
+          </div>
+        </div>
+        <div id="roomBadge" class="roomBadge">room: —</div>
+      </div>
+    </section>
+
+    <section class="setupPanel">
+      <div class="setupGrid">
+        <div class="formLine">
+          <div>
+            <label for="groupSelect">班を選択</label>
+            <select id="groupSelect"></select>
+          </div>
+
+          <div>
+            <label for="displayModeSelect">表示モード</label>
+            <select id="displayModeSelect">
+              <option value="student">学生ごとに見る</option>
+              <option value="field">共有欄ごとに比較する</option>
+            </select>
+          </div>
+        </div>
+
+        <button id="reloadBtn" class="grayBtn">再読み込み</button>
+      </div>
+
+      <div class="dangerNote">
+        個人情報、患者情報、実習先情報、学籍番号、顔写真、メールアドレス、アカウント名、パスワード、SNS画面、医療記録、実習記録の原文は扱わないでください。
+      </div>
+    </section>
+
+    <section class="summaryBar">
+      <div class="statCard">
+        <div class="statLabel">選択中の班</div>
+        <div id="statGroup" class="statValue">—</div>
+      </div>
+
+      <div class="statCard">
+        <div class="statLabel">投稿数</div>
+        <div id="statPosts" class="statValue">0</div>
+      </div>
+
+      <div class="statCard">
+        <div class="statLabel">まとめ</div>
+        <div id="statSummary" class="statValue">未</div>
+      </div>
+    </section>
+
+    <section class="tabPanel">
+      <div class="tabs">
+        <button id="studentViewBtn" class="tabBtn active">学生ごとに見る</button>
+        <button id="fieldViewBtn" class="tabBtn">共有欄ごとに比較</button>
+      </div>
+    </section>
+
+    <section id="studentView" class="viewArea">
+      <div id="postList" class="postList"></div>
+    </section>
+
+    <section id="fieldView" class="viewArea hidden">
+      <div id="compareList" class="compareGrid"></div>
+    </section>
+
+    <section class="summaryPanel">
+      <h2 class="sectionTitle">📝 班まとめ</h2>
+
+      <div id="summaryFields" class="summaryFields"></div>
+
+      <div class="summaryActions">
+        <button id="saveSummaryBtn" class="greenBtn">班まとめを保存</button>
+        <button id="clearSummaryBtn" class="grayBtn">入力欄をクリア</button>
+      </div>
+
+      <div id="saveStatus" class="saveStatus">まだ保存していません。</div>
+    </section>
+
+    <div id="footerInfo" class="footerInfo">ClassSync GroupShare / build: 2026-06-05</div>
+  </main>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getDatabase, ref, onValue, get, set, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBke-wTU16skpbK8z80ddK04tE154dHERQ",
+      databaseURL: "https://satosan-41eac-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "satosan-41eac"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    const DEFAULT_GROUPS = [
+      { id: "1", name: "1班" },
+      { id: "2", name: "2班" },
+      { id: "3", name: "3班" },
+      { id: "4", name: "4班" },
+      { id: "5", name: "5班" },
+      { id: "6", name: "6班" }
+    ];
+
+    const DEFAULT_SETTINGS = {
+      field_1_label: "共有欄1",
+      field_2_label: "共有欄2",
+      field_3_label: "共有欄3",
+      field_4_label: "共有欄4",
+      field_5_label: "共有欄5",
+
+      field_1_color: "#E8F3FF",
+      field_2_color: "#EAF8EA",
+      field_3_color: "#FFF7D6",
+      field_4_color: "#FFEAF1",
+      field_5_color: "#F3ECFF"
+    };
+
+    const url = new URL(location.href);
+    const roomId = url.searchParams.get("room") || localStorage.getItem("cs_group_room") || "kyoto-01";
+    localStorage.setItem("cs_group_room", roomId);
+
+    const groupSelect = document.getElementById("groupSelect");
+    const displayModeSelect = document.getElementById("displayModeSelect");
+    const reloadBtn = document.getElementById("reloadBtn");
+
+    const roomBadge = document.getElementById("roomBadge");
+    const statGroup = document.getElementById("statGroup");
+    const statPosts = document.getElementById("statPosts");
+    const statSummary = document.getElementById("statSummary");
+
+    const studentViewBtn = document.getElementById("studentViewBtn");
+    const fieldViewBtn = document.getElementById("fieldViewBtn");
+    const studentView = document.getElementById("studentView");
+    const fieldView = document.getElementById("fieldView");
+
+    const postList = document.getElementById("postList");
+    const compareList = document.getElementById("compareList");
+    const summaryFields = document.getElementById("summaryFields");
+
+    const saveSummaryBtn = document.getElementById("saveSummaryBtn");
+    const clearSummaryBtn = document.getElementById("clearSummaryBtn");
+    const saveStatus = document.getElementById("saveStatus");
+    const footerInfo = document.getElementById("footerInfo");
+
+    const state = {
+      settings: { ...DEFAULT_SETTINGS },
+      posts: {},
+      summaries: {},
+      selectedGroupId: localStorage.getItem(`cs_group_selected_${roomId}`) || "1",
+      selectedView: localStorage.getItem(`cs_group_view_${roomId}`) || "student",
+
+      unsubSettings: null,
+      unsubPosts: null,
+      unsubSummaries: null
+    };
+
+    function groupShareRef(path=""){
+      const suffix = path ? `/${path}` : "";
+      return ref(db, `rooms/${roomId}/groupShare${suffix}`);
+    }
+
+    function postsRef(){
+      return groupShareRef("posts");
+    }
+
+    function settingsRef(){
+      return groupShareRef("settings");
+    }
+
+    function summariesRef(){
+      return groupShareRef("summaries");
+    }
+
+    function summaryRef(groupId){
+      return groupShareRef(`summaries/${groupId}`);
+    }
+
+    function esc(s){
+      return String(s ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function normalizeText(s){
+      return String(s ?? "").trim();
+    }
+
+    function timestampToText(ts){
+      if (!ts) return "時刻なし";
+
+      try {
+        const d = new Date(Number(ts));
+        if (Number.isNaN(d.getTime())) return "時刻なし";
+        return d.toLocaleString("ja-JP", {
+          month: "2-digit",
+          day: "2-digit",
+          hour: "2-digit",
+          minute: "2-digit"
+        });
+      } catch(e) {
+        return "時刻なし";
+      }
+    }
+
+    function getFieldLabel(n){
+      return state.settings[`field_${n}_label`] || DEFAULT_SETTINGS[`field_${n}_label`];
+    }
+
+    function getFieldColor(n){
+      return state.settings[`field_${n}_color`] || DEFAULT_SETTINGS[`field_${n}_color`];
+    }
+
+    function getGroupName(groupId){
+      const found = DEFAULT_GROUPS.find(g => g.id === String(groupId));
+      return found ? found.name : `${groupId}班`;
+    }
+
+    function currentGroupName(){
+      return getGroupName(state.selectedGroupId);
+    }
+
+    function buildGroupOptions(){
+      groupSelect.innerHTML = "";
+
+      for (const g of DEFAULT_GROUPS){
+        const opt = document.createElement("option");
+        opt.value = g.id;
+        opt.textContent = g.name;
+        groupSelect.appendChild(opt);
+      }
+
+      groupSelect.value = state.selectedGroupId;
+    }
+
+    function applyFieldColors(){
+      for (let i = 1; i <= 5; i++){
+        document.documentElement.style.setProperty(`--field${i}`, getFieldColor(i));
+      }
+    }
+
+    function getVisiblePostsForGroup(){
+      const all = Object.entries(state.posts || {}).map(([postId, post]) => ({
+        postId,
+        ...post
+      }));
+
+      const selected = String(state.selectedGroupId);
+
+      const filtered = all.filter(post => {
+        if (post.isHidden === true) return false;
+
+        const postGroupId = String(post.groupId || post.group || "");
+        const postGroupName = String(post.groupName || "");
+
+        if (postGroupId === selected) return true;
+        if (postGroupName === getGroupName(selected)) return true;
+
+        return false;
+      });
+
+      filtered.sort((a,b) => {
+        const ta = Number(a.createdAt || a.timestamp || 0);
+        const tb = Number(b.createdAt || b.timestamp || 0);
+        return ta - tb;
+      });
+
+      return filtered;
+    }
+
+    function buildEmptyBox(message){
+      return `
+        <div class="emptyBox">
+          ${message}
+        </div>
+      `;
+    }
+
+    function renderStats(){
+      const posts = getVisiblePostsForGroup();
+      const summary = state.summaries?.[state.selectedGroupId] || {};
+
+      const hasSummary = [1,2,3,4,5].some(n => normalizeText(summary[`summary_${n}`]));
+
+      statGroup.textContent = currentGroupName();
+      statPosts.textContent = String(posts.length);
+      statSummary.textContent = hasSummary ? "済" : "未";
+
+      roomBadge.textContent = `room: ${roomId}`;
+      footerInfo.textContent = `ClassSync GroupShare / room:${roomId} / group:${currentGroupName()} / build: 2026-06-05`;
+    }
+
+    function renderStudentPosts(){
+      const posts = getVisiblePostsForGroup();
+
+      if (posts.length === 0){
+        postList.innerHTML = buildEmptyBox(
+          `${esc(currentGroupName())} の投稿はまだありません。<br>学生さんが student.html から投稿すると、ここに表示されます。`
+        );
+        return;
+      }
+
+      postList.innerHTML = posts.map(post => {
+        const studentName = post.studentName || post.name || "名前なし";
+        const tag = post.tag || "";
+        const ts = post.createdAt || post.timestamp || 0;
+
+        const fieldsHtml = [1,2,3,4,5].map(n => {
+          const text = normalizeText(post[`text_${n}`]);
+          const label = getFieldLabel(n);
+
+          return `
+            <div class="fieldBox field${n}">
+              <div class="fieldLabel">
+                <span class="fieldNo">${n}</span>
+                <span>${esc(label)}</span>
+              </div>
+              <div class="fieldText ${text ? "" : "empty"}">${text ? esc(text) : "未入力"}</div>
+            </div>
+          `;
+        }).join("");
+
+        return `
+          <article class="postCard">
+            <div class="postHead">
+              <div>
+                <div class="studentName">${esc(studentName)}</div>
+                <div class="postMeta">${esc(timestampToText(ts))}</div>
+              </div>
+              ${tag ? `<div class="tag">#${esc(tag)}</div>` : `<div class="tag">${esc(currentGroupName())}</div>`}
+            </div>
+            <div class="fields">
+              ${fieldsHtml}
+            </div>
+          </article>
+        `;
+      }).join("");
+    }
+
+    function renderFieldCompare(){
+      const posts = getVisiblePostsForGroup();
+
+      if (posts.length === 0){
+        compareList.innerHTML = buildEmptyBox(
+          `${esc(currentGroupName())} の投稿はまだありません。<br>共有欄ごとの比較は、投稿後に表示されます。`
+        );
+        return;
+      }
+
+      compareList.innerHTML = [1,2,3,4,5].map(n => {
+        const label = getFieldLabel(n);
+
+        const items = posts.map(post => {
+          const studentName = post.studentName || post.name || "名前なし";
+          const text = normalizeText(post[`text_${n}`]);
+
+          return `
+            <div class="compareItem">
+              <div class="compareName">${esc(studentName)}</div>
+              <div class="compareText">${text ? esc(text) : `<span style="color:#94a3b8; font-style:italic;">未入力</span>`}</div>
+            </div>
+          `;
+        }).join("");
+
+        return `
+          <section class="compareCard">
+            <div class="compareTitle field${n}">
+              <span class="fieldNo">${n}</span>
+              <span>${esc(label)}</span>
+            </div>
+            <div class="compareItems">
+              ${items}
+            </div>
+          </section>
+        `;
+      }).join("");
+    }
+
+    function renderSummaryInputs(){
+      const summary = state.summaries?.[state.selectedGroupId] || {};
+
+      summaryFields.innerHTML = [1,2,3,4,5].map(n => {
+        const label = getFieldLabel(n);
+        const value = summary[`summary_${n}`] || "";
+
+        return `
+          <div class="summaryField field${n}">
+            <label for="summary_${n}">${esc(label)}</label>
+            <textarea id="summary_${n}" placeholder="${esc(label)}について、班としてのまとめを書いてください。">${esc(value)}</textarea>
+          </div>
+        `;
+      }).join("");
+
+      const updatedAt = summary.updatedAt ? timestampToText(summary.updatedAt) : "";
+      saveStatus.textContent = updatedAt
+        ? `保存済み：${updatedAt}`
+        : "まだ保存していません。";
+    }
+
+    function renderAll(){
+      applyFieldColors();
+      renderStats();
+      renderStudentPosts();
+      renderFieldCompare();
+      renderSummaryInputs();
+      applyViewMode(state.selectedView);
+    }
+
+    function applyViewMode(mode){
+      const next = mode === "field" ? "field" : "student";
+      state.selectedView = next;
+      localStorage.setItem(`cs_group_view_${roomId}`, next);
+
+      displayModeSelect.value = next;
+
+      studentView.classList.toggle("hidden", next !== "student");
+      fieldView.classList.toggle("hidden", next !== "field");
+
+      studentViewBtn.classList.toggle("active", next === "student");
+      fieldViewBtn.classList.toggle("active", next === "field");
+    }
+
+    function attachFirebase(){
+      if (state.unsubSettings) state.unsubSettings();
+      if (state.unsubPosts) state.unsubPosts();
+      if (state.unsubSummaries) state.unsubSummaries();
+
+      state.unsubSettings = onValue(settingsRef(), snap => {
+        state.settings = {
+          ...DEFAULT_SETTINGS,
+          ...(snap.val() || {})
+        };
+        renderAll();
+      });
+
+      state.unsubPosts = onValue(postsRef(), snap => {
+        state.posts = snap.val() || {};
+        renderAll();
+      });
+
+      state.unsubSummaries = onValue(summariesRef(), snap => {
+        state.summaries = snap.val() || {};
+        renderAll();
+      });
+    }
+
+    async function ensureDefaultSettings(){
+      const snap = await get(settingsRef());
+
+      if (snap.exists()) return;
+
+      await set(settingsRef(), {
+        ...DEFAULT_SETTINGS,
+        updatedAt: Date.now()
+      });
+    }
+
+    async function saveSummary(){
+      const payload = {
+        groupId: state.selectedGroupId,
+        groupName: currentGroupName(),
+        updatedAt: Date.now()
+      };
+
+      for (let n = 1; n <= 5; n++){
+        const el = document.getElementById(`summary_${n}`);
+        payload[`summary_${n}`] = el ? el.value.trim() : "";
+      }
+
+      saveSummaryBtn.disabled = true;
+      saveStatus.textContent = "保存中です…";
+
+      try {
+        await update(summaryRef(state.selectedGroupId), payload);
+        saveStatus.textContent = `保存しました：${timestampToText(payload.updatedAt)}`;
+      } catch(e) {
+        console.error(e);
+        saveStatus.textContent = "保存に失敗しました。通信状態を確認してください。";
+        alert("班まとめの保存に失敗しました。");
+      } finally {
+        saveSummaryBtn.disabled = false;
+      }
+    }
+
+    function clearSummaryInputs(){
+      const ok = confirm("入力中の班まとめ欄をクリアしますか？\nFirebase上の保存済みデータは、保存ボタンを押すまで変更されません。");
+
+      if (!ok) return;
+
+      for (let n = 1; n <= 5; n++){
+        const el = document.getElementById(`summary_${n}`);
+        if (el) el.value = "";
+      }
+
+      saveStatus.textContent = "入力欄をクリアしました。保存する場合は「班まとめを保存」を押してください。";
+    }
+
+    groupSelect.onchange = () => {
+      state.selectedGroupId = groupSelect.value;
+      localStorage.setItem(`cs_group_selected_${roomId}`, state.selectedGroupId);
+      renderAll();
+    };
+
+    displayModeSelect.onchange = () => {
+      applyViewMode(displayModeSelect.value);
+    };
+
+    studentViewBtn.onclick = () => {
+      applyViewMode("student");
+    };
+
+    fieldViewBtn.onclick = () => {
+      applyViewMode("field");
+    };
+
+    reloadBtn.onclick = () => {
+      location.reload();
+    };
+
+    saveSummaryBtn.onclick = () => {
+      saveSummary();
+    };
+
+    clearSummaryBtn.onclick = () => {
+      clearSummaryInputs();
+    };
+
+    async function boot(){
+      roomBadge.textContent = `room: ${roomId}`;
+
+      buildGroupOptions();
+      applyViewMode(state.selectedView);
+
+      await ensureDefaultSettings();
+
+      attachFirebase();
+      renderAll();
+    }
+
+    boot();
+  </script>
+
+  <script src="./pwa-register.js"></script>
+</body>
+</html>
