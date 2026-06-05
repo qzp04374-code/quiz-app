@@ -2,1379 +2,1107 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
   <title>ClassSync Student</title>
+
   <link rel="icon" href="./icons/icon-192.png" type="image/png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&family=DM+Mono:wght@500&display=swap" rel="stylesheet">
   <link rel="manifest" href="./manifest.webmanifest" />
-  <meta name="theme-color" content="#0f172a" />
+
+  <meta name="theme-color" content="#f8fafc" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
 
   <style>
-    :root{
-      /* 既存の色（display/indexと揃える） */
-      --color-o:#34c759;
-      --color-x:#ff3b30;
-      --color-a:#0a84ff;
-      --color-b:#30d158;
-      --color-c:#ff9f0a;
-      --color-d:#bf5af2;
-      --color-e:#ff375f;
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
 
-      --bg:#050608;
-      --ink:#f9fafb;
-      --muted:rgba(203,213,225,.85);
-      --line:rgba(255,255,255,.10);
-      --shadow: 0 18px 60px rgba(0,0,0,.65);
+    :root {
+      --bg: #eef4ff;
+      --paper: #ffffff;
+      --ink: #0f172a;
+      --muted: #64748b;
+      --border: rgba(15,23,42,.10);
+      --soft: rgba(15,23,42,.05);
+
+      --blue: #2563eb;
+      --cyan: #0891b2;
+      --green: #16a34a;
+      --orange: #f97316;
+      --red: #dc2626;
+      --purple: #7c3aed;
+
+      --field1: #E8F3FF;
+      --field2: #EAF8EA;
+      --field3: #FFF7D6;
+      --field4: #FFEAF1;
+      --field5: #F3ECFF;
+
+      --radius-xl: 28px;
+      --radius-lg: 22px;
+      --radius-md: 16px;
+
+      --font-body: 'Noto Sans JP', sans-serif;
+      --font-mono: 'DM Mono', monospace;
     }
-    
-    /* ===== Seat FX (win/lose) ===== */
-    .padShell{ position:relative; } /* 念のため（既にあってもOK） */
-    
-    /* ===== Seat FX (win/lose) ===== */
-    /* padShellは ::before/::after を別用途で使っているので、FXは padArea に寄せる */
-    .padArea{ position:relative; }
-    
-    .padArea::after{
-      content:"";
-      position:absolute;
-      inset:-2px;
-      border-radius:24px;      /* padAreaの角丸に合わせる */
-      pointer-events:none;
-      opacity:0;
-      z-index:25;
-    }
-    
-    /* 勝ちフラッシュ（席色） */
-    .padShell.seatWin .padArea::after{
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: var(--font-body);
+      color: var(--ink);
       background:
-        radial-gradient(900px 520px at 50% 70%,
-          color-mix(in oklab, var(--seat-flash, rgba(10,132,255,1)) 65%, transparent),
-          transparent 62%);
-      animation: seatWinFlash 620ms ease-out both;
-      filter: saturate(1.35) brightness(1.15);
-    }
-    
-    /* 負けフラッシュ */
-    .padShell.seatLose .padArea::after{
-      background:
-        radial-gradient(900px 520px at 50% 70%,
-          rgba(255,59,48,.55),
-          transparent 62%);
-      animation: seatLoseFlash 520ms ease-out both;
-      filter: saturate(1.2) brightness(1.05);
-    }
-    
-    .padShell.seatLose{
-      animation: seatShake 420ms ease-in-out both;
-    }
-    
-    @keyframes seatWinFlash{
-      0%   { opacity:0; transform:scale(.985); }
-      18%  { opacity:1; transform:scale(1.00); }
-      100% { opacity:0; transform:scale(1.02); }
-    }
-    @keyframes seatLoseFlash{
-      0%   { opacity:0; transform:scale(.99); }
-      22%  { opacity:.95; transform:scale(1.00); }
-      100% { opacity:0; transform:scale(1.01); }
-    }
-    @keyframes seatShake{
-      0%{ transform:translateX(0); }
-      18%{ transform:translateX(-6px); }
-      36%{ transform:translateX(6px); }
-      54%{ transform:translateX(-4px); }
-      72%{ transform:translateX(4px); }
-      100%{ transform:translateX(0); }
-}
-
-    *{box-sizing:border-box;}
-    html,body{height:100%;}
-    body{
-      margin:0;
-      background:
-        radial-gradient(1200px 800px at 20% 20%, rgba(96,165,250,.10), transparent 55%),
-        radial-gradient(1000px 800px at 80% 30%, rgba(34,197,94,.08), transparent 55%),
-        radial-gradient(900px 900px at 50% 90%, rgba(191,90,242,.10), transparent 60%),
-        var(--bg);
-      color:var(--ink);
-      font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",sans-serif;
-      overflow:hidden; /* はみ出し対策 */
-      touch-action: manipulation;
+        radial-gradient(circle at 16% 0%, rgba(37,99,235,.16), transparent 34%),
+        radial-gradient(circle at 90% 8%, rgba(124,58,237,.12), transparent 30%),
+        linear-gradient(180deg, #f8fbff 0%, var(--bg) 100%);
+      padding: 16px 10px 34px;
     }
 
-    /* top bar */
-    .topbar{
-      position:fixed;
-      top:12px; left:12px; right:12px;
-      display:flex; justify-content:space-between; align-items:center; gap:10px;
-      padding:10px 12px;
-      border-radius:18px;
-      background:rgba(17,24,39,.55);
-      border:1px solid rgba(255,255,255,.08);
-      backdrop-filter: blur(10px);
-      box-shadow:0 18px 60px rgba(0,0,0,.45);
-      z-index:10;
-    }
-    .room{font-weight:1000; letter-spacing:.10em; font-size:14px; white-space:nowrap;}
-    .status{
-      display:flex; gap:10px; align-items:center;
-      font-weight:900; font-size:13px; color:var(--muted);
-      letter-spacing:.06em; white-space:nowrap;
-    }
-    .pill{
-      display:inline-flex; align-items:center; gap:8px;
-      padding:6px 10px; border-radius:999px;
-      border:1px solid rgba(255,255,255,.10);
-      background:rgba(2,6,23,.45);
-    }
-    .dot{width:8px;height:8px;border-radius:50%; background:#9ca3af; box-shadow:0 0 0 3px rgba(156,163,175,.15);}
-    .dot.open{background:#22c55e; box-shadow:0 0 0 3px rgba(34,197,94,.18), 0 0 16px rgba(34,197,94,.35);}
-    .dot.closed{background:#ef4444; box-shadow:0 0 0 3px rgba(239,68,68,.18), 0 0 16px rgba(239,68,68,.25);}
-
-    /* stage */
-    .stage{
-      height:100%;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      /* ✅ topbar の実高さ（JSで入れる）+ 余白分だけ下げる */
-      padding: calc(var(--topbarH, 66px) + 16px) 14px 18px;
+    .app {
+      width: 100%;
+      max-width: 760px;
+      margin: 0 auto;
     }
 
-    /* ✅iPhone等でtopbarが2段になる時の“食い込み”対策 */
-
-    .padShell{
-      width:min(520px, 94vw);
-      height:min(660px, 80vh);
-      border-radius:44px;
-      background:
-        radial-gradient(100% 120% at 50% 15%, rgba(255,255,255,.06), transparent 55%),
-        linear-gradient(180deg, rgba(17,24,39,.92), rgba(2,6,23,.88));
-      border:1px solid rgba(255,255,255,.10);
-      box-shadow:var(--shadow);
-      overflow:hidden;
-      padding:16px;
-      display:flex;
-      flex-direction:column;
-      gap:12px;
-      position:relative;
-    }
-
-    /* グリップ風（左右下だけ、D-padは無し） */
-    .padShell::before,.padShell::after{
-      content:"";
-      position:absolute;
-      bottom:-22%;
-      width:52%; height:54%;
-      border-radius:60px;
-      background:
-        radial-gradient(90% 80% at 50% 10%, rgba(255,255,255,.05), transparent 60%),
-        linear-gradient(180deg, rgba(255,255,255,.03), rgba(0,0,0,.22));
-      border:1px solid rgba(255,255,255,.06);
-      z-index:0; opacity:.85;
-    }
-    .padShell::before{left:-22%; transform:rotate(10deg);}
-    .padShell::after{right:-22%; transform:rotate(-10deg);}
-    .padShell > *{position:relative; z-index:1;}
-
-    .hud{
-      display:flex; justify-content:center; align-items:center; gap:10px;
-      padding:10px 12px;
-      border-radius:18px;
-      background:rgba(2,6,23,.55);
-      border:1px solid rgba(255,255,255,.08);
-      letter-spacing:.10em;
-      font-weight:1000;
-      color:rgba(203,213,225,.92);
-      text-align:center;
-    }
-    .hud strong{color:#fff; letter-spacing:.12em;}
-
-    .padArea{
-      flex:1; min-height:0;
-      border-radius:24px;
-      background:rgba(2,6,23,.45);
-      border:1px solid rgba(255,255,255,.08);
-      padding:14px;
-      display:flex;
-      flex-direction:column;
-      justify-content:center;
-      align-items:center;
-      gap:14px;
-      position:relative;
-      overflow:hidden;
-    }
-
-    /* FX */
-    .fxRing,.fxRing2{
-      position:absolute; left:50%; top:50%;
-      width:18px; height:18px;
-      transform:translate(-50%,-50%);
-      border-radius:999px;
-      pointer-events:none;
-      opacity:0;
-      z-index:6;
-      background: radial-gradient(circle, rgba(255,255,255,.95), rgba(255,255,255,0) 62%);
-    }
-    .fxRing2{
-      width:16px; height:16px;
-      background: radial-gradient(circle, rgba(168,85,247,.85), rgba(168,85,247,0) 62%);
-      mix-blend-mode: screen;
-      z-index:5;
-      filter: blur(.4px);
-    }
-    .fxRing::after,.fxRing2::after{
-      content:""; position:absolute; inset:-10px;
-      border-radius:999px;
-      border:2px solid rgba(255,255,255,.22);
-      opacity:0;
-    }
-    .fxRing2::after{border-color:rgba(168,85,247,.18); inset:-14px; border-width:3px;}
-
-    .padShell.fx .fxRing{opacity:1; animation:ringPop 520ms cubic-bezier(.12,.9,.1,1) forwards;}
-    .padShell.fx .fxRing::after{animation:ringOutline 520ms cubic-bezier(.12,.9,.1,1) forwards;}
-    .padShell.fx .fxRing2{opacity:1; animation:ringPop2 600ms cubic-bezier(.12,.9,.1,1) forwards;}
-    .padShell.fx .fxRing2::after{animation:ringOutline2 600ms cubic-bezier(.12,.9,.1,1) forwards;}
-
-    @keyframes ringPop{
-      0%{transform:translate(-50%,-50%) scale(.55); opacity:0;}
-      12%{opacity:1;}
-      65%{transform:translate(-50%,-50%) scale(12.5); opacity:.55;}
-      100%{transform:translate(-50%,-50%) scale(16.0); opacity:0;}
-    }
-    @keyframes ringOutline{
-      0%{opacity:0; transform:scale(.55);}
-      18%{opacity:.65;}
-      70%{opacity:.35; transform:scale(13.0);}
-      100%{opacity:0; transform:scale(16.5);}
-    }
-    @keyframes ringPop2{
-      0%{transform:translate(-50%,-50%) scale(.5); opacity:0;}
-      15%{opacity:1;}
-      70%{transform:translate(-50%,-50%) scale(10.8); opacity:.45;}
-      100%{transform:translate(-50%,-50%) scale(14.8); opacity:0;}
-    }
-    @keyframes ringOutline2{
-      0%{opacity:0; transform:scale(.5);}
-      20%{opacity:.55;}
-      72%{opacity:.28; transform:scale(11.6);}
-      100%{opacity:0; transform:scale(15.4);}
-    }
-
-    .trail{
-      position:absolute; border-radius:999px;
-      pointer-events:none; z-index:7;
-      mix-blend-mode: screen;
-      filter: blur(.2px);
-      will-change: transform, opacity, filter;
-    }
-    .trail.t1{opacity:.55; animation:trail1 520ms cubic-bezier(.12,.9,.1,1) forwards;}
-    .trail.t2{opacity:.35; animation:trail2 560ms cubic-bezier(.12,.9,.1,1) forwards;}
-    @keyframes trail1{
-      0%{transform:translate(0,0) scale(1) rotate(0deg); opacity:.55;}
-      35%{transform:translate(6px,10px) scale(.78) rotate(180deg); opacity:.48;}
-      70%{transform:translate(12px,22px) scale(.28) rotate(520deg); opacity:.22;}
-      100%{transform:translate(18px,34px) scale(.06) rotate(900deg); opacity:0;}
-    }
-    @keyframes trail2{
-      0%{transform:translate(-2px,2px) scale(1) rotate(0deg); opacity:.35;}
-      40%{transform:translate(4px,14px) scale(.72) rotate(210deg); opacity:.28;}
-      75%{transform:translate(10px,26px) scale(.22) rotate(620deg); opacity:.14;}
-      100%{transform:translate(16px,38px) scale(.05) rotate(980deg); opacity:0;}
-    }
-
-    /* buttons */
-    .btn{
-      -webkit-tap-highlight-color: transparent;
-      appearance:none; border:none;
-      cursor:pointer; user-select:none; outline:none;
-      width:84px; height:84px;
-      border-radius:999px;
-      font-weight:1100; font-size:30px; letter-spacing:.06em;
+    .hero {
       background: rgba(255,255,255,.88);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      padding: 18px 16px;
       box-shadow:
-        inset 0 10px 18px rgba(255,255,255,.35),
-        inset 0 -14px 18px rgba(0,0,0,.18),
-        0 18px 40px rgba(0,0,0,.55);
-      transform: translateY(0);
-      transition: transform .10s ease, filter .12s ease, box-shadow .12s ease, opacity .15s ease;
-      position:relative;
-      will-change: transform, opacity;
+        0 20px 60px rgba(15,23,42,.10),
+        inset 0 1px 0 rgba(255,255,255,.85);
+      backdrop-filter: blur(14px);
+      margin-bottom: 14px;
     }
-    .btn::after{
-      content:""; position:absolute; inset:10px;
-      border-radius:999px;
-      background: radial-gradient(circle at 30% 25%, rgba(255,255,255,.55), rgba(255,255,255,0) 55%);
-      opacity:.85; pointer-events:none;
+
+    .heroTop {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      flex-wrap: wrap;
     }
-    .btn:active{
-      transform: translateY(3px) scale(.985);
-      filter: brightness(.98);
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brandIcon {
+      width: 46px;
+      height: 46px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, var(--blue), var(--cyan));
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      box-shadow: 0 12px 28px rgba(37,99,235,.26);
+      flex-shrink: 0;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(22px, 6vw, 34px);
+      line-height: 1.15;
+      letter-spacing: .03em;
+    }
+
+    .sub {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .roomBadge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 9px 13px;
+      border-radius: 999px;
+      background: rgba(37,99,235,.09);
+      border: 1px solid rgba(37,99,235,.18);
+      color: #1d4ed8;
+      font-size: 12px;
+      font-weight: 900;
+      font-family: var(--font-mono);
+      white-space: nowrap;
+    }
+
+    .panel {
+      background: var(--paper);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      padding: 16px;
+      box-shadow: 0 16px 44px rgba(15,23,42,.08);
+      margin-bottom: 14px;
+    }
+
+    .notice {
+      background: rgba(37,99,235,.09);
+      border: 1px solid rgba(37,99,235,.18);
+      color: #1e3a8a;
+      border-radius: 18px;
+      padding: 13px 14px;
+      line-height: 1.75;
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 14px;
+    }
+
+    .dangerNote {
+      background: rgba(249,115,22,.10);
+      border: 1px solid rgba(249,115,22,.24);
+      color: #9a3412;
+      border-radius: 18px;
+      padding: 12px 14px;
+      line-height: 1.75;
+      font-size: 13px;
+      margin: 12px 0;
+      font-weight: 700;
+    }
+
+    .modeTitle {
+      margin: 0 0 12px;
+      font-size: 20px;
+      font-weight: 900;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .statusBox {
+      border-radius: 20px;
+      background: rgba(15,23,42,.04);
+      border: 1px solid rgba(15,23,42,.08);
+      padding: 14px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.75;
+      font-weight: 700;
+      text-align: center;
+    }
+
+    .locked {
+      opacity: .55;
+      pointer-events: none;
+      filter: grayscale(.20);
+    }
+
+    button {
+      width: 100%;
+      font-family: var(--font-body);
+      border: none;
+      cursor: pointer;
+      border-radius: 18px;
+      padding: 15px 16px;
+      font-size: 17px;
+      font-weight: 900;
+      letter-spacing: .04em;
+      color: #fff;
+      background: linear-gradient(135deg, #1d4ed8, #2563eb);
+      box-shadow: 0 12px 28px rgba(37,99,235,.22);
+      transition: transform .10s ease, filter .12s ease, box-shadow .12s ease, opacity .12s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    button:hover {
+      filter: brightness(1.04);
+    }
+
+    button:active {
+      transform: scale(.98);
+      filter: brightness(.96);
+    }
+
+    button:disabled {
+      opacity: .45;
+      cursor: not-allowed;
+      transform: none;
+      filter: none;
+      box-shadow: none;
+    }
+
+    .greenBtn {
+      background: linear-gradient(135deg, #15803d, #22c55e);
+      box-shadow: 0 12px 28px rgba(22,163,74,.20);
+    }
+
+    .grayBtn {
+      background: #475569;
+      box-shadow: 0 12px 28px rgba(71,85,105,.18);
+    }
+
+    .choiceGrid {
+      display: grid;
+      gap: 12px;
+      margin: 14px 0;
+    }
+
+    .oxGrid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .fiveGrid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .choiceBtn {
+      min-height: 110px;
+      border-radius: 28px;
+      background: #e2e8f0;
+      color: #0f172a;
+      border: 3px solid transparent;
+      box-shadow: 0 12px 30px rgba(15,23,42,.10);
+      font-size: clamp(34px, 12vw, 64px);
+      font-family: var(--font-mono);
+      line-height: 1;
+    }
+
+    .choiceBtn.selected {
+      color: #fff;
+      border-color: rgba(255,255,255,.95);
+      transform: translateY(-2px);
+    }
+
+    .choiceBtn[data-value="O"].selected {
+      background: linear-gradient(135deg, #15803d, #22c55e);
+    }
+
+    .choiceBtn[data-value="X"].selected {
+      background: linear-gradient(135deg, #b91c1c, #ef4444);
+    }
+
+    .choiceBtn:not([data-value="O"]):not([data-value="X"]).selected {
+      background: linear-gradient(135deg, #1d4ed8, #7c3aed);
+    }
+
+    .submitArea {
+      display: grid;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .sentBox {
+      background: rgba(22,163,74,.10);
+      border: 1px solid rgba(22,163,74,.24);
+      color: #166534;
+      border-radius: 18px;
+      padding: 14px;
+      font-weight: 900;
+      line-height: 1.7;
+      text-align: center;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 900;
+      color: #334155;
+      letter-spacing: .04em;
+      margin-bottom: 7px;
+    }
+
+    select,
+    input,
+    textarea {
+      width: 100%;
+      font-family: var(--font-body);
+      border: 1px solid var(--border);
+      background: #fff;
+      color: var(--ink);
+      outline: none;
+      border-radius: 16px;
+      font-size: 16px;
+      padding: 13px 14px;
+      box-shadow: inset 0 1px 0 rgba(15,23,42,.02);
+    }
+
+    select:focus,
+    input:focus,
+    textarea:focus {
+      border-color: rgba(37,99,235,.55);
       box-shadow:
-        inset 0 10px 18px rgba(255,255,255,.25),
-        inset 0 -14px 18px rgba(0,0,0,.25),
-        0 10px 24px rgba(0,0,0,.55);
-    }
-    .btn.sel{
-      box-shadow:
-        0 0 0 3px rgba(255,255,255,.24),
-        0 0 0 10px rgba(255,255,255,.10),
-        0 0 36px rgba(255,255,255,.16),
-        0 18px 40px rgba(0,0,0,.55);
-      transform: translateY(-2px) scale(1.05);
-    }
-    .btn.sucked{pointer-events:none; animation:suckIn 520ms cubic-bezier(.12,.9,.1,1) forwards;}
-    @keyframes suckIn{
-      0%{transform: translateY(-2px) scale(1.05) rotate(0deg); opacity:1; filter: blur(0);}
-      18%{transform: translateY(1px) scale(.90) rotate(180deg); opacity:1; filter: blur(.2px);}
-      50%{transform: translateY(12px) scale(.42) rotate(540deg); opacity:.70; filter: blur(1px);}
-      80%{transform: translateY(24px) scale(.12) rotate(980deg); opacity:.25; filter: blur(1.6px);}
-      100%{transform: translateY(32px) scale(.05) rotate(1260deg); opacity:0; filter: blur(2.1px);}
+        0 0 0 4px rgba(37,99,235,.11),
+        inset 0 1px 0 rgba(15,23,42,.02);
     }
 
-    .btn.O { background: var(--color-o); color:#0b1020; }
-    .btn.X { background: var(--color-x); color:#fff; }
-    .btn.A { background: var(--color-a); color:#fff; }
-    .btn.B { background: var(--color-b); color:#0b1020; }
-    .btn.C { background: var(--color-c); color:#0b1020; }
-    .btn.D { background: var(--color-d); color:#fff; }
-    .btn.E { background: var(--color-e); color:#fff; }
-
-    /* OX */
-    .oxGrid{
-      display:grid;
-      grid-template-columns: 1fr 1fr;
-      gap:14px;
-      align-items:center;
-      justify-items:center;
-    }
-    .oxGrid .btn{width:112px; height:112px; font-size:44px;}
-
-    /* 5択：右側ボタンだけ（ダイヤ配置） */
-    .fiveGrid{
-      width: min(320px, 100%);   /* ✅親(padArea)幅に収める */
-      max-width: 320px;
-      margin: 0 auto;           /* ✅必ず中央寄せ */
-      aspect-ratio: 1.15 / 1;
-      display:grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      grid-template-rows: 1fr 1fr 1fr;
-      gap:12px;
-      align-items:center;
-      justify-items:center;
-    }
-    .posD{ grid-column:2; grid-row:1; }
-    .posB{ grid-column:2; grid-row:3; }
-    .posC{ grid-column:1; grid-row:2; }
-    .posA{ grid-column:3; grid-row:2; }
-    .posE{ grid-column:2; grid-row:2; width:92px; height:92px; font-size:32px; }
-
-    /* text */
-    .textWrap{
-      width:min(420px, 88vw);
-      display:flex;
-      flex-direction:column;
-      gap:10px;
-      padding:14px;
-      border-radius:22px;
-      background:rgba(0,0,0,.18);
-      border:1px solid rgba(255,255,255,.10);
-      box-shadow:0 18px 44px rgba(0,0,0,.25);
-    }
-    .textTitle{
-      font-weight:1000;
-      letter-spacing:.10em;
-      color:rgba(203,213,225,.92);
-      font-size:13px;
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      gap:10px;
-    }
-    .counter{font-weight:900; color:rgba(203,213,225,.85); letter-spacing:.06em; font-size:12px;}
-    textarea{
-      width:100%;
-      min-height:150px;
-      max-height:240px;
-      resize:none;
-      padding:12px;
-      border-radius:16px;
-      border:1px solid rgba(255,255,255,.10);
-      background:rgba(0,0,0,.25);
-      color:#fff;
-      font-size:18px;
-      line-height:1.4;
-      outline:none;
-    }
-    textarea:focus{
-      border-color: rgba(255,255,255,.22);
-      box-shadow: 0 0 0 4px rgba(255,255,255,.08);
-    }
-    .hint{color:rgba(203,213,225,.80); font-size:12px; line-height:1.45;}
-
-    /* START/SEND */
-    .submit{
-      width:min(340px, 90vw);
-      height:64px;
-      border-radius:999px;
-      border:1px solid rgba(255,255,255,.12);
-      background:
-        radial-gradient(circle at 20% 20%, rgba(255,255,255,.15), transparent 50%),
-        linear-gradient(180deg, rgba(99,102,241,.90), rgba(168,85,247,.90));
-      color:#fff;
-      font-weight:1100;
-      font-size:18px;
-      letter-spacing:.12em;
-      box-shadow:0 18px 40px rgba(139,92,246,.35), 0 18px 60px rgba(0,0,0,.55);
-      cursor:pointer;
-      transition: transform .10s ease, filter .12s ease, opacity .15s ease;
-    }
-    .submit:active{ transform: translateY(2px); filter: brightness(.98); }
-    .submit:disabled{ opacity:.45; cursor:not-allowed; filter: grayscale(.2); }
-
-    .locked{opacity:.55; pointer-events:none; filter: grayscale(.15);}
-
-    /* overlay: closed中 */
-    .overlay{
-      position:absolute;
-      inset:0;
-      border-radius:24px;     /* ✅ padArea の角丸に合わせる */
-      overflow:hidden;         /* ✅ 角丸からはみ出さない */
-      display:flex; align-items:center; justify-content:center;
-      padding:22px;
-      text-align:center;
-      background:rgba(0,0,0,.42);
-      backdrop-filter: blur(10px);
-      opacity:0;
-      pointer-events:none;
-      transition: opacity .18s ease;
-      z-index:30;
+    textarea {
+      min-height: 120px;
+      resize: vertical;
+      line-height: 1.65;
     }
 
-    .overlay.show{opacity:1; pointer-events:auto;}
-    .overlayCard{
-      width:min(520px, 92vw);
-      border-radius:26px;
-      padding:18px 16px;
-      background:rgba(17,24,39,.72);
-      border:1px solid rgba(255,255,255,.10);
-      box-shadow:0 24px 80px rgba(0,0,0,.65);
-    }
-    .overlayCard h3{margin:0 0 8px 0; letter-spacing:.10em; font-weight:1100; font-size:18px;}
-    .overlayCard p{margin:0; color:rgba(203,213,225,.9); line-height:1.5; font-size:14px;}
-
-    /* toast */
-    .toast{
-      position:fixed; left:50%; bottom:16px;
-      transform:translateX(-50%);
-      background:rgba(17,24,39,.92);
-      border:1px solid rgba(255,255,255,.12);
-      padding:10px 14px;
-      border-radius:999px;
-      box-shadow:0 18px 50px rgba(0,0,0,.55);
-      color:#f9fafb;
-      font-weight:1000;
-      letter-spacing:.10em;
-      opacity:0;
-      pointer-events:none;
-      transition: opacity .18s ease;
-      z-index:50;
-      white-space:nowrap;
-    }
-    .toast.show{opacity:1;}
-
-    #buildTag{
-      position:fixed; right:10px; bottom:10px;
-      opacity:.60; font-size:12px; z-index:60;
-      background:rgba(0,0,0,.35);
-      border:1px solid rgba(255,255,255,.08);
-      padding:6px 10px;
-      border-radius:999px;
-      backdrop-filter: blur(8px);
+    .formGrid {
+      display: grid;
+      gap: 12px;
     }
 
-    @media (max-height: 640px){
-      .padShell{ height:min(660px, 84vh); }
-      .btn{ width:76px; height:76px; }
-      .oxGrid .btn{ width:98px; height:98px; font-size:40px; }
-      .posE{ width:86px; height:86px; }
-      textarea{ min-height:130px; }
+    .nameGroupGrid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 140px;
+      gap: 12px;
     }
 
-  /* ✅スマホで pill が切れないように折り返す */
-  .topbar{
-    flex-wrap: wrap;              /* ★追加：折り返し許可 */
-    align-items: flex-start;      /* ★追加：上寄せ */
-  }
-  
-  /* ROOM表示はスマホだと1行目に確保（切れ防止） */
-  .topbar .room{
-    flex: 1 1 120px;
-    min-width: 120px;
-  }
-  
-  /* pill群は折り返して2段以上になってOK */
-  .status{
-    flex: 1 1 260px;
-    flex-wrap: wrap;              /* ★追加：折り返し */
-    justify-content: flex-end;
-    gap: 8px;
-  }
-  
-  /* pillを少しだけ小さくしてスマホに収めやすく */
-  .pill{
-    font-size: 12.5px;            /* ★追加：お好みで 12〜13.5 */
-    padding: 7px 10px;            /* ★追加：少し詰める */
-    white-space: nowrap;          /* ★追加：pill内は折り返さない */
-  }
-  
-  /* me表示が長いときの保険 */
-  #meTag{
-    max-width: 100%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  
-  /* ✅iPhoneのノッチ対策（上が切れるケース防止） */
-  body{
-    padding-top: calc(env(safe-area-inset-top) + 10px);
-  }
+    @media (max-width: 560px) {
+      .nameGroupGrid {
+        grid-template-columns: 1fr;
+      }
+    }
 
+    .fieldBox {
+      border-radius: 20px;
+      padding: 13px;
+      border: 1px solid rgba(15,23,42,.08);
+    }
+
+    .fieldLabel {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .fieldNo {
+      width: 25px;
+      height: 25px;
+      border-radius: 999px;
+      background: rgba(15,23,42,.10);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-family: var(--font-mono);
+      flex-shrink: 0;
+    }
+
+    .checkRow {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      background: rgba(15,23,42,.04);
+      border: 1px solid rgba(15,23,42,.08);
+      border-radius: 18px;
+      padding: 12px;
+      line-height: 1.65;
+      color: #334155;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .checkRow input {
+      width: 22px;
+      height: 22px;
+      margin-top: 2px;
+      flex-shrink: 0;
+      box-shadow: none;
+    }
+
+    .smallMeta {
+      font-size: 12px;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      line-height: 1.6;
+      text-align: center;
+      margin-top: 10px;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .field1 { background: var(--field1); }
+    .field2 { background: var(--field2); }
+    .field3 { background: var(--field3); }
+    .field4 { background: var(--field4); }
+    .field5 { background: var(--field5); }
+
+    @media (max-width: 560px) {
+      body {
+        padding: 10px 8px 30px;
+      }
+
+      .hero,
+      .panel {
+        border-radius: 22px;
+      }
+
+      .heroTop {
+        align-items: flex-start;
+      }
+
+      .roomBadge {
+        width: 100%;
+        justify-content: center;
+      }
+
+      .choiceBtn {
+        min-height: 96px;
+      }
+    }
   </style>
 </head>
 
 <body>
-  <div id="buildTag">build: 2025-12-28 / student-one-side-pad-v3</div>
-
-  <div class="topbar">
-    <div class="room" id="roomLabel">ROOM: -</div>
-    <div class="status">
-      <span class="pill"><span id="dot" class="dot"></span><span id="statusText">status: -</span></span>
-      <span class="pill" id="modeText">mode: -</span>
-      <!-- ★追加：自分の印 -->
-      <span class="pill" id="meTag">me: -</span>
-    </div>
-  </div>
-
-  <div class="stage">
-    <div class="padShell" id="padShell">
-      <div class="hud">
-        <span>回答モード：</span><strong id="hudMode">待機</strong>
-      </div>
-
-      <div class="padArea" id="padArea">
-        <div class="fxRing" id="fxRing"></div>
-        <div class="fxRing2" id="fxRing2"></div>
-
-        <div id="answer-container"></div>
-        <!-- ✅ HotPotato 操作用（所持者だけ有効） -->
-        <button id="passBtn" class="submit" style="display:none;">渡す →</button>
-        <button id="submitBtn" class="submit" disabled>START（決定）</button>
-
-        <div id="overlay" class="overlay">
-          <div class="overlayCard">
-            <h3>待機中</h3>
-            <p id="overlayText">先生が出題を開始すると、解答ボタンが使えるようになります。</p>
+  <main class="app">
+    <section class="hero">
+      <div class="heroTop">
+        <div class="brand">
+          <div class="brandIcon">🎓</div>
+          <div>
+            <h1>ClassSync</h1>
+            <div id="heroSub" class="sub">授業の回答画面です。</div>
           </div>
         </div>
+        <div id="roomBadge" class="roomBadge">room: —</div>
       </div>
-    </div>
-  </div>
+    </section>
 
-  <div id="toast" class="toast">送信しました ✓</div>
+    <section id="standbyPanel" class="panel">
+      <h2 class="modeTitle">⏳ 待機中</h2>
+      <div id="standbyText" class="statusBox">
+        現在回答できる問題はありません。教員の指示を待ってください。
+      </div>
+      <div id="standbyMeta" class="smallMeta">—</div>
+    </section>
+
+    <section id="answerPanel" class="panel hidden">
+      <h2 id="answerTitle" class="modeTitle">回答</h2>
+
+      <div id="choiceArea" class="choiceGrid"></div>
+
+      <div id="textAreaWrap" class="hidden">
+        <label for="textAnswer">回答を入力してください</label>
+        <textarea id="textAnswer" placeholder="自由に記入してください"></textarea>
+      </div>
+
+      <div class="submitArea">
+        <button id="submitAnswerBtn">決定して送信</button>
+        <div id="answerMessage" class="statusBox">選択または入力してください。</div>
+      </div>
+    </section>
+
+    <section id="groupSharePanel" class="panel hidden">
+      <h2 class="modeTitle">🧩 GroupShare 投稿</h2>
+
+      <div class="notice">
+        AIに聞いた内容、自分の考え、班で共有したいことを入力して送信してください。
+      </div>
+
+      <div class="dangerNote">
+        個人情報、患者情報、実習先情報、学籍番号、顔写真、メールアドレス、アカウント名、パスワード、SNS画面、医療記録、実習記録の原文は投稿しないでください。
+      </div>
+
+      <div class="formGrid">
+        <div class="nameGroupGrid">
+          <div>
+            <label for="studentNameInput">名前またはニックネーム</label>
+            <input id="studentNameInput" type="text" placeholder="例：山田 / Aさん" autocomplete="name" />
+          </div>
+
+          <div>
+            <label for="groupSelect">班</label>
+            <select id="groupSelect"></select>
+          </div>
+        </div>
+
+        <div id="shareFields" class="formGrid"></div>
+
+        <div class="checkRow">
+          <input id="privacyCheck" type="checkbox" />
+          <div>
+            テキスト内に、個人情報・患者情報・実習先情報・学籍番号・アカウント名・SNS画面・医療記録・実習記録の原文が含まれていないことを確認しました。
+          </div>
+        </div>
+
+        <button id="submitShareBtn" class="greenBtn">GroupShareに投稿する</button>
+
+        <div id="shareMessage" class="statusBox">
+          入力後、「GroupShareに投稿する」を押してください。
+        </div>
+      </div>
+    </section>
+
+    <div id="footerInfo" class="smallMeta">ClassSync Student / build: 2026-06-05</div>
+  </main>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import {
-      getDatabase, ref, onValue, set, runTransaction
-    } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
-  
+    import { getDatabase, ref, set, push, onValue, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
     const firebaseConfig = {
       apiKey: "AIzaSyBke-wTU16skpbK8z80ddK04tE154dHERQ",
-      authDomain: "satosan-41eac.firebaseapp.com",
       databaseURL: "https://satosan-41eac-default-rtdb.asia-southeast1.firebasedatabase.app",
       projectId: "satosan-41eac"
     };
-  
+
     const app = initializeApp(firebaseConfig);
-    const db  = getDatabase(app);
-  
-    const url  = new URL(window.location.href);
-    const room = url.searchParams.get("room") || "kyoto-01";
-    const urlSession = url.searchParams.get("s") || "";  // ★追加：session
+    const db = getDatabase(app);
 
-    const padShell    = document.getElementById("padShell");
-    const padArea     = document.getElementById("padArea");
-    const roomLabel   = document.getElementById("roomLabel");
-    const dot         = document.getElementById("dot");
-    const statusText  = document.getElementById("statusText");
-    const modeText    = document.getElementById("modeText");
-    const hudMode     = document.getElementById("hudMode");
-  
-    const submitBtn   = document.getElementById("submitBtn");
-    const passBtn   = document.getElementById("passBtn");
-    const container = document.getElementById("answer-container");
-    const overlay     = document.getElementById("overlay");
-    const overlayText = document.getElementById("overlayText");
-    const toast       = document.getElementById("toast");
-  
-    roomLabel.textContent = `ROOM: ${room}`;
-  
-    // ===== userId固定 =====
-    let userId = localStorage.getItem("student_user_id");
-    if (!userId) {
-      userId = "user_" + Math.random().toString(36).slice(2, 10);
-      localStorage.setItem("student_user_id", userId);
-    }
-    
-    // ===== 追加：自分表示（emoji + shortId）=====
-    const ME_EMOJI_KEY = "cs_me_emoji";
-    const ME_TAG_KEY   = "cs_me_tag";
-    const ME_COLOR_KEY = "cs_me_color";
-    
-    function hash32(s){
-      let h = 2166136261;
-      for (let i=0;i<s.length;i++){
-        h ^= s.charCodeAt(i);
-        h = Math.imul(h, 16777619);
-      }
-      return (h >>> 0);
-    }
-    
-    function getOrCreateMe(userId){
-      const savedEmoji = localStorage.getItem(ME_EMOJI_KEY);
-      const savedTag   = localStorage.getItem(ME_TAG_KEY);
-      const savedColor = localStorage.getItem(ME_COLOR_KEY);
-      if (savedEmoji && savedTag && savedColor){
-        return { emoji: savedEmoji, tag: savedTag, color: savedColor };
-      }
-    
-      const EMOJIS = ["🐶","🐱","🐼","🦊","🐸","🐵","🐯","🐰","🐨","🦁","🐮","🐷","🐧","🐻","🐹","🦄"];
-      const COLORS = ["#60a5fa","#34d399","#f59e0b","#a78bfa","#fb7185","#22c55e","#38bdf8","#f472b6"];
-    
-      const h = hash32(String(userId||""));
-      const emoji = EMOJIS[h % EMOJIS.length];
-      const num = (h % 90) + 10; // 10-99
-      const tag = `ID-${String(num).padStart(2,"0")}`;
-      const color = COLORS[h % COLORS.length];
-    
-      localStorage.setItem(ME_EMOJI_KEY, emoji);
-      localStorage.setItem(ME_TAG_KEY, tag);
-      localStorage.setItem(ME_COLOR_KEY, color);
-    
-      return { emoji, tag, color };
-    }
-    
-    const me = getOrCreateMe(userId);
-    
-    // meTag表示
-    const meTagEl = document.getElementById("meTag");
-    if (meTagEl){
-      meTagEl.textContent = `me: ${me.emoji} ${me.tag}`;
-    }
-    
-    // display側が拾えるように roster 公開
-    set(ref(db, `rooms/${room}/activity/roster/${userId}`), {
-      emoji: me.emoji,
-      tag: me.tag,
-      color: me.color,
-      at: Date.now()
-    }).catch(()=>{});
-  
-    // ===== state =====
-    let isOpen = false;
-    let currentMode = null;     // ox / five / text
-    let currentView = "quiz";   // quiz / poll / standby / qr / game
-    let selected = null;        // O/X/A-E
-    let sending = false;
-    let textValue = "";
+    const DEFAULT_GROUPS = [
+      { id: "1", name: "1班" },
+      { id: "2", name: "2班" },
+      { id: "3", name: "3班" },
+      { id: "4", name: "4班" },
+      { id: "5", name: "5班" },
+      { id: "6", name: "6班" }
+    ];
 
-    // ===== game state =====
-    let isGame = false;
-    let gameRound = null;
-    let gamePhase = null;
-    let gameSeatsRemain = {A:0,B:0,C:0,D:0,E:0};
-    let mySeat = null;          // 座れたら "A".."E"
-    let claimBusy = false;
+    const DEFAULT_SETTINGS = {
+      field_1_label: "共有欄1",
+      field_2_label: "共有欄2",
+      field_3_label: "共有欄3",
+      field_4_label: "共有欄4",
+      field_5_label: "共有欄5",
 
-    // ===== seat FX state =====
-    let seatFxRound = -1;     // roundごとに1回だけ鳴らす
-    let seatFxDone = false;
-    
-    function seatColorVar(seatKey){
-      const k = String(seatKey || "").trim().toUpperCase();
-      const map = {
-        A:"var(--color-a)", B:"var(--color-b)", C:"var(--color-c)", D:"var(--color-d)", E:"var(--color-e)"
-      };
-      return map[k] || "var(--color-a)";
-    }
-    
-    function resetSeatFxIfNeeded(){
-      const r = (gameRound == null) ? -1 : Number(gameRound);
-      if (seatFxRound !== r){
-        seatFxRound = r;
-        seatFxDone = false;
-      }
-    }
-    
-    function fireSeatWinFx(seatKey){
-      resetSeatFxIfNeeded();
-      if (seatFxDone) return;
-      seatFxDone = true;
-    
-      padShell.style.setProperty("--seat-flash", seatColorVar(seatKey));
-    
-      padShell.classList.remove("seatLose");
-      padShell.classList.add("seatWin");
-      setTimeout(()=> padShell.classList.remove("seatWin"), 700);
-    
-      // 効果だけ（音は鳴らさない）
-      if (navigator.vibrate) navigator.vibrate(35);
-    }
-    
-    function fireSeatLoseFx(){
-      // 失敗は連打し得るので、round内でも毎回出してOK（嫌なら1回制限にしてもOK）
-      padShell.classList.remove("seatWin");
-      padShell.classList.add("seatLose");
-      setTimeout(()=> padShell.classList.remove("seatLose"), 520);
-    
-      if (navigator.vibrate) navigator.vibrate([60, 40, 60]);
-}
-
-    // ===== activity監視 =====
-  
-    // ===== UI helpers =====
-    function showToast(msg){
-      toast.textContent = msg;
-      toast.classList.add("show");
-      setTimeout(()=> toast.classList.remove("show"), 1200);
-    }
-  
-    function setOverlay(show, msg){
-      overlay.classList.toggle("show", !!show);
-      if (msg) overlayText.textContent = msg;
-    }
-  
-    function clearTrails(){
-      padArea.querySelectorAll(".trail").forEach(el => el.remove());
-    }
-  
-    function unlockUI(){
-      sending = false;
-      padShell.classList.remove("fx");
-      container.classList.remove("locked");
-      submitBtn.disabled = true;
-      selected = null;
-      textValue = "";
-      clearTrails();
-      container.style.pointerEvents = "";
-      container.querySelectorAll(".btn").forEach(b => b.classList.remove("sel", "sucked"));
-      container.querySelectorAll(".btn").forEach(b => b.style.opacity = "");
-    }
-  
-    function lockUI(){
-      container.classList.add("locked");
-      submitBtn.disabled = true;
-    }
-  
-    function uiLabel(ch){
-      const c = String(ch).trim().toUpperCase();
-      if (c === "O") return "○";
-      if (c === "X") return "✕";
-      return c;
-    }
-  
-    function haptic(){
-      try{ if (navigator.vibrate) navigator.vibrate(18); }catch(_){}
-    }
-  
-    // ===== Game HUD line (動的に1行追加) =====
-    let gameLineEl = null;
-    function ensureGameLine(){
-      if (gameLineEl) return gameLineEl;
-      gameLineEl = document.createElement("div");
-      gameLineEl.id = "gameLine";
-      gameLineEl.style.margin = "0 16px";
-      gameLineEl.style.padding = "10px 12px";
-      gameLineEl.style.borderRadius = "16px";
-      gameLineEl.style.background = "rgba(2,6,23,.40)";
-      gameLineEl.style.border = "1px solid rgba(255,255,255,.08)";
-      gameLineEl.style.color = "rgba(203,213,225,.92)";
-      gameLineEl.style.fontWeight = "1000";
-      gameLineEl.style.letterSpacing = ".08em";
-      gameLineEl.style.fontSize = "12px";
-      // hudの直後に入れる
-      const hud = document.querySelector(".hud");
-      hud?.insertAdjacentElement("afterend", gameLineEl);
-      return gameLineEl;
-    }
-    function setGameLine(text){
-      const el = ensureGameLine();
-      el.textContent = text;
-      el.style.display = isGame ? "block" : "none";
-    }
-  
-    function normKey(k){
-      return String(k||"").trim().toUpperCase();
-    }
-  
-    function getRemainMap(game){
-      const g = game || {};
-      // 優先：seatsRemain → seats
-      const src = (g.seatsRemain && typeof g.seatsRemain === "object") ? g.seatsRemain
-                : (g.seats && typeof g.seats === "object") ? g.seats
-                : null;
-      const out = {A:0,B:0,C:0,D:0,E:0};
-      if (!src) return out;
-      ["A","B","C","D","E"].forEach(k => out[k] = Math.max(0, Math.floor(Number(src[k] || 0))));
-      return out;
-    }
-  
-    function updateGameButtonsAvailability(){
-      const buttons = container.querySelectorAll(".btn");
-    
-      buttons.forEach(btn => {
-        const key = (btn.dataset && btn.dataset.choice) ? String(btn.dataset.choice) : "";
-        // 既存のdisable/opacity処理はそのまま
-    
-        // ★座れたら、その席以外は消す
-        if (mySeat){
-          btn.style.display = (key === mySeat) ? "" : "none";
-        } else {
-          btn.style.display = "";
-        }
-      });
-    }
-  
-    // ===== Button factory =====
-    function createChoiceButton(ch, onPress){
-      const c = normKey(ch);
-      const btn = document.createElement("button");
-      btn.className = `btn ${c}`;
-      btn.type = "button";
-      btn.textContent = uiLabel(c);
-      btn.dataset.choice = c; // ★追加：updateGameButtonsAvailability が参照する
-  
-      btn.onclick = () => {
-        onPress?.(c, btn);
-      };
-      return btn;
-    }
-  
-    // ===== render (quiz modes) =====
-    function renderOX(choices){
-      isGame = false;
-      submitBtn.style.display = "block";
-  
-      unlockUI();
-      container.innerHTML = "";
-      hudMode.textContent = "○✕";
-      modeText.textContent = "mode: ox";
-      setGameLine("");
-  
-      const grid = document.createElement("div");
-      grid.className = "oxGrid";
-  
-      const onPress = (c, btn) => {
-        if (!isOpen || sending) return;
-        selected = c;
-        haptic();
-        container.querySelectorAll(".btn").forEach(b => b.classList.remove("sel"));
-        btn.classList.add("sel");
-        submitBtn.disabled = false;
-      };
-  
-      (choices || ["O","X"]).forEach(ch => grid.appendChild(createChoiceButton(ch, onPress)));
-      container.appendChild(grid);
-  
-      submitBtn.textContent = "START（決定）";
-      submitBtn.disabled = true;
-    }
-  
-    function renderFive(choices){
-      isGame = false;
-      submitBtn.style.display = "block";
-  
-      unlockUI();
-      container.innerHTML = "";
-      hudMode.textContent = "5択";
-      modeText.textContent = "mode: five";
-      setGameLine("");
-  
-      const grid = document.createElement("div");
-      grid.className = "fiveGrid";
-  
-      const order = (choices && choices.length) ? choices : ["A","B","C","D","E"];
-      const posClass = { A:"posA", B:"posB", C:"posC", D:"posD", E:"posE" };
-  
-      const onPress = (c, btn) => {
-        if (!isOpen || sending) return;
-        selected = c;
-        haptic();
-        container.querySelectorAll(".btn").forEach(b => b.classList.remove("sel"));
-        btn.classList.add("sel");
-        submitBtn.disabled = false;
-      };
-  
-      order.forEach(ch => {
-        const c = normKey(ch);
-        const btn = createChoiceButton(c, onPress);
-        btn.classList.add(posClass[c] || "");
-        grid.appendChild(btn);
-      });
-  
-      container.appendChild(grid);
-  
-      submitBtn.textContent = "START（決定）";
-      submitBtn.disabled = true;
-    }
-  
-    function renderText(){
-      isGame = false;
-      submitBtn.style.display = "block";
-  
-      unlockUI();
-      container.innerHTML = "";
-      hudMode.textContent = "文字入力";
-      modeText.textContent = "mode: text";
-      setGameLine("");
-  
-      const wrap = document.createElement("div");
-      wrap.className = "textWrap";
-  
-      const title = document.createElement("div");
-      title.className = "textTitle";
-      title.innerHTML = `<span>テキストを入力</span><span class="counter" id="counter">0/200</span>`;
-  
-      const ta = document.createElement("textarea");
-      ta.placeholder = "短くでOK（1〜2文）";
-      ta.maxLength = 200;
-      ta.disabled = !isOpen;
-  
-      const hint = document.createElement("div");
-      hint.className = "hint";
-      hint.textContent = "※ 送信は1回。先生が「解答終了」を押した後に投影で公開されます。";
-  
-      wrap.appendChild(title);
-      wrap.appendChild(ta);
-      wrap.appendChild(hint);
-      container.appendChild(wrap);
-  
-      const counterEl = wrap.querySelector("#counter");
-  
-      const refresh = () => {
-        textValue = ta.value || "";
-        counterEl.textContent = `${textValue.length}/200`;
-        submitBtn.disabled = (!isOpen) || sending || (textValue.trim().length === 0);
-      };
-      ta.addEventListener("input", refresh);
-      refresh();
-  
-      submitBtn.textContent = "SEND（送信）";
-      submitBtn.disabled = true;
-  
-      if (isOpen) setTimeout(()=>{ try{ ta.focus(); }catch(_){ } }, 50);
-    }
-  
-    // ===== FX for submit (quiz) =====
-    function makeTrailClone(selBtn, klass){
-      const areaRect = padArea.getBoundingClientRect();
-      const r = selBtn.getBoundingClientRect();
-      const clone = selBtn.cloneNode(true);
-      clone.classList.remove("sel");
-      clone.classList.add("trail", klass);
-      clone.style.left = (r.left - areaRect.left) + "px";
-      clone.style.top  = (r.top  - areaRect.top)  + "px";
-      clone.style.width  = r.width + "px";
-      clone.style.height = r.height + "px";
-      clone.style.position = "absolute";
-      clone.style.boxShadow = "0 0 0 2px rgba(255,255,255,.14), 0 0 18px rgba(255,255,255,.18), 0 18px 40px rgba(0,0,0,.35)";
-      padArea.appendChild(clone);
-      clone.addEventListener("animationend", () => clone.remove());
-    }
-  
-    function playSubmitFX(){
-      const selBtn = container.querySelector(".btn.sel");
-      if (!selBtn) return;
-  
-      clearTrails();
-      padShell.classList.add("fx");
-  
-      makeTrailClone(selBtn, "t2");
-      makeTrailClone(selBtn, "t1");
-  
-      selBtn.classList.add("sucked");
-      container.querySelectorAll(".btn").forEach(b => {
-        if (b !== selBtn) b.style.opacity = "0.50";
-      });
-  
-      setTimeout(() => padShell.classList.remove("fx"), 650);
-    }
-  
-    // ===== submit (quiz/text only) =====
-    submitBtn.onclick = async () => {
-      if (isGame) return; // ★ゲームでは使わない
-      if (!isOpen || sending) return;
-  
-      let payload = null;
-  
-      if (currentMode === "ox" || currentMode === "five"){
-        if (!selected) return;
-        payload = { value: selected, timestamp: Date.now() };
-        sending = true;
-        submitBtn.disabled = true;
-        container.style.pointerEvents = "none";
-        playSubmitFX();
-      } else if (currentMode === "text"){
-        const text = (textValue || "").trim();
-        if (!text) return;
-        payload = { value: text, timestamp: Date.now() };
-        sending = true;
-        submitBtn.disabled = true;
-        container.style.pointerEvents = "none";
-      } else {
-        return;
-      }
-  
-      try{
-        await set(ref(db, `rooms/${room}/answers/${userId}`), payload);
-      }catch(e){
-        sending = false;
-        container.style.pointerEvents = "";
-        showToast("送信失敗…もう一度");
-        if (currentMode === "text") renderText();
-        if (currentMode === "ox") renderOX(["O","X"]);
-        if (currentMode === "five") renderFive(["A","B","C","D","E"]);
-        return;
-      }
-  
-      setTimeout(() => {
-        container.style.pointerEvents = "";
-        showToast("送信しました ✓");
-        lockUI();
-      }, (currentMode === "ox" || currentMode === "five") ? 560 : 220);
+      field_1_color: "#E8F3FF",
+      field_2_color: "#EAF8EA",
+      field_3_color: "#FFF7D6",
+      field_4_color: "#FFEAF1",
+      field_5_color: "#F3ECFF"
     };
-  
-    // ===== Game render =====
-    function renderGameFive(){
-      isGame = true;
-      submitBtn.style.display = "none"; // ★決定ボタンは使わない
-  
-      // ラウンドが切り替わるたびに参加できるように
-      unlockUI();
-      mySeat = null;
-      claimBusy = false;
-  
-      container.innerHTML = "";
-      hudMode.textContent = `GAME${(gameRound!=null ? ` R${gameRound}` : "")}`;
-      modeText.textContent = "mode: game(A-E)";
-  
-      const grid = document.createElement("div");
-      grid.className = "fiveGrid";
-  
-      const order = ["A","B","C","D","E"];
-      const posClass = { A:"posA", B:"posB", C:"posC", D:"posD", E:"posE" };
-  
-      const onPress = async (c, btn) => {
-        if (!isGame) return;
-        if (!isOpen) return;
-        if (mySeat != null) return;
-        if (claimBusy) return;
-  
-        // 残席が見えてる場合：0は押せない（ガイド）
-        const rem = Number(gameSeatsRemain[c] || 0);
-        if (rem <= 0){
-          showToast(`${c} は満席！`);
-          return;
-        }
-  
-        haptic();
-        claimBusy = true;
-        updateGameButtonsAvailability();
-  
-        // 「どこに集まっているか」の参考用（display_gameの混雑表示に使える）
-        // ※上書きなので人数カウントは増えない
-        set(ref(db, `rooms/${room}/answers/${userId}`), { value: c, timestamp: Date.now(), game: true }).catch(()=>{});
-  
-        const okSeat = await claimSeatTransaction(c);
-  
-        claimBusy = false;
-  
-        if (okSeat){
-          mySeat = okSeat;
-          showToast(`${okSeat} に座れた！`);
-          fireSeatWinFx(okSeat);   // ★追加
-          lockUI(); // このラウンドは固定
-        }else{
-          showToast("取れなかった！別の椅子へ");
-          fireSeatLoseFx();        // ★追加
-        }
-  
-        updateGameButtonsAvailability();
-        updateGameLine();
-      };
-  
-      order.forEach(ch => {
-        const btn = createChoiceButton(ch, onPress);
-        btn.classList.add(posClass[ch] || "");
-        grid.appendChild(btn);
-      });
-  
-      container.appendChild(grid);
-      updateGameButtonsAvailability();
-      updateGameLine();
-    }
-  
-    function updateGameLine(){
-      if (!isGame){
-        setGameLine("");
-        return;
-      }
-      const r = gameSeatsRemain || {A:0,B:0,C:0,D:0,E:0};
-      const remainText = `残席 A${r.A} B${r.B} C${r.C} D${r.D} E${r.E}`;
-      const meText = mySeat ? ` / あなた: ${mySeat}` : "";
-      const ph = gamePhase ? ` / phase:${gamePhase}` : "";
-      setGameLine(remainText + meText + ph);
-    }
-  
-    // ===== Core: 先着確保（transaction） =====
-    async function claimSeatTransaction(choiceKey){
-      const k = normKey(choiceKey);
-      if (!["A","B","C","D","E"].includes(k)) return null;
-    
-      const gameRef = ref(db, `rooms/${room}/activity/game`);
-    
-      try{
-        const res = await runTransaction(gameRef, (game) => {
-          if (!game || typeof game !== "object") return; // ←中断
-    
-          const phase = String(game.phase || "").trim();
-          // ★受付は open（後方互換で running も許可）
-          if (phase && phase !== "open" && phase !== "running") return; // ←中断
 
-    
-          const round = Number(game.round || 0);
-    
-          game.players ??= {};
-    
-          // すでに“今ラウンド”で座ってたら、そのまま（DB更新はしない）
-          const cur = game.players[userId];
-          if (cur && Number(cur.round || 0) === round && cur.seat) return; // ←中断
-    
-          // seatsRemain優先、無ければseats
-          const hasSeatsRemain = (game.seatsRemain && typeof game.seatsRemain === "object");
-          const hasSeats       = (game.seats && typeof game.seats === "object");
-          if (!hasSeatsRemain && !hasSeats) return; // ←中断（先生側初期化待ち）
-    
-          const target = hasSeatsRemain ? "seatsRemain" : "seats";
-          game[target] ??= {A:0,B:0,C:0,D:0,E:0};
-    
-          const remain = Math.max(0, Math.floor(Number(game[target][k] || 0)));
-          if (remain <= 0) return; // ←中断（満席）
-    
-          // 確保
-          game[target][k] = remain - 1;
-          game.players[userId] = { seat: k, round, at: Date.now() };
-    
-          return game; // ←ここだけ更新コミット
+    const url = new URL(location.href);
+    const roomId = url.searchParams.get("room") || localStorage.getItem("cs_student_room") || "kyoto-01";
+    const forcedMode = String(url.searchParams.get("mode") || "").toLowerCase();
+
+    localStorage.setItem("cs_student_room", roomId);
+
+    const standbyPanel = document.getElementById("standbyPanel");
+    const answerPanel = document.getElementById("answerPanel");
+    const groupSharePanel = document.getElementById("groupSharePanel");
+
+    const standbyText = document.getElementById("standbyText");
+    const standbyMeta = document.getElementById("standbyMeta");
+    const answerTitle = document.getElementById("answerTitle");
+    const choiceArea = document.getElementById("choiceArea");
+    const textAreaWrap = document.getElementById("textAreaWrap");
+    const textAnswer = document.getElementById("textAnswer");
+    const submitAnswerBtn = document.getElementById("submitAnswerBtn");
+    const answerMessage = document.getElementById("answerMessage");
+
+    const studentNameInput = document.getElementById("studentNameInput");
+    const groupSelect = document.getElementById("groupSelect");
+    const shareFields = document.getElementById("shareFields");
+    const privacyCheck = document.getElementById("privacyCheck");
+    const submitShareBtn = document.getElementById("submitShareBtn");
+    const shareMessage = document.getElementById("shareMessage");
+
+    const roomBadge = document.getElementById("roomBadge");
+    const heroSub = document.getElementById("heroSub");
+    const footerInfo = document.getElementById("footerInfo");
+
+    const state = {
+      activity: {},
+      settings: { ...DEFAULT_SETTINGS },
+      selectedAnswer: "",
+      alreadyAnswered: false,
+      currentRenderKey: "",
+      unsubActivity: null,
+      unsubOwnAnswer: null,
+      unsubSettings: null
+    };
+
+    function getOrCreateUserId(){
+      const key = "student_user_id";
+      let id = localStorage.getItem(key);
+
+      if (!id){
+        id = `user_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+        localStorage.setItem(key, id);
+      }
+
+      return id;
+    }
+
+    const userId = getOrCreateUserId();
+
+    function activityRef(){
+      return ref(db, `rooms/${roomId}/activity`);
+    }
+
+    function ownAnswerRef(){
+      return ref(db, `rooms/${roomId}/answers/${userId}`);
+    }
+
+    function groupShareSettingsRef(){
+      return ref(db, `rooms/${roomId}/groupShare/settings`);
+    }
+
+    function groupSharePostsRef(){
+      return ref(db, `rooms/${roomId}/groupShare/posts`);
+    }
+
+    function esc(s){
+      return String(s ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function normalizeText(s){
+      return String(s ?? "").trim();
+    }
+
+    function uiLabel(key){
+      const k = String(key).trim().toUpperCase();
+
+      if (k === "O") return "○";
+      if (k === "X") return "×";
+
+      return k;
+    }
+
+    function getFieldLabel(n){
+      return state.settings[`field_${n}_label`] || DEFAULT_SETTINGS[`field_${n}_label`];
+    }
+
+    function getFieldColor(n){
+      return state.settings[`field_${n}_color`] || DEFAULT_SETTINGS[`field_${n}_color`];
+    }
+
+    function applyFieldColors(){
+      for (let i = 1; i <= 5; i++){
+        document.documentElement.style.setProperty(`--field${i}`, getFieldColor(i));
+      }
+    }
+
+    function buildGroupOptions(){
+      groupSelect.innerHTML = "";
+
+      const savedGroup = localStorage.getItem(`cs_share_group_${roomId}`) || "1";
+
+      for (const g of DEFAULT_GROUPS){
+        const opt = document.createElement("option");
+        opt.value = g.id;
+        opt.textContent = g.name;
+        groupSelect.appendChild(opt);
+      }
+
+      groupSelect.value = savedGroup;
+    }
+
+    function groupNameFromId(id){
+      const found = DEFAULT_GROUPS.find(g => g.id === String(id));
+      return found ? found.name : `${id}班`;
+    }
+
+    function buildShareFields(){
+      const currentValues = {};
+
+      for (let n = 1; n <= 5; n++){
+        const old = document.getElementById(`share_text_${n}`);
+        currentValues[n] = old ? old.value : localStorage.getItem(`cs_share_text_${roomId}_${n}`) || "";
+      }
+
+      shareFields.innerHTML = [1,2,3,4,5].map(n => {
+        const label = getFieldLabel(n);
+
+        return `
+          <div class="fieldBox field${n}">
+            <label class="fieldLabel" for="share_text_${n}">
+              <span class="fieldNo">${n}</span>
+              <span>${esc(label)}</span>
+            </label>
+            <textarea id="share_text_${n}" placeholder="${esc(label)}に入力してください。">${esc(currentValues[n])}</textarea>
+          </div>
+        `;
+      }).join("");
+
+      for (let n = 1; n <= 5; n++){
+        const el = document.getElementById(`share_text_${n}`);
+
+        if (el){
+          el.addEventListener("input", () => {
+            localStorage.setItem(`cs_share_text_${roomId}_${n}`, el.value);
+          });
+        }
+      }
+    }
+
+    function showOnly(panelName){
+      standbyPanel.classList.toggle("hidden", panelName !== "standby");
+      answerPanel.classList.toggle("hidden", panelName !== "answer");
+      groupSharePanel.classList.toggle("hidden", panelName !== "groupshare");
+    }
+
+    function isGroupShareMode(){
+      const m = String(state.activity?.mode || "").toLowerCase();
+      return m === "groupshare" || m === "group_share" || m === "board" || forcedMode === "groupshare" || forcedMode === "share";
+    }
+
+    function isAnswerOpen(){
+      const a = state.activity || {};
+      const status = String(a.status || "").toLowerCase();
+      const mode = String(a.mode || "").toLowerCase();
+
+      if (!mode) return false;
+      if (mode === "groupshare" || mode === "group_share" || mode === "board") return true;
+
+      return status === "open";
+    }
+
+    function getChoices(){
+      const a = state.activity || {};
+      const mode = String(a.mode || "").toLowerCase();
+
+      if (Array.isArray(a.config?.choices)) {
+        return a.config.choices.map(x => String(x).toUpperCase());
+      }
+
+      if (mode === "ox") return ["O", "X"];
+      if (mode === "five") return ["A", "B", "C", "D", "E"];
+
+      return [];
+    }
+
+    function renderChoiceButtons(choices){
+      const mode = String(state.activity?.mode || "").toLowerCase();
+
+      choiceArea.className = "choiceGrid";
+      choiceArea.classList.toggle("oxGrid", mode === "ox");
+      choiceArea.classList.toggle("fiveGrid", mode === "five");
+
+      choiceArea.innerHTML = choices.map(value => {
+        const selected = state.selectedAnswer === value ? "selected" : "";
+
+        return `
+          <button class="choiceBtn ${selected}" data-value="${esc(value)}">
+            ${esc(uiLabel(value))}
+          </button>
+        `;
+      }).join("");
+
+      const buttons = choiceArea.querySelectorAll(".choiceBtn");
+
+      buttons.forEach(btn => {
+        btn.addEventListener("click", () => {
+          state.selectedAnswer = btn.dataset.value || "";
+          renderAnswerPanel(false);
         });
-        showToast(`TX committed=${res.committed} /押:${k}`);
-    
-        // 重要：返す seat は「現在ラウンド」だけ
-        const g = res.snapshot.val();
-        const p = g?.players?.[userId];
-    
-        if (!p) return null;
-        if (Number(p.round || 0) !== Number(gameRound || 0)) return null;
-    
-        const seat = normKey(p.seat);
-        if (!["A","B","C","D","E"].includes(seat)) return null;
-    
-        // 押したキーと違う seat が返ってきたら事故なので無効（好みで外してOK）
-        if (seat !== k) return null;
-    
-        return seat;
-      }catch(e){
-        console.warn("[game] claim failed:", e);
-        return null;
-      }
+      });
     }
-  
-    // ===== 再描画条件（タイマー更新では再描画しない）=====
-    let lastStatus = null;
-    let lastMode = null;
-    let lastView = null;
-    let lastConfigKey = "";
-  
-    function makeConfigKey(mode, config){
-      const c = config || {};
-      if (mode === "text") return "text";
-      const arr = Array.isArray(c.choices) ? c.choices : [];
-      return arr.map(x => String(x).trim().toUpperCase()).join(",");
-    }
-  
-    // ===== activity監視 =====
-    const activityRef = ref(db, `rooms/${room}/activity`);
-    onValue(activityRef, snap => {
-      const data = snap.val() || {};
 
-      const session = String(data.session || "");
-      // ★不一致のときだけ弾く（session未設定時は待機OK）
-      if (session !== "" && urlSession !== "" && session !== urlSession){
-        isOpen = false;
-        lockUI();
-        setOverlay(true, "本日のQRから参加してください。");
+    function renderAnswerPanel(forceRebuild=true){
+      const a = state.activity || {};
+      const mode = String(a.mode || "").toLowerCase();
+      const open = isAnswerOpen();
+
+      if (!open){
+        renderStandby();
         return;
       }
 
-      const status = data.status || "-";
-      const mode = data.mode || null;
-      const view = data.view || "quiz";
-      const config = data.config || {};
-      const game = data.game || null;
-  
-      // 1) 毎回追随：open/closed
-      currentMode = mode;
-      currentView = view;
-      
-      // game state（毎回追随：ここは座席表示の更新に使う）
-      isGame = (view === "game");
-      gameRound = (game && game.round != null) ? Number(game.round) : null;
-      gamePhase = (game && game.phase != null) ? String(game.phase) : null;
-      gameSeatsRemain = getRemainMap(game);
-      
-      // ★入力可能判定：ゲーム中は phase を優先
-      const quizInputOpen = (status === "open");
-      const gameInputOpen = (view === "game") && (gamePhase === "open" || gamePhase === "running");
-      isOpen = isGame ? gameInputOpen : quizInputOpen;
-  
-      statusText.textContent = isGame
-        ? `status: ${status} / phase: ${gamePhase || "-"}`
-        : `status: ${status}`;
+      showOnly("answer");
 
-      dot.classList.toggle("open", isOpen);
-      dot.classList.toggle("closed", !isOpen);
-  
-      // ★補足：DB側で seat が確定していたら、押下処理を経由しなくても反映＆FX
-      if (isGame && game && game.players && game.players[userId]){
-        const p = game.players[userId];
-        const pr = Number(p.round || 0);
-        const seat = String(p.seat || "").trim().toUpperCase();
-      
-        if (gameRound != null && pr === Number(gameRound) && ["A","B","C","D","E"].includes(seat)){
-          if (mySeat !== seat){
-            mySeat = seat;
-            fireSeatWinFx(seat);
-            lockUI();
-            updateGameButtonsAvailability();
-            updateGameLine();
-          }
-        }
+      const isText = mode === "text";
+      const choices = getChoices();
+
+      if (mode === "ox") answerTitle.textContent = "○×で回答";
+      else if (mode === "five") answerTitle.textContent = "5択で回答";
+      else if (mode === "text") answerTitle.textContent = "自由記入で回答";
+      else answerTitle.textContent = "回答";
+
+      choiceArea.classList.toggle("hidden", isText);
+      textAreaWrap.classList.toggle("hidden", !isText);
+
+      if (isText){
+        const placeholder = a.config?.placeholder || "自由に記入してください";
+        textAnswer.placeholder = placeholder;
+      } else {
+        renderChoiceButtons(choices);
       }
 
-      // overlay
-      if (!isOpen){
-        let msg = "先生の操作を待っています…";
-        if (status === "closed"){
-          if (isGame){
-            if (gamePhase === "music") msg = "♪ 音楽中…『ストップ』で押せるようになります。";
-            else if (gamePhase === "reveal") msg = "ラウンド終了！次のラウンドを待ってください。";
-            else msg = "このラウンドは締切！次のラウンドを待ってください。";
-          } else {
-            msg = "解答は締切です。先生の次の操作を待ってください。";
-          }
-        }
-        setOverlay(true, msg);
-      }else{
-        setOverlay(false);
+      const disabled = state.alreadyAnswered || String(a.status || "").toLowerCase() !== "open";
+
+      submitAnswerBtn.disabled = disabled;
+
+      if (state.alreadyAnswered){
+        answerMessage.className = "sentBox";
+        answerMessage.textContent = "送信済みです。この問題には回答済みです。";
+      } else {
+        answerMessage.className = "statusBox";
+        answerMessage.textContent = isText
+          ? "入力してから送信してください。"
+          : "選択してから送信してください。";
       }
-  
-      // 2) 再描画判定（タイマー更新などは無視）
-      const cfgKey = makeConfigKey(mode, config);
-      const shouldRerender =
-        (status !== lastStatus) ||
-        (mode !== lastMode) ||
-        (view !== lastView) ||
-        (cfgKey !== lastConfigKey);
-  
-      // 3) 再描画しない場合でも、ゲーム情報だけは更新
-      if (!shouldRerender){
-        if (isGame){
-          // roundが変わったら参加リセット（ここが重要）
-          // view/mode/statusは同じでも round は変わるのでここで見る
-          const prevRound = Number(container.dataset.gameRound || "NaN");
-          if (!Number.isNaN(gameRound) && gameRound !== prevRound){
-            container.dataset.gameRound = String(gameRound);
-            renderGameFive();
-            updateGameButtonsAvailability();
-            updateGameLine();
-            return;
-          }
-  
-          updateGameButtonsAvailability();
-          updateGameLine();
+    }
+
+    function renderGroupShare(){
+      showOnly("groupshare");
+
+      heroSub.textContent = "GroupShare 個人投稿画面です。";
+
+      applyFieldColors();
+
+      const savedName = localStorage.getItem(`cs_share_name_${roomId}`) || "";
+
+      if (!studentNameInput.value) {
+        studentNameInput.value = savedName;
+      }
+
+      buildShareFields();
+
+      shareMessage.className = "statusBox";
+      shareMessage.textContent = "入力後、「GroupShareに投稿する」を押してください。";
+    }
+
+    function renderStandby(){
+      showOnly("standby");
+
+      heroSub.textContent = "授業の回答画面です。";
+
+      const a = state.activity || {};
+      const mode = a.mode || "—";
+      const status = a.status || "—";
+      const view = a.view || "—";
+
+      standbyText.textContent = "現在回答できる問題はありません。教員の指示を待ってください。";
+      standbyMeta.textContent = `room:${roomId} / view:${view} / status:${status} / mode:${mode}`;
+    }
+
+    function render(){
+      roomBadge.textContent = `room: ${roomId}`;
+      footerInfo.textContent = `ClassSync Student / room:${roomId} / user:${userId} / build: 2026-06-05`;
+
+      if (isGroupShareMode()){
+        renderGroupShare();
+        return;
+      }
+
+      if (isAnswerOpen()){
+        renderAnswerPanel();
+        return;
+      }
+
+      renderStandby();
+    }
+
+    async function submitAnswer(){
+      const a = state.activity || {};
+      const mode = String(a.mode || "").toLowerCase();
+
+      if (state.alreadyAnswered){
+        alert("すでに回答済みです。");
+        return;
+      }
+
+      if (String(a.status || "").toLowerCase() !== "open"){
+        alert("現在は回答できません。");
+        return;
+      }
+
+      let value = "";
+
+      if (mode === "text"){
+        value = normalizeText(textAnswer.value);
+
+        if (!value){
+          alert("回答を入力してください。");
           return;
         }
-  
-        // textの入力継続（従来）
-        const ta = container.querySelector("textarea");
-        if (ta){
-          ta.disabled = (!isOpen) || container.classList.contains("locked");
-          submitBtn.disabled =
-            (!isOpen) ||
-            sending ||
-            container.classList.contains("locked") ||
-            ((textValue || "").trim().length === 0);
-        } else {
-          if (!isOpen) submitBtn.disabled = true;
+      } else {
+        value = normalizeText(state.selectedAnswer).toUpperCase();
+
+        if (!value){
+          alert("選択してください。");
+          return;
         }
+      }
+
+      submitAnswerBtn.disabled = true;
+      answerMessage.className = "statusBox";
+      answerMessage.textContent = "送信中です…";
+
+      try {
+        await set(ownAnswerRef(), {
+          value,
+          timestamp: Date.now()
+        });
+
+        state.alreadyAnswered = true;
+        answerMessage.className = "sentBox";
+        answerMessage.textContent = "送信しました。";
+        renderAnswerPanel(false);
+      } catch(e) {
+        console.error(e);
+        submitAnswerBtn.disabled = false;
+        answerMessage.className = "statusBox";
+        answerMessage.textContent = "送信に失敗しました。通信状態を確認してください。";
+        alert("送信に失敗しました。");
+      }
+    }
+
+    async function submitShare(){
+      const name = normalizeText(studentNameInput.value);
+      const groupId = String(groupSelect.value || "1");
+      const groupName = groupNameFromId(groupId);
+
+      const texts = {};
+
+      for (let n = 1; n <= 5; n++){
+        const el = document.getElementById(`share_text_${n}`);
+        texts[`text_${n}`] = el ? normalizeText(el.value) : "";
+      }
+
+      const hasText = [1,2,3,4,5].some(n => texts[`text_${n}`]);
+
+      if (!name){
+        alert("名前またはニックネームを入力してください。");
         return;
       }
-  
-      // 4) 本質的に変化したので再描画
-      lastStatus = status;
-      lastMode = mode;
-      lastView = view;
-      lastConfigKey = cfgKey;
-  
-      // ゲーム
-      if (view === "game"){
-        container.dataset.gameRound = (gameRound != null ? String(gameRound) : "");
-        renderGameFive();
-        updateGameButtonsAvailability();
-        updateGameLine();
+
+      if (!hasText){
+        alert("共有欄1〜5のどれかに入力してください。");
         return;
       }
-  
-      // 通常投票
-      if (currentMode === "ox")   return renderOX(config.choices || ["O","X"]);
-      if (currentMode === "five") return renderFive(config.choices || ["A","B","C","D","E"]);
-      if (currentMode === "text") return renderText();
-  
-      // modeが無い（初期/待機）
-      hudMode.textContent = "待機";
-      modeText.textContent = `mode: ${currentMode || "-"}`;
-      container.innerHTML = "";
-      submitBtn.style.display = "block";
-      submitBtn.disabled = true;
-      setOverlay(true, "先生が出題を開始すると、解答ボタンが使えるようになります。");
+
+      if (!privacyCheck.checked){
+        alert("個人情報・患者情報等が含まれていないことの確認チェックを入れてください。");
+        return;
+      }
+
+      localStorage.setItem(`cs_share_name_${roomId}`, name);
+      localStorage.setItem(`cs_share_group_${roomId}`, groupId);
+
+      submitShareBtn.disabled = true;
+      shareMessage.className = "statusBox";
+      shareMessage.textContent = "投稿中です…";
+
+      const payload = {
+        userId,
+        studentName: name,
+        groupId,
+        groupName,
+        ...texts,
+        tag: "GroupShare",
+        createdAt: Date.now(),
+        isHidden: false
+      };
+
+      try {
+        await push(groupSharePostsRef(), payload);
+
+        for (let n = 1; n <= 5; n++){
+          localStorage.removeItem(`cs_share_text_${roomId}_${n}`);
+          const el = document.getElementById(`share_text_${n}`);
+          if (el) el.value = "";
+        }
+
+        privacyCheck.checked = false;
+
+        shareMessage.className = "sentBox";
+        shareMessage.textContent = "GroupShareに投稿しました。班の共有画面で確認できます。";
+      } catch(e) {
+        console.error(e);
+        shareMessage.className = "statusBox";
+        shareMessage.textContent = "投稿に失敗しました。通信状態を確認してください。";
+        alert("投稿に失敗しました。");
+      } finally {
+        submitShareBtn.disabled = false;
+      }
+    }
+
+    function subscribeOwnAnswer(){
+      if (state.unsubOwnAnswer){
+        state.unsubOwnAnswer();
+        state.unsubOwnAnswer = null;
+      }
+
+      state.unsubOwnAnswer = onValue(ownAnswerRef(), snap => {
+        state.alreadyAnswered = snap.exists();
+        render();
+      });
+    }
+
+    function attachFirebase(){
+      state.unsubActivity = onValue(activityRef(), snap => {
+        const nextActivity = snap.val() || {};
+
+        const oldKey = state.currentRenderKey;
+        const nextKey = JSON.stringify({
+          mode: nextActivity.mode || "",
+          status: nextActivity.status || "",
+          view: nextActivity.view || "",
+          config: nextActivity.config || null,
+          session: nextActivity.session || ""
+        });
+
+        state.activity = nextActivity;
+
+        if (oldKey !== nextKey){
+          state.currentRenderKey = nextKey;
+          state.selectedAnswer = "";
+        }
+
+        render();
+      });
+
+      state.unsubSettings = onValue(groupShareSettingsRef(), snap => {
+        state.settings = {
+          ...DEFAULT_SETTINGS,
+          ...(snap.val() || {})
+        };
+
+        applyFieldColors();
+
+        if (isGroupShareMode()){
+          buildShareFields();
+        }
+      });
+
+      subscribeOwnAnswer();
+    }
+
+    async function ensureDefaultSettings(){
+      const snap = await get(groupShareSettingsRef());
+
+      if (snap.exists()) return;
+
+      await set(groupShareSettingsRef(), {
+        ...DEFAULT_SETTINGS,
+        updatedAt: Date.now()
+      });
+    }
+
+    groupSelect.addEventListener("change", () => {
+      localStorage.setItem(`cs_share_group_${roomId}`, groupSelect.value);
     });
 
-  // ✅ topbar が2段になっても被らないように、実高さをCSS変数へ反映
-  function updateTopbarInset(){
-    const tb = document.querySelector(".topbar");
-    if (!tb) return;
-    document.documentElement.style.setProperty("--topbarH", (tb.offsetHeight || 66) + "px");
-  }
-  
-  // ✅ ここから下（呼び出しセット）を必ず付ける
-  updateTopbarInset();
-  requestAnimationFrame(updateTopbarInset);
-  setTimeout(updateTopbarInset, 200);
-  window.addEventListener("resize", updateTopbarInset);
-  
+    studentNameInput.addEventListener("input", () => {
+      localStorage.setItem(`cs_share_name_${roomId}`, studentNameInput.value);
+    });
+
+    submitAnswerBtn.addEventListener("click", () => {
+      submitAnswer();
+    });
+
+    submitShareBtn.addEventListener("click", () => {
+      submitShare();
+    });
+
+    async function boot(){
+      roomBadge.textContent = `room: ${roomId}`;
+
+      buildGroupOptions();
+      applyFieldColors();
+
+      await ensureDefaultSettings();
+
+      attachFirebase();
+      render();
+    }
+
+    boot();
   </script>
 
   <script src="./pwa-register.js"></script>
