@@ -3,46 +3,46 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
   <title>ClassSync Teacher Control</title>
+
   <link rel="icon" href="./icons/icon-192.png" type="image/png" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&family=DM+Mono:wght@500&display=swap" rel="stylesheet">
   <link rel="manifest" href="./manifest.webmanifest" />
+
   <meta name="theme-color" content="#0f172a" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 
   <style>
-    /* ===== RESET & BASE ===== */
-    *, *::before, *::after { box-sizing: border-box; }
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
 
     :root {
-      --bg:       #060810;
-      --surface:  #0d1117;
-      --panel:    #111827;
-      --panel2:   #0a0f1a;
-      --glass:    rgba(255,255,255,.055);
-      --border:   rgba(255,255,255,.09);
-      --ink:      #f0f4ff;
-      --muted:    #8899bb;
+      --bg: #060810;
+      --surface: #0d1117;
+      --panel: #111827;
+      --panel2: #0a0f1a;
+      --glass: rgba(255,255,255,.055);
+      --glass2: rgba(255,255,255,.085);
+      --border: rgba(255,255,255,.09);
+      --ink: #f0f4ff;
+      --muted: #8899bb;
 
-      --blue:     #2b7fff;
-      --cyan:     #06d6f5;
-      --green:    #30d158;
-      --orange:   #ff9f0a;
-      --red:      #ff453a;
-      --purple:   #bf5af2;
-      --teal:     #00c7be;
-      --indigo:   #6366f1;
-
-      --color-o:  #30d158;
-      --color-x:  #ff453a;
-      --color-c:  #ff9f0a;
-      --color-d:  #bf5af2;
+      --blue: #2b7fff;
+      --cyan: #06d6f5;
+      --green: #30d158;
+      --orange: #ff9f0a;
+      --red: #ff453a;
+      --purple: #bf5af2;
+      --teal: #00c7be;
+      --indigo: #6366f1;
 
       --radius-card: 22px;
-      --radius-btn:  16px;
+      --radius-btn: 16px;
 
       --font-body: 'Noto Sans JP', sans-serif;
       --font-mono: 'DM Mono', monospace;
@@ -62,7 +62,6 @@
       color: var(--ink);
     }
 
-    /* ===== MAIN CARD ===== */
     .card {
       background: var(--panel);
       border-radius: 28px;
@@ -75,7 +74,9 @@
         0 2px 0 rgba(255,255,255,.04) inset;
       position: relative;
       overflow: hidden;
+      animation: fadeUp .40s ease both;
     }
+
     .card::before {
       content: "";
       position: absolute;
@@ -85,23 +86,29 @@
       border-radius: inherit;
     }
 
-    /* ===== HEADER ===== */
     .page-header {
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 12px;
       margin-bottom: 18px;
+      position: relative;
+      z-index: 1;
     }
+
     .logo-icon {
-      width: 36px; height: 36px;
+      width: 36px;
+      height: 36px;
       background: linear-gradient(135deg, var(--blue), var(--cyan));
       border-radius: 10px;
-      display: flex; align-items: center; justify-content: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       font-size: 18px;
       box-shadow: 0 4px 16px rgba(43,127,255,.40);
       flex-shrink: 0;
     }
+
     h2 {
       margin: 0;
       font-size: 20px;
@@ -113,15 +120,17 @@
       background-clip: text;
     }
 
-    /* ===== TOP ROW ===== */
     .topRow {
       display: flex;
       justify-content: center;
       align-items: center;
       gap: 10px;
       flex-wrap: wrap;
-      margin-bottom: 18px;
+      margin-bottom: 16px;
+      position: relative;
+      z-index: 1;
     }
+
     .topRow-label {
       font-size: 12px;
       font-weight: 700;
@@ -145,7 +154,10 @@
       cursor: pointer;
       transition: border-color .15s;
     }
-    select:focus { border-color: var(--blue); }
+
+    select:focus {
+      border-color: var(--blue);
+    }
 
     .roomMeta {
       padding: 8px 14px;
@@ -159,21 +171,75 @@
       backdrop-filter: blur(8px);
     }
 
-    /* ===== CONTROL GROUPS GRID ===== */
+    .teacherTabs {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin: 0 auto 18px;
+      max-width: 960px;
+      position: relative;
+      z-index: 1;
+    }
+
+    @media (max-width: 720px) {
+      .teacherTabs {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    .tabBtn {
+      min-height: 48px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.065);
+      border: 1px solid rgba(255,255,255,.10);
+      color: #dbeafe;
+      font-size: 13px;
+      font-weight: 900;
+      letter-spacing: .04em;
+      box-shadow:
+        0 8px 24px rgba(0,0,0,.22),
+        inset 0 1px 0 rgba(255,255,255,.06);
+    }
+
+    .tabBtn.active {
+      background: linear-gradient(135deg, #1d6fdb, var(--blue));
+      border-color: rgba(43,127,255,.55);
+      color: #fff;
+      box-shadow:
+        0 0 0 1px rgba(43,127,255,.20),
+        0 12px 34px rgba(43,127,255,.32),
+        inset 0 1px 0 rgba(255,255,255,.10);
+    }
+
+    .teacherView {
+      display: block;
+      position: relative;
+      z-index: 1;
+    }
+
+    .teacherView.hidden {
+      display: none;
+    }
+
     .controlGroups {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 14px;
       margin: 0 0 18px;
     }
+
     @media (max-width: 980px) {
-      .controlGroups { grid-template-columns: 1fr; }
-    }
-    @media (min-width: 1200px) {
-      .controlGroups { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+      .controlGroups {
+        grid-template-columns: 1fr;
+      }
     }
 
-    /* ===== GROUP PANEL ===== */
+    @media (min-width: 1200px) {
+      .controlGroups {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+    }
+
     .btnGroup {
       padding: 16px 14px 14px;
       border-radius: var(--radius-card);
@@ -182,11 +248,18 @@
       backdrop-filter: blur(16px);
       position: relative;
       overflow: hidden;
+      animation: fadeUp .40s ease both;
     }
-    .btnGroup::before {
+
+    .btnGroup::before,
+    .panelBox::before,
+    #preview::before,
+    #teacherLive::before {
       content: "";
       position: absolute;
-      top: 0; left: 0; right: 0;
+      top: 0;
+      left: 0;
+      right: 0;
       height: 1px;
       background: linear-gradient(90deg, transparent, rgba(255,255,255,.12), transparent);
     }
@@ -202,9 +275,14 @@
       text-transform: uppercase;
       margin: 0 0 12px 2px;
     }
-    .miniState { opacity: .9; font-weight: 700; font-size: 11px; font-family: var(--font-mono); }
 
-    /* ===== BUTTON BASE ===== */
+    .miniState {
+      opacity: .9;
+      font-weight: 700;
+      font-size: 11px;
+      font-family: var(--font-mono);
+    }
+
     button {
       font-family: var(--font-body);
       border: none;
@@ -219,8 +297,16 @@
       transition: transform .10s ease, filter .12s ease, box-shadow .12s ease, opacity .12s ease;
       -webkit-tap-highlight-color: transparent;
     }
-    button:hover { filter: brightness(1.12); }
-    button:active { transform: scale(.97); filter: brightness(.95); }
+
+    button:hover {
+      filter: brightness(1.12);
+    }
+
+    button:active {
+      transform: scale(.97);
+      filter: brightness(.95);
+    }
+
     button:disabled {
       opacity: .35;
       cursor: not-allowed;
@@ -229,14 +315,17 @@
       filter: none !important;
     }
 
-    /* ===== CONTROL GROUP BUTTONS ===== */
-    .btnRow, .pollGrid {
+    .btnRow,
+    .pollGrid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
       gap: 8px;
       margin-bottom: 8px;
     }
-    .btnRow:last-child { margin-bottom: 0; }
+
+    .btnRow:last-child {
+      margin-bottom: 0;
+    }
 
     .controlGroups button {
       width: 100%;
@@ -256,6 +345,7 @@
       position: relative;
       overflow: hidden;
     }
+
     .controlGroups button::after {
       content: "";
       position: absolute;
@@ -264,14 +354,7 @@
       pointer-events: none;
       border-radius: inherit;
     }
-    .controlGroups button:hover {
-      filter: brightness(1.10);
-      box-shadow: 0 12px 32px rgba(0,0,0,.40), inset 0 1px 0 rgba(255,255,255,.10);
-    }
-    .controlGroups button:active { transform: scale(.975); }
-    .controlGroups button:disabled { opacity: .32; box-shadow: none; }
 
-    /* ===== TILE BUTTONS (投票・管理) ===== */
     .tile {
       min-height: 54px;
       border-radius: var(--radius-btn);
@@ -279,40 +362,70 @@
       font-weight: 900;
       letter-spacing: .04em;
     }
-    .tile-ox   { background: linear-gradient(135deg, #1a9e3f, #06b6d4); box-shadow: 0 8px 24px rgba(6,182,212,.20); }
-    .tile-five { background: linear-gradient(135deg, #7c3aed, #a855f7); box-shadow: 0 8px 24px rgba(168,85,247,.20); }
-    .tile-text { background: linear-gradient(135deg, #d97706, #f59e0b); color:#fff !important; box-shadow: 0 8px 24px rgba(245,158,11,.20); }
-    .tile-admin  { background: rgba(100,116,139,.18); }
-    .tile-admin2 { background: linear-gradient(135deg, #166534, #22c55e); box-shadow: 0 8px 20px rgba(34,197,94,.18); }
 
-    /* ===== SPECIFIC BUTTON COLORS ===== */
+    .tile-ox {
+      background: linear-gradient(135deg, #1a9e3f, #06b6d4) !important;
+      box-shadow: 0 8px 24px rgba(6,182,212,.20);
+    }
+
+    .tile-five {
+      background: linear-gradient(135deg, #7c3aed, #a855f7) !important;
+      box-shadow: 0 8px 24px rgba(168,85,247,.20);
+    }
+
+    .tile-text {
+      background: linear-gradient(135deg, #d97706, #f59e0b) !important;
+      color: #fff !important;
+      box-shadow: 0 8px 24px rgba(245,158,11,.20);
+    }
+
+    .tile-admin {
+      background: rgba(100,116,139,.18) !important;
+    }
+
+    .tile-admin2 {
+      background: linear-gradient(135deg, #166534, #22c55e) !important;
+      box-shadow: 0 8px 20px rgba(34,197,94,.18);
+    }
+
     #prevQuestionBtn {
       background: rgba(120,120,130,.25) !important;
       border-color: rgba(120,120,130,.32) !important;
     }
+
     #nextQuestionBtn {
       background: linear-gradient(135deg, #1d6fdb, var(--blue)) !important;
       border-color: rgba(43,127,255,.45) !important;
       box-shadow: 0 8px 28px rgba(43,127,255,.30) !important;
     }
+
     #stopBtn {
       background: linear-gradient(135deg, #c47400, var(--orange)) !important;
       border-color: rgba(255,159,10,.45) !important;
       box-shadow: 0 8px 24px rgba(255,159,10,.28) !important;
     }
+
     #endClassBtn {
       background: linear-gradient(135deg, #c0362b, var(--red)) !important;
       border-color: rgba(255,69,58,.45) !important;
       box-shadow: 0 8px 24px rgba(255,69,58,.28) !important;
     }
-    #qrBtn, #projectionBtn {
+
+    #qrBtn,
+    #projectionBtn {
       background: linear-gradient(135deg, #9333ea, var(--purple)) !important;
       border-color: rgba(191,90,242,.45) !important;
       box-shadow: 0 8px 24px rgba(191,90,242,.25) !important;
     }
-    #t20Btn, #t30Btn, #t60Btn, #tOffBtn {
-      width: 58px !important; height: 58px !important;
-      max-width: none !important; padding: 0 !important;
+
+    #t20Btn,
+    #t30Btn,
+    #t60Btn,
+    #tOffBtn {
+      width: 58px !important;
+      height: 58px !important;
+      max-width: none !important;
+      padding: 0 !important;
       border-radius: 999px !important;
       background: linear-gradient(135deg, #1a8a3a, var(--green)) !important;
       border-color: rgba(48,209,88,.40) !important;
@@ -320,22 +433,24 @@
       font-weight: 900 !important;
       font-size: 12px !important;
     }
+
     #importBtn {
       background: rgba(99,102,241,.30) !important;
       border-color: rgba(99,102,241,.38) !important;
     }
+
     #dictBtn {
       background: linear-gradient(135deg, #166534, #22c55e) !important;
       border-color: rgba(50,215,75,.40) !important;
       box-shadow: 0 8px 22px rgba(50,215,75,.20) !important;
     }
+
     #branchSetBtn {
       background: linear-gradient(135deg, #0a9e98, var(--teal)) !important;
       border-color: rgba(0,199,190,.45) !important;
       box-shadow: 0 8px 22px rgba(0,199,190,.22) !important;
     }
 
-    /* ===== REVEAL TOGGLE BUTTON ===== */
     #revealBtn {
       background: rgba(120,120,130,.22) !important;
       border-color: rgba(120,120,130,.30) !important;
@@ -343,35 +458,44 @@
       padding-left: 56px !important;
       text-align: left !important;
     }
+
     #revealBtn.on {
       background: linear-gradient(135deg, #c47400, var(--orange)) !important;
       border-color: rgba(255,159,10,.45) !important;
       box-shadow: 0 8px 24px rgba(255,159,10,.28) !important;
     }
+
     #revealBtn::before {
       content: "";
       position: absolute;
-      left: 14px; top: 50%;
+      left: 14px;
+      top: 50%;
       transform: translateY(-50%);
-      width: 34px; height: 20px;
+      width: 34px;
+      height: 20px;
       border-radius: 999px;
       background: rgba(255,255,255,.18);
       box-shadow: inset 0 0 0 1px rgba(255,255,255,.16);
     }
+
     #revealBtn::after {
       content: "";
       position: absolute;
-      left: 16px; top: 50%;
+      left: 16px;
+      top: 50%;
       transform: translateY(-50%);
-      width: 16px; height: 16px;
+      width: 16px;
+      height: 16px;
       border-radius: 999px;
       background: #fff;
       box-shadow: 0 2px 8px rgba(0,0,0,.30);
       transition: left 130ms cubic-bezier(.4,0,.2,1);
     }
-    #revealBtn.on::after { left: 30px; }
 
-    /* ===== TIMER ROW ===== */
+    #revealBtn.on::after {
+      left: 30px;
+    }
+
     .timerRow {
       display: flex !important;
       justify-content: center;
@@ -379,7 +503,6 @@
       gap: 10px;
     }
 
-    /* ===== PILLS (live counts) ===== */
     .pill {
       padding: 8px 14px;
       border-radius: 999px;
@@ -391,9 +514,7 @@
       letter-spacing: .04em;
       transition: background .2s, transform .1s;
     }
-    .pill:hover { background: rgba(255,255,255,.12); }
 
-    /* ===== TEXT LIST ===== */
     .textList {
       max-height: 260px;
       overflow: auto;
@@ -402,6 +523,7 @@
       background: rgba(0,0,0,.22);
       border: 1px solid var(--border);
     }
+
     .textItem {
       padding: 10px 12px;
       border-radius: 12px;
@@ -411,11 +533,18 @@
       word-break: break-word;
       border: 1px solid var(--border);
     }
-    .textMeta { font-size: 11px; opacity: .65; margin-top: 5px; font-family: var(--font-mono); }
 
-    /* ===== PREVIEW SECTION ===== */
-    #preview {
-      margin-top: 18px;
+    .textMeta {
+      font-size: 11px;
+      opacity: .65;
+      margin-top: 5px;
+      font-family: var(--font-mono);
+    }
+
+    #preview,
+    #teacherLive,
+    .panelBox {
+      margin-top: 16px;
       padding: 20px;
       border-radius: var(--radius-card);
       background: var(--panel2);
@@ -423,13 +552,10 @@
       position: relative;
       overflow: hidden;
     }
-    #preview::before {
-      content: "";
-      position: absolute;
-      top: 0; left: 0; right: 0; height: 1px;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,.10), transparent);
-    }
-    #preview h3 {
+
+    #preview h3,
+    #teacherLive h3,
+    .panelBox h3 {
       margin: 0 0 14px 0;
       font-size: 13px;
       font-weight: 900;
@@ -437,15 +563,20 @@
       text-transform: uppercase;
       color: var(--muted);
     }
+
     .pvGrid {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 14px;
       margin-top: 10px;
     }
+
     @media (max-width: 980px) {
-      .pvGrid { grid-template-columns: 1fr; }
+      .pvGrid {
+        grid-template-columns: 1fr;
+      }
     }
+
     .pvCard {
       background: rgba(255,255,255,.03);
       border: 1px solid var(--border);
@@ -453,12 +584,14 @@
       padding: 16px;
       position: relative;
     }
+
     .pvHead {
       display: flex;
       align-items: center;
       justify-content: space-between;
       margin-bottom: 10px;
     }
+
     .pvBadge {
       font-weight: 900;
       font-size: 10px;
@@ -470,51 +603,173 @@
       border: 1px solid rgba(6,182,212,.32);
       color: #67e8f9;
     }
+
     .pvBadge.next {
       background: rgba(168,85,247,.18);
       border: 1px solid rgba(168,85,247,.32);
       color: #d8b4fe;
     }
+
     .pvMeta {
       font-size: 11px;
       color: var(--muted);
       font-weight: 700;
       font-family: var(--font-mono);
     }
-    .pv-question { font-size: 14px; font-weight: 700; line-height: 1.55; margin-bottom: 8px; }
-    .pv-choice { margin-left: 10px; margin-bottom: 4px; font-size: 13px; color: #94a3b8; }
-    .pv-answer { margin-top: 10px; font-weight: 900; color: var(--green); font-size: 13px; }
-    .pv-explanation { margin-top: 6px; font-size: 13px; color: var(--muted); white-space: pre-wrap; }
 
-    /* ===== LIVE RESULTS SECTION ===== */
-    #teacherLive {
-      margin-top: 16px;
-      padding: 20px;
-      border-radius: var(--radius-card);
-      background: var(--panel2);
-      border: 1px solid var(--border);
-      position: relative;
-      overflow: hidden;
-    }
-    #teacherLive::before {
-      content: "";
-      position: absolute;
-      top: 0; left: 0; right: 0; height: 1px;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,.10), transparent);
-    }
-    #teacherLive h3 {
-      margin: 0 0 12px 0;
+    .pv-choice {
+      margin-left: 10px;
+      margin-bottom: 4px;
       font-size: 13px;
-      font-weight: 900;
-      letter-spacing: .10em;
-      text-transform: uppercase;
-      color: var(--muted);
+      color: #94a3b8;
     }
 
-    /* ===== BUILD TAG ===== */
+    .pv-answer {
+      margin-top: 10px;
+      font-weight: 900;
+      color: var(--green);
+      font-size: 13px;
+    }
+
+    .pv-explanation {
+      margin-top: 6px;
+      font-size: 13px;
+      color: var(--muted);
+      white-space: pre-wrap;
+    }
+
+    .qrGrid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    @media (max-width: 980px) {
+      .qrGrid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .qrCard {
+      border-radius: 20px;
+      background: rgba(255,255,255,.045);
+      border: 1px solid var(--border);
+      padding: 18px;
+    }
+
+    .qrTitle {
+      font-size: 17px;
+      font-weight: 900;
+      margin-bottom: 8px;
+    }
+
+    .qrDesc {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.7;
+      margin-bottom: 14px;
+    }
+
+    .qrImageBox {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: #fff;
+      border-radius: 18px;
+      padding: 14px;
+      margin: 12px auto;
+      max-width: 300px;
+    }
+
+    .qrImageBox img {
+      width: 100%;
+      max-width: 260px;
+      height: auto;
+      display: block;
+    }
+
+    .urlBox {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: #cbd5e1;
+      background: rgba(0,0,0,.26);
+      border: 1px solid rgba(255,255,255,.09);
+      padding: 10px;
+      border-radius: 12px;
+      word-break: break-all;
+      line-height: 1.5;
+      margin-top: 10px;
+    }
+
+    .actionRow {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+
+    .actionRow button {
+      min-height: 42px;
+      background: rgba(255,255,255,.08);
+      border: 1px solid rgba(255,255,255,.12);
+    }
+
+    .blueAction {
+      background: linear-gradient(135deg, #1d6fdb, var(--blue)) !important;
+    }
+
+    .greenAction {
+      background: linear-gradient(135deg, #166534, #22c55e) !important;
+    }
+
+    .purpleAction {
+      background: linear-gradient(135deg, #9333ea, var(--purple)) !important;
+    }
+
+    .orangeAction {
+      background: linear-gradient(135deg, #c47400, var(--orange)) !important;
+    }
+
+    .noticeBox {
+      border-radius: 16px;
+      padding: 14px 16px;
+      background: rgba(43,127,255,.10);
+      border: 1px solid rgba(43,127,255,.24);
+      color: #dbeafe;
+      line-height: 1.7;
+      font-size: 13px;
+      margin-bottom: 14px;
+    }
+
+    .mutedText {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.8;
+    }
+
+    .settingGrid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    @media (max-width: 980px) {
+      .settingGrid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .dummySetting {
+      padding: 14px;
+      border-radius: 16px;
+      background: rgba(255,255,255,.045);
+      border: 1px solid rgba(255,255,255,.08);
+    }
+
     #buildTag {
       position: fixed;
-      right: 12px; bottom: 12px;
+      right: 12px;
+      bottom: 12px;
       opacity: .50;
       font-size: 11px;
       font-family: var(--font-mono);
@@ -528,24 +783,21 @@
       pointer-events: none;
     }
 
-    /* ===== PAGE LOAD ANIMATION ===== */
     @keyframes fadeUp {
-      from { opacity:0; transform: translateY(14px); }
-      to   { opacity:1; transform: translateY(0); }
+      from {
+        opacity: 0;
+        transform: translateY(14px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
-    .card      { animation: fadeUp .40s ease both; }
-    .btnGroup  { animation: fadeUp .40s ease both; }
-    .btnGroup:nth-child(1) { animation-delay: .06s; }
-    .btnGroup:nth-child(2) { animation-delay: .10s; }
-    .btnGroup:nth-child(3) { animation-delay: .14s; }
-    .btnGroup:nth-child(4) { animation-delay: .18s; }
-    #preview      { animation: fadeUp .40s .22s ease both; }
-    #teacherLive  { animation: fadeUp .40s .26s ease both; }
-</style>
+  </style>
 </head>
 
 <body>
-  <div id="buildTag">build: 2026-03-15 / no-game-v2</div>
+  <div id="buildTag">build: 2026-06-05 / teacher-tabs-groupshare-ready</div>
 
   <div class="card">
     <div class="page-header">
@@ -559,111 +811,253 @@
       <span id="roomMeta" class="miniState roomMeta">—</span>
     </div>
 
-    <div class="controlGroups">
-      <!-- ① 出題・回収 -->
-      <section class="btnGroup">
-        <div class="btnGroupTitle"><span>① 出題 · 回収</span></div>
-        <div class="btnRow">
-          <button id="prevQuestionBtn">問題戻る ◀</button>
-          <button id="nextQuestionBtn">次の問題 ▶</button>
-        </div>
-        <div class="btnRow">
-          <button id="stopBtn">解答終了</button>
-          <button id="branchSetBtn">分岐セット</button>
-        </div>
-      </section>
-
-      <!-- ② タイマー -->
-      <section class="btnGroup">
-        <div class="btnGroupTitle"><span>② タイマー</span></div>
-        <div class="btnRow timerRow">
-          <button id="t20Btn">⏱20</button>
-          <button id="t30Btn">⏱30</button>
-          <button id="t60Btn">⏱60</button>
-          <button id="tOffBtn">⏹停止</button>
-        </div>
-      </section>
-
-      <!-- ③ 表示・参加 -->
-      <section class="btnGroup">
-        <div class="btnGroupTitle"><span>③ 表示 · 参加</span></div>
-        <div class="btnRow">
-          <button id="qrBtn">QRコード</button>
-          <button id="projectionBtn">display表示</button>
-        </div>
-        <div class="btnRow">
-          <button id="revealBtn">結果：即時公開</button>
-        </div>
-        <div class="btnRow">
-          <button id="endClassBtn">授業終了</button>
-        </div>
-      </section>
-
-      <!-- ④ 投票・管理 -->
-      <section class="btnGroup">
-        <div class="btnGroupTitle"><span>④ 投票 · 管理</span></div>
-        <div class="pollGrid">
-          <button id="quick2Btn" class="tile tile-ox">投票 ○✕</button>
-          <button id="quick5Btn" class="tile tile-five">投票 5択</button>
-          <button id="quickTextBtn" class="tile tile-text">投票 TEXT</button>
-          <button id="importBtn" class="tile tile-admin">CSV投入</button>
-          <button id="dictBtn" class="tile tile-admin2">読み方（辞書）</button>
-          <button id="setExpectedFromVotesBtn" class="tile tile-admin">母数=投票人数</button>
-
-        </div>
-      </section>
+    <div class="teacherTabs">
+      <button class="tabBtn active" data-view="lesson">授業</button>
+      <button class="tabBtn" data-view="qr">QR / 参加</button>
+      <button class="tabBtn" data-view="groupshare">GroupShare</button>
+      <button class="tabBtn" data-view="settings">設定</button>
     </div>
 
-    <!-- プレビュー（2枚） -->
-    <div id="preview">
-      <h3>📋 出題プレビュー（現在 ＋ 次の1問）</h3>
-
-      <div class="pvGrid">
-        <section class="pvCard">
-          <div class="pvHead">
-            <div class="pvBadge">現在</div>
-            <div class="pvMeta" id="pvQid">ID: —</div>
+    <section id="viewLesson" class="teacherView">
+      <div class="controlGroups">
+        <section class="btnGroup">
+          <div class="btnGroupTitle"><span>① 出題 · 回収</span></div>
+          <div class="btnRow">
+            <button id="prevQuestionBtn">問題戻る ◀</button>
+            <button id="nextQuestionBtn">次の問題 ▶</button>
           </div>
-          <div id="pvQuestion">問題を待っています…</div>
-          <div id="pvChoices"></div>
-          <div id="pvAnswer" class="pv-answer"></div>
-          <div id="pvExplanation" class="pv-explanation"></div>
+          <div class="btnRow">
+            <button id="stopBtn">解答終了</button>
+            <button id="branchSetBtn">分岐セット</button>
+          </div>
         </section>
 
-        <section class="pvCard">
-          <div class="pvHead">
-            <div class="pvBadge next">次</div>
-            <div class="pvMeta" id="pvQidNext">ID: —</div>
+        <section class="btnGroup">
+          <div class="btnGroupTitle"><span>② タイマー</span></div>
+          <div class="btnRow timerRow">
+            <button id="t20Btn">⏱20</button>
+            <button id="t30Btn">⏱30</button>
+            <button id="t60Btn">⏱60</button>
+            <button id="tOffBtn">⏹停止</button>
           </div>
-          <div id="pvQuestionNext">（次の問題）</div>
-          <div id="pvChoicesNext"></div>
-          <div id="pvAnswerNext" class="pv-answer"></div>
-          <div id="pvExplanationNext" class="pv-explanation"></div>
+        </section>
+
+        <section class="btnGroup">
+          <div class="btnGroupTitle"><span>③ 表示 · 参加</span></div>
+          <div class="btnRow">
+            <button id="qrBtn">displayにQR表示</button>
+            <button id="projectionBtn">display表示</button>
+          </div>
+          <div class="btnRow">
+            <button id="revealBtn">結果：即時公開</button>
+          </div>
+          <div class="btnRow">
+            <button id="endClassBtn">授業終了</button>
+          </div>
+        </section>
+
+        <section class="btnGroup">
+          <div class="btnGroupTitle"><span>④ 投票 · 管理</span></div>
+          <div class="pollGrid">
+            <button id="quick2Btn" class="tile tile-ox">投票 ○✕</button>
+            <button id="quick5Btn" class="tile tile-five">投票 5択</button>
+            <button id="quickTextBtn" class="tile tile-text">投票 TEXT</button>
+            <button id="importBtn" class="tile tile-admin">CSV投入</button>
+            <button id="dictBtn" class="tile tile-admin2">読み方（辞書）</button>
+            <button id="setExpectedFromVotesBtn" class="tile tile-admin">母数=投票人数</button>
+          </div>
         </section>
       </div>
-    </div>
 
-    <!-- 教師用：リアルタイム結果 -->
-    <div id="teacherLive">
-      <h3>📊 リアルタイム結果</h3>
+      <div id="preview">
+        <h3>📋 出題プレビュー（現在 ＋ 次の1問）</h3>
 
-      <div id="liveCounts" style="display:flex; gap:10px; flex-wrap:wrap; margin:10px 0;">
-        <div class="pill" id="liveTotal">Total: 0</div>
-        <div class="pill" id="liveO">O: 0</div>
-        <div class="pill" id="liveX">X: 0</div>
-        <div class="pill" id="liveA">A: 0</div>
-        <div class="pill" id="liveB">B: 0</div>
-        <div class="pill" id="liveC">C: 0</div>
-        <div class="pill" id="liveD">D: 0</div>
-        <div class="pill" id="liveE">E: 0</div>
+        <div class="pvGrid">
+          <section class="pvCard">
+            <div class="pvHead">
+              <div class="pvBadge">現在</div>
+              <div class="pvMeta" id="pvQid">ID: —</div>
+            </div>
+            <div id="pvQuestion">問題を待っています…</div>
+            <div id="pvChoices"></div>
+            <div id="pvAnswer" class="pv-answer"></div>
+            <div id="pvExplanation" class="pv-explanation"></div>
+          </section>
+
+          <section class="pvCard">
+            <div class="pvHead">
+              <div class="pvBadge next">次</div>
+              <div class="pvMeta" id="pvQidNext">ID: —</div>
+            </div>
+            <div id="pvQuestionNext">（次の問題）</div>
+            <div id="pvChoicesNext"></div>
+            <div id="pvAnswerNext" class="pv-answer"></div>
+            <div id="pvExplanationNext" class="pv-explanation"></div>
+          </section>
+        </div>
       </div>
 
-      <div id="liveTextWrap" style="display:none;">
-        <div style="opacity:.85; margin:8px 0 6px;">TEXT（最新20件）</div>
-        <div id="liveTextList" class="textList"></div>
-      </div>
-    </div>
+      <div id="teacherLive">
+        <h3>📊 リアルタイム結果</h3>
 
+        <div id="liveCounts" style="display:flex; gap:10px; flex-wrap:wrap; margin:10px 0;">
+          <div class="pill" id="liveTotal">Total: 0</div>
+          <div class="pill" id="liveO">O: 0</div>
+          <div class="pill" id="liveX">X: 0</div>
+          <div class="pill" id="liveA">A: 0</div>
+          <div class="pill" id="liveB">B: 0</div>
+          <div class="pill" id="liveC">C: 0</div>
+          <div class="pill" id="liveD">D: 0</div>
+          <div class="pill" id="liveE">E: 0</div>
+        </div>
+
+        <div id="liveTextWrap" style="display:none;">
+          <div style="opacity:.85; margin:8px 0 6px;">TEXT（最新20件）</div>
+          <div id="liveTextList" class="textList"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="viewQR" class="teacherView hidden">
+      <div class="panelBox">
+        <h3>📱 QR / 参加</h3>
+
+        <div class="noticeBox">
+          ここでは、現在選択中のルームに紐づいたQRコードを表示します。<br>
+          学生個人投稿用は <b>student.html</b>、グループ共有用は <b>group.html</b> を開きます。
+        </div>
+
+        <div class="qrGrid">
+          <section class="qrCard">
+            <div class="qrTitle">学生用QR</div>
+            <div class="qrDesc">
+              学生さんが自分のスマホで読み込みます。<br>
+              通常の回答・今後のGroupShare個人投稿に使います。
+            </div>
+
+            <div class="qrImageBox">
+              <img id="studentQRImg" alt="学生用QRコード">
+            </div>
+
+            <div id="studentUrlBox" class="urlBox">—</div>
+
+            <div class="actionRow">
+              <button id="openStudentBtn" class="blueAction">学生画面を開く</button>
+              <button id="copyStudentBtn">URLコピー</button>
+            </div>
+          </section>
+
+          <section class="qrCard">
+            <div class="qrTitle">グループ用QR</div>
+            <div class="qrDesc">
+              班で1台のタブレット・PCで読み込みます。<br>
+              グループ内の投稿共有・班まとめに使います。
+            </div>
+
+            <div class="qrImageBox">
+              <img id="groupQRImg" alt="グループ用QRコード">
+            </div>
+
+            <div id="groupUrlBox" class="urlBox">—</div>
+
+            <div class="actionRow">
+              <button id="openGroupBtn" class="greenAction">グループ画面を開く</button>
+              <button id="copyGroupBtn">URLコピー</button>
+            </div>
+          </section>
+        </div>
+
+        <div class="actionRow" style="margin-top:18px;">
+          <button id="openDisplayBtnFromQR" class="purpleAction">display画面を開く</button>
+          <button id="setDisplayQRBtn" class="orangeAction">displayにQR表示</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="viewGroupShare" class="teacherView hidden">
+      <div class="panelBox">
+        <h3>🧩 GroupShare 管理</h3>
+
+        <div class="noticeBox">
+          この画面は、GroupShare機能を追加するための管理場所です。<br>
+          次の段階で、班別投稿数・全投稿一覧・班まとめ一覧をここに表示します。
+        </div>
+
+        <div class="qrGrid">
+          <section class="qrCard">
+            <div class="qrTitle">想定する授業の流れ</div>
+            <div class="mutedText">
+              1. 学生が学生用QRから個人投稿<br>
+              2. 班でグループ用QRを読み込む<br>
+              3. group.htmlで班を選択<br>
+              4. 班内投稿を比較<br>
+              5. 班まとめを保存<br>
+              6. 教員がこの画面で全班を確認
+            </div>
+          </section>
+
+          <section class="qrCard">
+            <div class="qrTitle">次に追加する表示</div>
+            <div class="mutedText">
+              ・1班、2班、3班…の投稿数<br>
+              ・各班のまとめ入力状況<br>
+              ・全投稿一覧<br>
+              ・班まとめ一覧<br>
+              ・非表示 / 削除<br>
+              ・CSV出力
+            </div>
+          </section>
+        </div>
+
+        <div class="actionRow" style="margin-top:18px;">
+          <button id="openGroupFromGroupShareBtn" class="greenAction">グループ画面を開く</button>
+          <button id="openStudentFromGroupShareBtn" class="blueAction">学生画面を開く</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="viewSettings" class="teacherView hidden">
+      <div class="panelBox">
+        <h3>⚙️ 設定</h3>
+
+        <div class="noticeBox">
+          今後、GroupShareの共有欄名・色・班数などをここで設定できるようにします。<br>
+          既存のCSV投入・読み方辞書は、現時点では授業タブのボタンから開けます。
+        </div>
+
+        <div class="settingGrid">
+          <div class="dummySetting">
+            <div class="qrTitle">共有欄設定予定</div>
+            <div class="mutedText">
+              共有欄1〜5の名前を設定します。<br>
+              例：AIの説明で参考になった部分 / 疑問点 / 発表に使える一文 など。
+            </div>
+          </div>
+
+          <div class="dummySetting">
+            <div class="qrTitle">色設定予定</div>
+            <div class="mutedText">
+              共有欄1〜5の背景色を設定します。<br>
+              学生画面・グループ画面・教員画面で同じ色を使います。
+            </div>
+          </div>
+
+          <div class="dummySetting">
+            <div class="qrTitle">班数設定予定</div>
+            <div class="mutedText">
+              1班〜6班など、授業ごとの班数を設定できるようにします。
+            </div>
+          </div>
+
+          <div class="dummySetting">
+            <div class="qrTitle">データ管理予定</div>
+            <div class="mutedText">
+              授業終了時のGroupShareデータ削除、CSV出力などをここに整理します。
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
   </div>
 
   <script type="module">
@@ -679,8 +1073,8 @@
     const app = initializeApp(firebaseConfig);
     const db  = getDatabase(app);
 
-    // ルーム
     const roomSelect = document.getElementById("roomSelect");
+
     const ROOMS = [
       { id: "kyoto-01",  label: "Kyoto-01"  },
       { id: "kyoto-02",  label: "Kyoto-02"  },
@@ -692,6 +1086,7 @@
 
     function buildRoomOptions(){
       roomSelect.innerHTML = "";
+
       for (const r of ROOMS){
         const opt = document.createElement("option");
         opt.value = r.id;
@@ -713,13 +1108,25 @@
 
     roomSelect.value = currentRoom;
 
-    // refs
-    function activityRef(room=currentRoom){ return ref(db, `rooms/${room}/activity`); }
-    function answersRef(room=currentRoom){ return ref(db, `rooms/${room}/answers`); }
+    function activityRef(room=currentRoom){
+      return ref(db, `rooms/${room}/activity`);
+    }
 
-    function qidRef(room=currentRoom){ return ref(db, `rooms/${room}/quiz/current_question_id`); }
-    function questionsRef(room=currentRoom){ return ref(db, `rooms/${room}/questions`); }
-    function questionRef(qid, room=currentRoom){ return ref(db, `rooms/${room}/questions/${qid}`); }
+    function answersRef(room=currentRoom){
+      return ref(db, `rooms/${room}/answers`);
+    }
+
+    function qidRef(room=currentRoom){
+      return ref(db, `rooms/${room}/quiz/current_question_id`);
+    }
+
+    function questionsRef(room=currentRoom){
+      return ref(db, `rooms/${room}/questions`);
+    }
+
+    function questionRef(qid, room=currentRoom){
+      return ref(db, `rooms/${room}/questions/${qid}`);
+    }
 
     const pvQuestion = document.getElementById("pvQuestion");
     const pvChoices  = document.getElementById("pvChoices");
@@ -748,21 +1155,6 @@
     const btnReveal = document.getElementById("revealBtn");
     const btnSetExpectedFromVotes = document.getElementById("setExpectedFromVotesBtn");
 
-    async function clearAnswers(){ await set(answersRef(), {}); }
-
-    async function refreshOrder(){
-      const snap = await get(questionsRef());
-      return Object.keys(snap.val() || {}).sort();
-    }
-
-    function uiLabel(key){
-      const k = String(key).trim().toUpperCase();
-      if (k === "O") return "○";
-      if (k === "X") return "✕";
-      return k;
-    }
-
-    // state
     const state = {
       activity: {},
       latestQid: null,
@@ -778,11 +1170,151 @@
       unsubAnswers: null
     };
 
+    function setupTeacherTabs(){
+      const tabButtons = document.querySelectorAll(".tabBtn");
+      const views = {
+        lesson: document.getElementById("viewLesson"),
+        qr: document.getElementById("viewQR"),
+        groupshare: document.getElementById("viewGroupShare"),
+        settings: document.getElementById("viewSettings")
+      };
+
+      tabButtons.forEach(btn => {
+        btn.addEventListener("click", () => {
+          const viewName = btn.dataset.view;
+
+          tabButtons.forEach(b => b.classList.remove("active"));
+          btn.classList.add("active");
+
+          Object.entries(views).forEach(([name, el]) => {
+            if (!el) return;
+            el.classList.toggle("hidden", name !== viewName);
+          });
+
+          updateJoinUrls();
+        });
+      });
+    }
+
+    function getBaseDir(){
+      return new URL("./", location.href).href;
+    }
+
+    function getStudentUrl(){
+      return new URL(`student.html?room=${encodeURIComponent(currentRoom)}`, getBaseDir()).href;
+    }
+
+    function getGroupUrl(){
+      return new URL(`group.html?room=${encodeURIComponent(currentRoom)}`, getBaseDir()).href;
+    }
+
+    function getDisplayUrl(){
+      return new URL(`display.html?room=${encodeURIComponent(currentRoom)}`, getBaseDir()).href;
+    }
+
+    function qrImageUrl(targetUrl){
+      return `https://api.qrserver.com/v1/create-qr-code/?size=320x320&data=${encodeURIComponent(targetUrl)}`;
+    }
+
+    function updateJoinUrls(){
+      const studentUrl = getStudentUrl();
+      const groupUrl = getGroupUrl();
+
+      const studentUrlBox = document.getElementById("studentUrlBox");
+      const groupUrlBox = document.getElementById("groupUrlBox");
+      const studentQRImg = document.getElementById("studentQRImg");
+      const groupQRImg = document.getElementById("groupQRImg");
+
+      if (studentUrlBox) studentUrlBox.textContent = studentUrl;
+      if (groupUrlBox) groupUrlBox.textContent = groupUrl;
+      if (studentQRImg) studentQRImg.src = qrImageUrl(studentUrl);
+      if (groupQRImg) groupQRImg.src = qrImageUrl(groupUrl);
+    }
+
+    async function copyText(text){
+      try {
+        await navigator.clipboard.writeText(text);
+        alert("URLをコピーしました。");
+      } catch(e) {
+        prompt("コピーできない場合は、以下を選択してコピーしてください。", text);
+      }
+    }
+
+    function setupQRButtons(){
+      const openStudentBtn = document.getElementById("openStudentBtn");
+      const copyStudentBtn = document.getElementById("copyStudentBtn");
+      const openGroupBtn = document.getElementById("openGroupBtn");
+      const copyGroupBtn = document.getElementById("copyGroupBtn");
+      const openDisplayBtnFromQR = document.getElementById("openDisplayBtnFromQR");
+      const setDisplayQRBtn = document.getElementById("setDisplayQRBtn");
+      const openGroupFromGroupShareBtn = document.getElementById("openGroupFromGroupShareBtn");
+      const openStudentFromGroupShareBtn = document.getElementById("openStudentFromGroupShareBtn");
+
+      if (openStudentBtn) {
+        openStudentBtn.onclick = () => window.open(getStudentUrl(), "_blank");
+      }
+
+      if (copyStudentBtn) {
+        copyStudentBtn.onclick = () => copyText(getStudentUrl());
+      }
+
+      if (openGroupBtn) {
+        openGroupBtn.onclick = () => window.open(getGroupUrl(), "_blank");
+      }
+
+      if (copyGroupBtn) {
+        copyGroupBtn.onclick = () => copyText(getGroupUrl());
+      }
+
+      if (openDisplayBtnFromQR) {
+        openDisplayBtnFromQR.onclick = () => window.open(getDisplayUrl(), "_blank");
+      }
+
+      if (setDisplayQRBtn) {
+        setDisplayQRBtn.onclick = async () => {
+          await toggleQR();
+        };
+      }
+
+      if (openGroupFromGroupShareBtn) {
+        openGroupFromGroupShareBtn.onclick = () => window.open(getGroupUrl(), "_blank");
+      }
+
+      if (openStudentFromGroupShareBtn) {
+        openStudentFromGroupShareBtn.onclick = () => window.open(getStudentUrl(), "_blank");
+      }
+    }
+
+    async function clearAnswers(){
+      await set(answersRef(), {});
+    }
+
+    async function refreshOrder(){
+      const snap = await get(questionsRef());
+      return Object.keys(snap.val() || {}).sort();
+    }
+
+    function uiLabel(key){
+      const k = String(key).trim().toUpperCase();
+
+      if (k === "O") return "○";
+      if (k === "X") return "✕";
+
+      return k;
+    }
+
     function subscribeQuestion(qid){
-      if (state.unsubQuestion){ state.unsubQuestion(); state.unsubQuestion = null; }
+      if (state.unsubQuestion){
+        state.unsubQuestion();
+        state.unsubQuestion = null;
+      }
+
       state.question = null;
 
-      if (!qid){ renderPreview(); return; }
+      if (!qid){
+        renderPreview();
+        return;
+      }
 
       state.unsubQuestion = onValue(questionRef(qid), snap => {
         state.question = snap.val() || null;
@@ -791,11 +1323,18 @@
     }
 
     function subscribeNextQuestion(qid){
-      if (state.unsubNextQuestion){ state.unsubNextQuestion(); state.unsubNextQuestion = null; }
+      if (state.unsubNextQuestion){
+        state.unsubNextQuestion();
+        state.unsubNextQuestion = null;
+      }
+
       state.nextQuestion = null;
       state.nextQid = qid || null;
 
-      if (!qid){ renderPreview(); return; }
+      if (!qid){
+        renderPreview();
+        return;
+      }
 
       state.unsubNextQuestion = onValue(questionRef(qid), snap => {
         state.nextQuestion = snap.val() || null;
@@ -805,27 +1344,34 @@
 
     async function updateNextSubscription(){
       const base = state.latestQid;
-      if (!base){ subscribeNextQuestion(null); return; }
+
+      if (!base){
+        subscribeNextQuestion(null);
+        return;
+      }
 
       const order = await refreshOrder();
       const i = order.indexOf(base);
       const next = (i >= 0) ? (order[i+1] || null) : (order[0] || null);
 
       if (state.latestQid !== base) return;
+
       subscribeNextQuestion(next);
     }
 
-    // mode推定（既存の揺れ対策）
     function guessMode(q){
       const m = String(q?.mode ?? "").toLowerCase().trim();
+
       if (m) return m;
+
       const keys = q?.choices ? Object.keys(q.choices).map(x => String(x).toUpperCase()) : [];
+
       if (keys.length === 2 && keys.includes("O") && keys.includes("X")) return "ox";
       if (["A","B","C","D","E"].every(k => keys.includes(k))) return "five";
+
       return "text";
     }
 
-    // 出題（quiz）
     async function startQuizQuestion(qid){
       if (!qid) return;
 
@@ -838,50 +1384,50 @@
       let mode = guessMode(q);
 
       let config = null;
+
       if (mode === "text") config = { type:"text" };
       else if (mode === "ox") config = { choices:["O","X"] };
       else if (mode === "five") config = { choices:["A","B","C","D","E"] };
 
-      // ★既存 session を維持（なければ作る）
       const aSnap = await get(activityRef());
       const aNow = aSnap.val() || {};
       const session = String(aNow.session || "") || Date.now().toString(36);
-      
+
       await update(activityRef(), {
-        status:"open",
-        qr:false,
-        view:"quiz",
+        status: "open",
+        qr: false,
+        view: "quiz",
         mode,
         config,
-        timer:{ running:false },
+        timer: { running:false },
         session
       });
     }
 
-    // クイック投票（poll）
     async function startQuickPoll(mode){
       await clearAnswers();
+
       let config = null;
+
       if (mode === "text") config = { type:"text" };
       else if (mode === "ox") config = { choices:["O","X"] };
       else if (mode === "five") config = { choices:["A","B","C","D","E"] };
 
-      // ★既存 session を維持（なければ作る）
       const aSnap = await get(activityRef());
       const aNow = aSnap.val() || {};
       const session = String(aNow.session || "") || Date.now().toString(36);
-      
+
       await update(activityRef(), {
-        status:"open",
-        qr:false,
-        view:"poll",
+        status: "open",
+        qr: false,
+        view: "poll",
         mode,
         config,
-        timer:{ running:false },
+        timer: { running:false },
         session
       });
-      }
-      
+    }
+
     async function setExpectedFromVotes(){
       const snap = await get(answersRef());
       const ans = snap.val() || {};
@@ -893,13 +1439,14 @@
       }
 
       const ok = confirm(`今回の投票人数 ${n} 人を、100%人数（母数）に設定しますか？`);
+
       if (!ok) return;
 
       await update(activityRef(), { expectedN: n });
+
       alert(`100%人数（母数）を ${n} 人に設定しました。`);
     }
 
-    // タイマー
     async function startTimer(sec){
       await update(activityRef(), {
         timer: {
@@ -912,45 +1459,49 @@
     }
 
     async function stopTimer(){
-      await update(activityRef(), { timer: { running: false } });
+      await update(activityRef(), {
+        timer: { running: false }
+      });
     }
 
-    // 結果公開方式トグル（live <-> closed）
     async function toggleRevealMode(){
       const cur = (state.activity?.revealMode === "closed") ? "closed" : "live";
       const next = (cur === "live") ? "closed" : "live";
-      await update(activityRef(), { revealMode: next });
+
+      await update(activityRef(), {
+        revealMode: next
+      });
     }
 
-    // QRトグル
     async function toggleQR(){
       const isQR = (state.activity?.qr === true);
 
       if (!isQR){
         const session = Date.now().toString(36);
+
         await update(activityRef(), {
-          qr:true,
-          view:"qr",
-          session: session   // ★追加
+          qr: true,
+          view: "qr",
+          session: session
         });
 
         return;
       }
 
       await update(activityRef(), {
-        qr:false,
-        view:"standby",
-        status:"ready",
-        mode:null,
-        config:null
+        qr: false,
+        view: "standby",
+        status: "ready",
+        mode: null,
+        config: null
       });
     }
 
-    // ===== 分岐（クラス全体・多数決）=====
     function extractAnswerValue(v){
       if (v == null) return "";
       if (typeof v === "string") return v;
       if (typeof v === "object" && typeof v.value === "string") return v.value;
+
       return "";
     }
 
@@ -959,52 +1510,56 @@
       const count = Object.fromEntries(keys.map(k => [k, 0]));
 
       const answers = answersObj || {};
+
       for (const v of Object.values(answers)){
         const s = String(extractAnswerValue(v)).trim().toUpperCase();
+
         if (count.hasOwnProperty(s)) count[s]++;
       }
 
-      // 同票は keys の先頭が勝つ（安定・再現性優先）
       let bestK = keys[0];
       let bestV = -1;
+
       for (const k of keys){
         const v = count[k] ?? 0;
+
         if (v > bestV){
           bestV = v;
           bestK = k;
         }
       }
+
       return { winner: bestK, count };
     }
 
     async function branchSetNextQuestionId(){
-      // 1) 現在qid
       const qidSnap = await get(qidRef());
       const qid = qidSnap.val() || null;
+
       if (!qid){
         alert("current_question_id がありません");
         return;
       }
 
-      // 2) 現在問題データ
       const qSnap = await get(questionRef(qid));
       const q = qSnap.val() || null;
+
       if (!q){
         alert(`questions/${qid} が見つかりません`);
         return;
       }
 
-      // 3) mode（ox / five のみ対応。textは分岐不可）
       const mode = guessMode(q);
+
       if (mode !== "ox" && mode !== "five"){
         alert(`分岐は ox / five のみ対応です（現在 mode=${mode}）`);
         return;
       }
 
-      // 4) answersから多数決
       const ansSnap = await get(answersRef());
       const answersObj = ansSnap.val() || {};
       const n = Object.keys(answersObj).length;
+
       if (n <= 0){
         alert("まだ投票がありません（answers=0）");
         return;
@@ -1012,7 +1567,6 @@
 
       const { winner, count } = pickWinnerFromAnswers(mode, answersObj);
 
-      // 5) branch を読む（問題データに持つのが本命）
       const branch = (q.branch && typeof q.branch === "object") ? q.branch : null;
       const nextId = branch ? branch[winner] : null;
 
@@ -1022,11 +1576,11 @@
           `qid=${qid}\nmode=${mode}\n多数決=${winner}\n\n` +
           `questions/${qid}/branch に { "${winner}": "次の問題ID" } を設定してください。\n\n` +
           `現在の票：${JSON.stringify(count)}`;
+
         alert(msg);
         return;
       }
 
-      // 6) 次の問題IDだけセット（openはしない）
       await set(qidRef(), nextId);
 
       alert(
@@ -1038,7 +1592,6 @@
       );
     }
 
-    // プレビュー描画（正解・解説は常時表示）
     function renderPreview(){
       const a = state.activity || {};
       const view = a.view || "quiz";
@@ -1048,10 +1601,11 @@
       const reveal = (a.revealMode === "closed") ? "closed" : "live";
 
       const lock = (a.qr === true);
+
       btnPrev.disabled = lock;
       btnNext.disabled = lock;
       btnStop.disabled = lock;
-      btnBranchSet.disabled = lock;          // ★追加：分岐もQR中はロック
+      btnBranchSet.disabled = lock;
       btnQ2.disabled = lock;
       btnQ5.disabled = lock;
       btnQT.disabled = lock;
@@ -1070,6 +1624,7 @@
         `room:${currentRoom} / view:${view} / status:${status} / mode:${mode} / reveal:${reveal}${qr ? " / QR" : ""}`;
 
       const roomMeta = document.getElementById("roomMeta");
+
       if (roomMeta) roomMeta.textContent = meta;
 
       if (view === "standby"){
@@ -1102,8 +1657,8 @@
         return;
       }
 
-      // 現在
       const q = state.question;
+
       if (!state.latestQid){
         pvQid.textContent = "ID: —";
         pvQuestion.textContent = "問題を待っています…";
@@ -1121,6 +1676,7 @@
         pvQuestion.textContent = q.question || "";
 
         pvChoices.innerHTML = "";
+
         if (q.choices && typeof q.choices === "object"){
           Object.entries(q.choices).forEach(([k, v]) => {
             const div = document.createElement("div");
@@ -1131,11 +1687,11 @@
         }
 
         const ans = (q.answer || "").toString().trim().toUpperCase();
+
         pvAnswer.textContent = ans ? `正解：${uiLabel(ans)}` : "正解：—";
         pvExplanation.textContent = q.explanation ? `解説：${q.explanation}` : "";
       }
 
-      // 次（現状は「並び順の次」を表示。分岐先は branchSet で決める運用）
       const q2id = state.nextQid;
       const q2 = state.nextQuestion;
 
@@ -1148,6 +1704,7 @@
         pvExplanationNext.textContent = "";
         return;
       }
+
       if (!q2){
         pvQuestionNext.textContent = `（${q2id}：問題データ待ち）`;
         pvChoicesNext.innerHTML = "";
@@ -1158,6 +1715,7 @@
 
       pvQuestionNext.textContent = q2.question || "";
       pvChoicesNext.innerHTML = "";
+
       if (q2.choices && typeof q2.choices === "object"){
         Object.entries(q2.choices).forEach(([k, v]) => {
           const div = document.createElement("div");
@@ -1168,6 +1726,7 @@
       }
 
       const ans2 = (q2.answer || "").toString().trim().toUpperCase();
+
       pvAnswerNext.textContent = ans2 ? `正解：${uiLabel(ans2)}` : "正解：—";
       pvExplanationNext.textContent = q2.explanation ? `解説：${q2.explanation}` : "";
     }
@@ -1183,13 +1742,22 @@
 
       const total = vals.length;
       const count = { O:0, X:0, A:0, B:0, C:0, D:0, E:0 };
+
       for (const s of vals){
         const up = String(s).trim().toUpperCase();
+
         if (count.hasOwnProperty(up)) count[up]++;
       }
 
-      const setText = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
-      const show = (id, ok) => { const el = document.getElementById(id); if (el) el.style.display = ok ? "" : "none"; };
+      const setText = (id, text) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = text;
+      };
+
+      const show = (id, ok) => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = ok ? "" : "none";
+      };
 
       setText("liveTotal", `Total: ${total}`);
 
@@ -1197,13 +1765,19 @@
       const isFive = (mode === "five");
       const isText = (mode === "text");
 
-      show("liveO", isOX); show("liveX", isOX);
-      show("liveA", isFive); show("liveB", isFive); show("liveC", isFive); show("liveD", isFive); show("liveE", isFive);
+      show("liveO", isOX);
+      show("liveX", isOX);
+      show("liveA", isFive);
+      show("liveB", isFive);
+      show("liveC", isFive);
+      show("liveD", isFive);
+      show("liveE", isFive);
 
       if (isOX){
         setText("liveO", `O: ${count.O}`);
         setText("liveX", `X: ${count.X}`);
       }
+
       if (isFive){
         setText("liveA", `A: ${count.A}`);
         setText("liveB", `B: ${count.B}`);
@@ -1213,6 +1787,7 @@
       }
 
       const wrap = document.getElementById("liveTextWrap");
+
       if (wrap) wrap.style.display = isText ? "" : "none";
 
       if (isText) renderTeacherTextList(answersObj);
@@ -1220,9 +1795,11 @@
 
     function renderTeacherTextList(answersObj){
       const list = document.getElementById("liveTextList");
+
       if (!list) return;
 
       const answers = answersObj || {};
+
       const items = Object.entries(answers).map(([uid, v]) => ({
         uid,
         text: extractAnswerValue(v),
@@ -1230,11 +1807,17 @@
       })).filter(x => x.text);
 
       items.sort((a,b) => (b.ts||0) - (a.ts||0));
+
       const top = items.slice(0, 20);
 
-      const esc = (s) => String(s).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;");
+      const esc = (s) => String(s)
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;");
+
       list.innerHTML = top.map(x => {
         const when = x.ts ? new Date(x.ts).toLocaleString() : "";
+
         return `
           <div class="textItem">
             ${esc(x.text)}
@@ -1248,11 +1831,30 @@
       currentRoom = room;
       roomSelect.value = room;
 
-      if (state.unsubActivity){ state.unsubActivity(); state.unsubActivity = null; }
-      if (state.unsubQid){ state.unsubQid(); state.unsubQid = null; }
-      if (state.unsubQuestion){ state.unsubQuestion(); state.unsubQuestion = null; }
-      if (state.unsubNextQuestion){ state.unsubNextQuestion(); state.unsubNextQuestion = null; }
-      if (state.unsubAnswers){ state.unsubAnswers(); state.unsubAnswers = null; }
+      if (state.unsubActivity){
+        state.unsubActivity();
+        state.unsubActivity = null;
+      }
+
+      if (state.unsubQid){
+        state.unsubQid();
+        state.unsubQid = null;
+      }
+
+      if (state.unsubQuestion){
+        state.unsubQuestion();
+        state.unsubQuestion = null;
+      }
+
+      if (state.unsubNextQuestion){
+        state.unsubNextQuestion();
+        state.unsubNextQuestion = null;
+      }
+
+      if (state.unsubAnswers){
+        state.unsubAnswers();
+        state.unsubAnswers = null;
+      }
 
       state.activity = {};
       state.latestQid = null;
@@ -1286,14 +1888,15 @@
         renderTeacherLive(mode, answersObj);
       });
 
+      updateJoinUrls();
       renderPreview();
     }
 
-    // イベント
     roomSelect.onchange = () => {
       currentRoom = roomSelect.value;
       localStorage.setItem("cs_teacher_room", currentRoom);
       attachRoom(currentRoom);
+      updateJoinUrls();
     };
 
     btnNext.onclick = async () => {
@@ -1301,6 +1904,7 @@
       const cur = (await get(qidRef())).val();
       const i = order.indexOf(cur);
       const next = i < 0 ? order[0] : order[i + 1];
+
       if (next) startQuizQuestion(next);
     };
 
@@ -1309,28 +1913,48 @@
       const cur = (await get(qidRef())).val();
       const i = order.indexOf(cur);
       const prev = i > 0 ? order[i - 1] : order[0];
+
       if (prev) startQuizQuestion(prev);
     };
 
-    btnStop.onclick = async () => { await update(activityRef(), { status:"closed" }); };
+    btnStop.onclick = async () => {
+      await update(activityRef(), {
+        status: "closed"
+      });
+    };
 
-    // ★追加：分岐セット（次IDだけ更新。openしない）
     btnBranchSet.onclick = async () => {
-      try{
+      try {
         await branchSetNextQuestionId();
-      }catch(e){
+      } catch(e) {
         console.error(e);
         alert("分岐セットでエラーが出ました（console を確認してください）");
       }
     };
 
-    btnQR.onclick = async () => { await toggleQR(); };
-    btnReveal.onclick = async () => { await toggleRevealMode(); };
-    btnSetExpectedFromVotes.onclick = async () => { await setExpectedFromVotes(); };
+    btnQR.onclick = async () => {
+      await toggleQR();
+    };
 
-    btnQ2.onclick = async () => { await startQuickPoll("ox"); };
-    btnQ5.onclick = async () => { await startQuickPoll("five"); };
-    btnQT.onclick = async () => { await startQuickPoll("text"); };
+    btnReveal.onclick = async () => {
+      await toggleRevealMode();
+    };
+
+    btnSetExpectedFromVotes.onclick = async () => {
+      await setExpectedFromVotes();
+    };
+
+    btnQ2.onclick = async () => {
+      await startQuickPoll("ox");
+    };
+
+    btnQ5.onclick = async () => {
+      await startQuickPoll("five");
+    };
+
+    btnQT.onclick = async () => {
+      await startQuickPoll("text");
+    };
 
     btnT20.onclick  = () => startTimer(20);
     btnT30.onclick  = () => startTimer(30);
@@ -1338,26 +1962,35 @@
     btnTOff.onclick = () => stopTimer();
 
     document.getElementById("projectionBtn").onclick = () => {
-      window.open(`https://qzp04374-code.github.io/quiz-app/exp-display/display.html?room=${encodeURIComponent(currentRoom)}`, "_blank");
+      window.open(getDisplayUrl(), "_blank");
     };
+
     document.getElementById("importBtn").onclick = () => {
       window.open(`https://qzp04374-code.github.io/quiz-app/exp-display/import-csv.html?room=${encodeURIComponent(currentRoom)}`, "_blank");
     };
+
     document.getElementById("dictBtn").onclick = () => {
       window.open(`https://qzp04374-code.github.io/quiz-app/exp-display/dict-editor.html?room=${encodeURIComponent(currentRoom)}`, "_blank");
     };
 
     document.getElementById("endClassBtn").onclick = async () => {
       const ok1 = confirm("授業終了します。データを削除しますか？（1/2）");
+
       if (!ok1) return;
+
       const ok2 = confirm("本当に削除しますか？（2/2）");
+
       if (!ok2) return;
+
       await remove(ref(db, `rooms/${currentRoom}`));
+
       alert("授業データを削除しました。");
     };
 
-    // 起動
+    setupTeacherTabs();
+    setupQRButtons();
     attachRoom(currentRoom);
+    updateJoinUrls();
   </script>
 
   <script src="./pwa-register.js"></script>
