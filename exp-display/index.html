@@ -913,6 +913,58 @@
       background: rgba(255,255,255,.07);
     }
 
+　　.groupSummaryList {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 14px;
+    }
+
+    .groupSummaryCard {
+      background: rgba(255,255,255,.04);
+      border: 1px solid rgba(34,197,94,.26);
+      border-radius: 18px;
+      padding: 16px;
+    }
+
+    .groupSummaryTitle {
+      font-size: 17px;
+      font-weight: 900;
+      margin-bottom: 8px;
+    }
+
+    .groupSummaryMeta {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+
+    .groupSummaryField {
+      border-top: 1px solid rgba(255,255,255,.08);
+      padding-top: 10px;
+      margin-top: 10px;
+    }
+
+    .groupSummaryFieldName {
+      font-size: 12px;
+      font-weight: 900;
+      color: #93c5fd;
+      margin-bottom: 5px;
+    }
+
+    .groupSummaryText {
+      white-space: pre-wrap;
+      word-break: break-word;
+      line-height: 1.7;
+      color: #f8fafc;
+    }
+
+    .groupSummaryEmpty {
+      color: var(--muted);
+      line-height: 1.8;
+    }
+    
     @media (max-width: 1180px) {
       .fixedGroupQRGrid,
       .groupProgressGrid {
@@ -1211,7 +1263,19 @@
           <div id="groupProgressGrid" class="groupProgressGrid"></div>
         </div>
 
+        <div class="panelBox">
+          <h3>📝 全班まとめ一覧</h3>
+
+          <div class="noticeBox">
+            提出済みの班まとめだけを表示します。<br>
+            group.html 側で「教員に提出」を押すと、ここに本文が表示されます。
+          </div>
+
+          <div id="groupSummaryList" class="groupSummaryList"></div>
+        </div>
+
         <div class="qrGrid" style="margin-top:16px;">
+          
           <section class="qrCard">
             <div class="qrTitle">授業の流れ</div>
             <div class="mutedText">
@@ -2343,29 +2407,84 @@
             <div class="groupProgressLine">
               <span>提出時刻</span>
               <span class="groupProgressValue">${formatGroupShareTime(submittedAt)}</span>
-            </div>
+        </div>
 
-            <div class="groupProgressLine">
-              <span>group</span>
-              <span class="groupProgressValue">${groupId}</span>
-            </div>
-          </section>
-        `;
-      }
+        <div class="groupProgressLine">
+          <span>group</span>
+          <span class="groupProgressValue">${groupId}</span>
+        </div>
+      </section>
+    `;
+  }
 
-      grid.innerHTML = html;
+  grid.innerHTML = html;
 
-      if (summaryBox){
-        const notSubmitted = GROUP_COUNT - submittedCount;
+  if (summaryBox){
+    const notSubmitted = GROUP_COUNT - submittedCount;
 
-        summaryBox.innerHTML = `
-          <div class="pill">投稿合計: ${totalPosts}</div>
-          <div class="pill">提出済: ${submittedCount} / ${GROUP_COUNT}</div>
-          <div class="pill">未提出: ${notSubmitted}</div>
-          <div class="pill">投稿なし: ${noPostCount}</div>
-        `;
-      }
+    summaryBox.innerHTML = `
+      <div class="pill">投稿合計: ${totalPosts}</div>
+      <div class="pill">提出済: ${submittedCount} / ${GROUP_COUNT}</div>
+      <div class="pill">未提出: ${notSubmitted}</div>
+      <div class="pill">投稿なし: ${noPostCount}</div>
+    `;
+  }
+
+  renderGroupShareSummaries();
+}
+
+function renderGroupShareSummaries(){
+  const list = document.getElementById("groupSummaryList");
+
+  if (!list) return;
+
+  let html = "";
+  let submittedCount = 0;
+
+  for (let i = 1; i <= GROUP_COUNT; i++){
+    const groupId = String(i);
+    const summary = state.groupShareSummaries?.[groupId] || null;
+
+    if (!hasSubmittedSummary(summary)) continue;
+
+    submittedCount++;
+
+    const label = groupLabel(groupId);
+    const submittedAt = summary?.submittedAt || summary?.updatedAt || null;
+
+    let fieldsHtml = "";
+
+    for (let n = 1; n <= 5; n++){
+      const text = String(summary?.[`summary_${n}`] || "").trim();
+
+      fieldsHtml += `
+        <div class="groupSummaryField">
+          <div class="groupSummaryFieldName">共有欄${n}</div>
+          <div class="groupSummaryText">${text ? esc(text) : "—"}</div>
+        </div>
+      `;
     }
+
+    html += `
+      <section class="groupSummaryCard">
+        <div class="groupSummaryTitle">${label}</div>
+        <div class="groupSummaryMeta">提出時刻：${formatGroupShareTime(submittedAt)} / group=${groupId}</div>
+        ${fieldsHtml}
+      </section>
+    `;
+  }
+
+  if (submittedCount === 0){
+    list.innerHTML = `
+      <div class="groupSummaryEmpty">
+        まだ提出済みの班まとめはありません。
+      </div>
+    `;
+    return;
+  }
+
+  list.innerHTML = html;
+}
 
     function attachRoom(room){
       currentRoom = room;
