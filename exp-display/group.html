@@ -299,6 +299,15 @@
       box-shadow: 0 8px 20px rgba(71,85,105,.16);
     }
 
+    .dangerMiniBtn {
+      margin-top: 10px;
+      padding: 10px 13px;
+      border-radius: 14px;
+      font-size: 13px;
+      background: linear-gradient(135deg, #b91c1c, #ef4444);
+      box-shadow: 0 8px 20px rgba(220,38,38,.16);
+    }
+
     .tabPanel {
       background: var(--paper);
       border: 1px solid var(--border);
@@ -637,7 +646,8 @@
 
       .summaryActions button,
       .setupGrid button,
-      .miniClearBtn {
+      .miniClearBtn,
+      .dangerMiniBtn {
         width: 100%;
       }
     }
@@ -730,7 +740,8 @@
       <div id="summaryFields" class="summaryFields"></div>
 
       <div class="summaryActions">
-        <button id="saveSummaryBtn" class="greenBtn">教員に提出</button>
+        <button id="saveSummaryBtn" class="greenBtn">教員に提出 / 再提出</button>
+        <button id="resetSubmissionBtn" class="grayBtn">提出を取り消す</button>
         <button id="clearSummaryBtn" class="grayBtn">入力欄をクリア</button>
       </div>
 
@@ -811,6 +822,7 @@
     const summaryFields = document.getElementById("summaryFields");
 
     const saveSummaryBtn = document.getElementById("saveSummaryBtn");
+    const resetSubmissionBtn = document.getElementById("resetSubmissionBtn");
     const clearSummaryBtn = document.getElementById("clearSummaryBtn");
     const saveStatus = document.getElementById("saveStatus");
     const footerInfo = document.getElementById("footerInfo");
@@ -836,6 +848,10 @@
 
     function postsRef(){
       return groupShareRef("posts");
+    }
+
+    function postRef(postId){
+      return groupShareRef(`posts/${postId}`);
     }
 
     function settingsRef(){
@@ -972,7 +988,14 @@
 
       statGroup.textContent = currentGroupName();
       statPosts.textContent = String(posts.length);
-      statSummary.textContent = hasSummary ? "済" : "未";
+
+      if (summary.submitted === true){
+        statSummary.textContent = "提出";
+      } else if (hasSummary){
+        statSummary.textContent = "下書";
+      } else {
+        statSummary.textContent = "未";
+      }
 
       const lockedText = isGroupLocked ? ` / fixed:${currentGroupName()}` : " / free-select";
       roomBadge.textContent = `room: ${roomId}${lockedText}`;
@@ -1006,6 +1029,9 @@
                 <span>${esc(label)}</span>
               </div>
               <div class="fieldText ${text ? "" : "empty"}">${text ? esc(text) : "未入力"}</div>
+              <button type="button" class="dangerMiniBtn" data-clear-post-field="${esc(post.postId)}:${n}">
+                この学生の共有欄${n}だけクリア
+              </button>
             </div>
           `;
         }).join("");
@@ -1025,6 +1051,14 @@
           </article>
         `;
       }).join("");
+
+      postList.querySelectorAll("[data-clear-post-field]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const raw = btn.dataset.clearPostField || "";
+          const [postId, fieldNo] = raw.split(":");
+          clearOnePostField(postId, fieldNo);
+        });
+      });
     }
 
     function renderFieldCompare(){
@@ -1077,7 +1111,9 @@
           <div class="summaryField field${n}">
             <label for="summary_${n}">${esc(label)}</label>
             <textarea id="summary_${n}" placeholder="${esc(label)}について、班としてのまとめを書いてください。">${esc(value)}</textarea>
-            <button type="button" class="miniClearBtn" data-clear-summary-field="${n}">共有欄${n}だけクリア</button>
+            <button type="button" class="miniClearBtn" data-clear-summary-field="${n}">
+              班まとめの共有欄${n}だけクリア
+            </button>
           </div>
         `;
       }).join("");
@@ -1090,9 +1126,15 @@
       });
 
       const updatedAt = summary.updatedAt ? timestampToText(summary.updatedAt) : "";
-      saveStatus.textContent = updatedAt
-        ? `保存済み：${updatedAt}`
-        : "まだ保存していません。";
+      const submittedAt = summary.submittedAt ? timestampToText(summary.submittedAt) : "";
+
+      if (summary.submitted === true && submittedAt){
+        saveStatus.textContent = `提出済み：${submittedAt}`;
+      } else if (updatedAt){
+        saveStatus.textContent = `下書き保存あり：${updatedAt}（未提出）`;
+      } else {
+        saveStatus.textContent = "まだ保存していません。";
+      }
     }
 
     function renderAll(){
@@ -1194,19 +1236,86 @@
       }
     }
 
+    async function resetSubmission(){
+      if (isGroupLocked){
+        state.selectedGroupId = fixedGroupId;
+      }
+
+      const ok = confirm(
+        "提出を取り消しますか？\n\n" +
+        "班まとめ本文は残ります。\n" +
+        "教員画面では未提出に戻ります。\n" +
+        "もう一度「教員に提出 / 再提出」を押すと再提出できます。"
+      );
+
+      if (!ok) return;
+
+      resetSubmissionBtn.disabled = true;
+      saveStatus.textContent = "提出を取り消し中です…";
+
+      try {
+        await update(summaryRef(state.selectedGroupId), {
+          submitted: false,
+          submittedAt: null,
+          updatedAt: Date.now()
+        });
+
+        saveStatus.textContent = "提出を取り消しました。本文は残っています。再提出できます。";
+        alert("提出を取り消しました。");
+      } catch(e) {
+        console.error(e);
+        saveStatus.textContent = "提出の取り消しに失敗しました。通信状態を確認してください。";
+        alert("提出の取り消しに失敗しました。");
+      } finally {
+        resetSubmissionBtn.disabled = false;
+      }
+    }
+
+    async function clearOnePostField(postId, n){
+      const fieldNo = Number(n);
+
+      if (!postId) return;
+      if (!fieldNo || fieldNo < 1 || fieldNo > 5) return;
+
+      const ok = confirm(
+        `この学生投稿の共有欄${fieldNo}だけをクリアしますか？\n\n` +
+        "Firebase上の保存済み投稿も空になります。"
+      );
+
+      if (!ok) return;
+
+      saveStatus.textContent = `学生投稿の共有欄${fieldNo}をクリア中です…`;
+
+      try {
+        await update(postRef(postId), {
+          [`text_${fieldNo}`]: "",
+          updatedAt: Date.now()
+        });
+
+        saveStatus.textContent = `学生投稿の共有欄${fieldNo}をクリアしました。`;
+      } catch(e) {
+        console.error(e);
+        saveStatus.textContent = `学生投稿の共有欄${fieldNo}のクリアに失敗しました。`;
+        alert("クリアに失敗しました。通信状態を確認してください。");
+      }
+    }
+
     async function clearOneSummaryField(n){
       const fieldNo = Number(n);
 
       if (!fieldNo || fieldNo < 1 || fieldNo > 5) return;
 
-      const ok = confirm(`共有欄${fieldNo}だけをクリアしますか？\nFirebase上の保存済みデータも空になります。`);
+      const ok = confirm(
+        `班まとめの共有欄${fieldNo}だけをクリアしますか？\n\n` +
+        "Firebase上の保存済み班まとめも空になります。"
+      );
 
       if (!ok) return;
 
       const el = document.getElementById(`summary_${fieldNo}`);
       if (el) el.value = "";
 
-      saveStatus.textContent = `共有欄${fieldNo}をクリア中です…`;
+      saveStatus.textContent = `班まとめの共有欄${fieldNo}をクリア中です…`;
 
       try {
         await update(summaryRef(state.selectedGroupId), {
@@ -1214,10 +1323,10 @@
           updatedAt: Date.now()
         });
 
-        saveStatus.textContent = `共有欄${fieldNo}をクリアしました。`;
+        saveStatus.textContent = `班まとめの共有欄${fieldNo}をクリアしました。`;
       } catch(e) {
         console.error(e);
-        saveStatus.textContent = `共有欄${fieldNo}のクリアに失敗しました。`;
+        saveStatus.textContent = `班まとめの共有欄${fieldNo}のクリアに失敗しました。`;
         alert("クリアに失敗しました。通信状態を確認してください。");
       }
     }
@@ -1232,7 +1341,7 @@
         if (el) el.value = "";
       }
 
-      saveStatus.textContent = "入力欄を全てクリアしました。保存する場合は「教員に提出」を押してください。";
+      saveStatus.textContent = "入力欄を全てクリアしました。保存する場合は「教員に提出 / 再提出」を押してください。";
     }
 
     groupSelect.onchange = () => {
@@ -1266,6 +1375,10 @@
 
     saveSummaryBtn.onclick = () => {
       saveSummary();
+    };
+
+    resetSubmissionBtn.onclick = () => {
+      resetSubmission();
     };
 
     clearSummaryBtn.onclick = () => {
