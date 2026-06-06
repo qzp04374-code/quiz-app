@@ -1,4 +1,4 @@
-    <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
@@ -288,6 +288,15 @@
     .grayBtn {
       background: #475569;
       box-shadow: 0 12px 28px rgba(71,85,105,.18);
+    }
+
+    .miniClearBtn {
+      margin-top: 10px;
+      padding: 10px 13px;
+      border-radius: 14px;
+      font-size: 13px;
+      background: #64748b;
+      box-shadow: 0 8px 20px rgba(71,85,105,.16);
     }
 
     .tabPanel {
@@ -627,7 +636,8 @@
       }
 
       .summaryActions button,
-      .setupGrid button {
+      .setupGrid button,
+      .miniClearBtn {
         width: 100%;
       }
     }
@@ -1067,9 +1077,17 @@
           <div class="summaryField field${n}">
             <label for="summary_${n}">${esc(label)}</label>
             <textarea id="summary_${n}" placeholder="${esc(label)}について、班としてのまとめを書いてください。">${esc(value)}</textarea>
+            <button type="button" class="miniClearBtn" data-clear-summary-field="${n}">共有欄${n}だけクリア</button>
           </div>
         `;
       }).join("");
+
+      summaryFields.querySelectorAll("[data-clear-summary-field]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const n = btn.dataset.clearSummaryField;
+          clearOneSummaryField(n);
+        });
+      });
 
       const updatedAt = summary.updatedAt ? timestampToText(summary.updatedAt) : "";
       saveStatus.textContent = updatedAt
@@ -1174,10 +1192,38 @@
       } finally {
         saveSummaryBtn.disabled = false;
       }
-    }    
+    }
+
+    async function clearOneSummaryField(n){
+      const fieldNo = Number(n);
+
+      if (!fieldNo || fieldNo < 1 || fieldNo > 5) return;
+
+      const ok = confirm(`共有欄${fieldNo}だけをクリアしますか？\nFirebase上の保存済みデータも空になります。`);
+
+      if (!ok) return;
+
+      const el = document.getElementById(`summary_${fieldNo}`);
+      if (el) el.value = "";
+
+      saveStatus.textContent = `共有欄${fieldNo}をクリア中です…`;
+
+      try {
+        await update(summaryRef(state.selectedGroupId), {
+          [`summary_${fieldNo}`]: "",
+          updatedAt: Date.now()
+        });
+
+        saveStatus.textContent = `共有欄${fieldNo}をクリアしました。`;
+      } catch(e) {
+        console.error(e);
+        saveStatus.textContent = `共有欄${fieldNo}のクリアに失敗しました。`;
+        alert("クリアに失敗しました。通信状態を確認してください。");
+      }
+    }
 
     function clearSummaryInputs(){
-      const ok = confirm("入力中の班まとめ欄をクリアしますか？\nFirebase上の保存済みデータは、保存ボタンを押すまで変更されません。");
+      const ok = confirm("入力中の班まとめ欄を全てクリアしますか？\nFirebase上の保存済みデータは、教員に提出するまで変更されません。");
 
       if (!ok) return;
 
@@ -1186,7 +1232,7 @@
         if (el) el.value = "";
       }
 
-      saveStatus.textContent = "入力欄をクリアしました。保存する場合は「班まとめを保存」を押してください。";
+      saveStatus.textContent = "入力欄を全てクリアしました。保存する場合は「教員に提出」を押してください。";
     }
 
     groupSelect.onchange = () => {
