@@ -914,11 +914,11 @@
     }
 
 　　.groupSummaryList {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 14px;
-      margin-top: 14px;
-    }
+    　display: grid;
+  　　grid-template-columns: repeat(2, minmax(0, 1fr));
+  　　gap: 14px;
+  　　margin-top: 14px;
+　　}
 
     .groupSummaryCard {
       background: rgba(255,255,255,.04);
@@ -2304,17 +2304,10 @@
     }
 
     function hasSubmittedSummary(summary){
-      if (!summary) return false;
+  　　if (!summary) return false;
 
-      if (summary.submitted === true) return true;
-
-      for (let i = 1; i <= 5; i++){
-        const text = String(summary[`summary_${i}`] || "").trim();
-        if (text) return true;
-      }
-
-      return false;
-    }
+  　　return summary.submitted === true;
+　　}
 
     function countPostsForGroup(groupId){
       const posts = state.groupSharePosts || {};
