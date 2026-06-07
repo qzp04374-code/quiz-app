@@ -1875,17 +1875,14 @@
     }
 
     async function toggleQR(){
-      const isQR = (state.activity?.qr === true);
-
+      const isQR = (state.activity?.qr === true || state.activity?.view === "qr");
+    
       if (!isQR){
         const session = Date.now().toString(36);
-
+    
         await update(activityRef(), {
           qr: true,
           view: "qr",
-          status: "ready",
-          mode: null,
-          config: null,
           session: session,
           display: {
             type: "qr",
@@ -1897,16 +1894,26 @@
             updatedAt: Date.now()
           }
         });
-
+    
         return;
       }
-
+    
+      const previousMode = state.activity?.mode || null;
+    
+      let nextView = "standby";
+    
+      if (previousMode === "ox" || previousMode === "five" || previousMode === "text"){
+        nextView = "quiz";
+      }
+    
+      if (previousMode === "groupshare"){
+        nextView = "groupshare";
+      }
+    
       await update(activityRef(), {
         qr: false,
-        view: "standby",
-        status: "ready",
-        mode: null,
-        config: null
+        view: nextView,
+        display: null
       });
     }
 
@@ -1944,8 +1951,6 @@
     qr: true,
     view: "qr",
     status: "ready",
-    mode: null,
-    config: null,
     session,
     display: {
       type: "qr",
@@ -2748,9 +2753,10 @@ function renderGroupShareSummaries(){
     btnT60.onclick  = () => startTimer(60);
     btnTOff.onclick = () => stopTimer();
 
-    document.getElementById("projectionBtn").onclick = () => {
+    setClickById("projectionBtn", async () => {
+      await setDisplayQR("student");
       window.open(getDisplayUrl(), "_blank");
-    };
+    });
     
     const groupShareNewBtn = document.getElementById("groupShareNewBtn");
     const showGroupSummaryOnDisplayBtn = document.getElementById("showGroupSummaryOnDisplayBtn");
