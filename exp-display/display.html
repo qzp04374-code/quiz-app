@@ -2997,6 +2997,7 @@ onValue(activityRef, snap => {
     (a.qr === "true") ||
     (a.view === "qr");
   
+  const wasQR = isQR;
   isQR = qrOn;
   
   if (qrOn) {
@@ -3018,8 +3019,24 @@ onValue(activityRef, snap => {
     document.body.classList.remove("show-qr");
     document.body.classList.remove("qr-open");
   
-    // ★QRから戻った瞬間に、保持している問題を即再描画する
-    if (currentView === "quiz") {
+    // ★QRからquizへ戻った瞬間は、同じqidでも必ず購読を張り直す
+    if (wasQR && currentView === "quiz") {
+      if (unsubQ) {
+        unsubQ();
+        unsubQ = null;
+      }
+  
+      subscribedQid = null;
+      currentQuestion = null;
+  
+      applyCurrentQid();
+      updateAnswerUI();
+      recomputeAndRenderFromAnswers(lastAnswers);
+      requestFitQuestion();
+    }
+  
+    // ★QR以外でquiz状態になった場合も、問題を再反映
+    if (!wasQR && currentView === "quiz") {
       applyCurrentQid();
       updateAnswerUI();
       recomputeAndRenderFromAnswers(lastAnswers);
@@ -3089,7 +3106,7 @@ onValue(activityRef, snap => {
   applyCurrentQid();
 
   // 即再描画
-  if (a.qr !== true){
+  if (!qrOn){
     // view/mode/statusが変わったタイミングで即描画（TEXTのclosed表示を確実に反映）
     recomputeAndRenderFromAnswers(lastAnswers);
   }
