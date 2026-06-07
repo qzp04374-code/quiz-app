@@ -1908,25 +1908,6 @@
       });
     }
 
-async function showGroupShareSummaryOnDisplay(){
-  await update(activityRef(), {
-    qr: false,
-    view: "groupshare-summary",
-    status: "closed",
-    mode: "groupshare",
-    config: {
-      type: "groupshare-summary"
-    },
-    timer: { running:false },
-    display: {
-      type: "groupshare-summary",
-      updatedAt: Date.now()
-    }
-  });
-
-  alert("displayに提出済みの班まとめを表示しました。");
-}
-
     async function setDisplayQR(target, groupId=null){
   let qrUrl = getStudentUrl();
   let qrTitle = "参加用QRコード";
