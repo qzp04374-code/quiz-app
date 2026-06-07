@@ -981,15 +981,112 @@
       border: 1px solid rgba(148,163,184,.30);
     }
 
-    /* ===== 未回答者パネル ===== */
-    #unansweredPanel{
+    /* ===== GroupShareまとめ display表示 ===== */
+    #groupShareDisplayPanel{
       display:none;
-      margin-top:8px;
-      padding:10px 12px;
-      border-radius:14px;
-      background:rgba(239,68,68,.08);
-      border:1px solid rgba(239,68,68,.22);
+      flex:1;
+      min-height:0;
+      border-radius:22px;
+      background:var(--panel);
+      border:1px solid var(--line);
+      box-shadow:0 18px 50px rgba(0,0,0,.55);
+      padding:22px;
       box-sizing:border-box;
+      overflow:auto;
+    }
+    
+    body.groupshare-summary #mainGrid{
+      display:none !important;
+    }
+    
+    body.groupshare-summary #groupShareDisplayPanel{
+      display:block;
+    }
+    
+    .groupShareDisplayHeader{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-end;
+      gap:18px;
+      margin-bottom:18px;
+      border-bottom:1px solid rgba(255,255,255,.12);
+      padding-bottom:14px;
+    }
+    
+    .groupShareDisplayTitle{
+      font-size:clamp(28px, 4vw, 54px);
+      font-weight:1000;
+      letter-spacing:.06em;
+      margin:0;
+    }
+    
+    .groupShareDisplaySub{
+      color:var(--muted);
+      font-size:clamp(14px, 1.7vw, 22px);
+      font-weight:800;
+    }
+    
+    .groupShareDisplayGrid{
+      display:grid;
+      grid-template-columns:repeat(2, minmax(0, 1fr));
+      gap:16px;
+    }
+    
+    .groupShareDisplayCard{
+      border-radius:20px;
+      background:rgba(255,255,255,.055);
+      border:1px solid rgba(34,197,94,.30);
+      padding:18px;
+      box-sizing:border-box;
+      break-inside:avoid;
+    }
+    
+    .groupShareDisplayCardTitle{
+      font-size:clamp(22px, 2.5vw, 34px);
+      font-weight:1000;
+      margin-bottom:8px;
+    }
+    
+    .groupShareDisplayMeta{
+      font-size:13px;
+      color:var(--muted);
+      margin-bottom:12px;
+      font-weight:800;
+    }
+    
+    .groupShareDisplayField{
+      border-top:1px solid rgba(255,255,255,.10);
+      padding-top:10px;
+      margin-top:10px;
+    }
+    
+    .groupShareDisplayFieldName{
+      color:#93c5fd;
+      font-size:clamp(14px, 1.5vw, 20px);
+      font-weight:1000;
+      margin-bottom:5px;
+    }
+    
+    .groupShareDisplayText{
+      white-space:pre-wrap;
+      word-break:break-word;
+      line-height:1.55;
+      font-size:clamp(18px, 2vw, 30px);
+      font-weight:800;
+    }
+    
+    .groupShareDisplayEmpty{
+      font-size:clamp(24px, 3vw, 42px);
+      color:var(--muted);
+      font-weight:1000;
+      text-align:center;
+      padding:80px 20px;
+    }
+    
+    @media (max-width: 980px){
+      .groupShareDisplayGrid{
+        grid-template-columns:1fr;
+      }
     }
     #unansweredPanel.show{ display:block; }
     #unansweredTitle{
@@ -1108,6 +1205,18 @@
         <div id="textAnswersTitle">文字回答（解答終了で表示）</div>
         <div id="textAnswersList"></div>
       </div>
+    </div>
+
+    <div id="groupShareDisplayPanel">
+      <div class="groupShareDisplayHeader">
+        <div>
+          <h1 class="groupShareDisplayTitle">GroupShare 班まとめ</h1>
+          <div class="groupShareDisplaySub">提出済みの班まとめを表示しています</div>
+        </div>
+        <div class="groupShareDisplaySub" id="groupShareDisplayCount">提出済 0 / 10</div>
+      </div>
+
+      <div id="groupShareDisplayList" class="groupShareDisplayGrid"></div>
     </div>
   </div>
 
@@ -1698,11 +1807,111 @@ ttsBtn.onclick = async () => {
     };
   }
 
-    function uiLabel(key){
-      const k = String(key).trim().toUpperCase();
-      if (k === "O") return "○";
-      if (k === "X") return "✕";
-      return k;
+    const DISPLAY_GROUP_COUNT = 10;
+    
+    const DISPLAY_GROUP_LABELS = {
+      "1": "🐶 いぬ班",
+      "2": "🐱 ねこ班",
+      "3": "🐰 うさぎ班",
+      "4": "🦊 きつね班",
+      "5": "🐼 ぱんだ班",
+      "6": "🐨 こあら班",
+      "7": "🐵 さる班",
+      "8": "🦁 らいおん班",
+      "9": "🐧 ぺんぎん班",
+      "10": "🐢 かめ班"
+    };
+    
+    function escHtml(s){
+      return String(s ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#39;");
+    }
+    
+    function displayGroupLabel(groupId){
+      return DISPLAY_GROUP_LABELS[String(groupId)] || `${groupId}班`;
+    }
+    
+    function hasSubmittedSummary(summary){
+      if (!summary || typeof summary !== "object") return false;
+    
+      if (summary.submitted === true) return true;
+      if (summary.status === "submitted") return true;
+      if (summary.submittedAt) return true;
+    
+      return false;
+    }
+    
+    function formatDisplayTime(ts){
+      if (!ts) return "—";
+    
+      const d = new Date(Number(ts));
+      if (Number.isNaN(d.getTime())) return "—";
+    
+      return d.toLocaleString("ja-JP", {
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit"
+      });
+    }
+    
+    function renderGroupShareDisplay(){
+      const list = document.getElementById("groupShareDisplayList");
+      const count = document.getElementById("groupShareDisplayCount");
+    
+      if (!list) return;
+    
+      let html = "";
+      let submittedCount = 0;
+    
+      for (let i = 1; i <= DISPLAY_GROUP_COUNT; i++){
+        const groupId = String(i);
+        const summary = groupShareSummaries?.[groupId] || null;
+    
+        if (!hasSubmittedSummary(summary)) continue;
+    
+        submittedCount++;
+    
+        let fieldsHtml = "";
+    
+        for (let n = 1; n <= 5; n++){
+          const text = String(summary?.[`summary_${n}`] || "").trim();
+    
+          fieldsHtml += `
+            <div class="groupShareDisplayField">
+              <div class="groupShareDisplayFieldName">共有欄${n}</div>
+              <div class="groupShareDisplayText">${text ? escHtml(text) : "—"}</div>
+            </div>
+          `;
+        }
+    
+        html += `
+          <section class="groupShareDisplayCard">
+            <div class="groupShareDisplayCardTitle">${displayGroupLabel(groupId)}</div>
+            <div class="groupShareDisplayMeta">
+              提出時刻：${formatDisplayTime(summary?.submittedAt || summary?.updatedAt)}
+            </div>
+            ${fieldsHtml}
+          </section>
+        `;
+      }
+    
+      if (count) count.textContent = `提出済 ${submittedCount} / ${DISPLAY_GROUP_COUNT}`;
+    
+      if (submittedCount === 0){
+        list.innerHTML = `
+          <div class="groupShareDisplayEmpty">
+            まだ提出済みの班まとめはありません
+          </div>
+        `;
+        return;
+      }
+    
+      list.innerHTML = html;
     }
 
     // ===== ABのみ問題を OX に統一する（display側の正規化）=====
@@ -1756,6 +1965,7 @@ ttsBtn.onclick = async () => {
     const qidRef      = ref(db, `rooms/${room}/quiz/current_question_id`);
     const answersRef  = ref(db, `rooms/${room}/answers`);
     const rosterRef   = ref(db, `rooms/${room}/activity/roster`);
+    const groupShareSummariesRef = ref(db, `rooms/${room}/groupShare/summaries`);
     const qRef = (qid) => ref(db, `rooms/${room}/questions/${qid}`);
 
     // display起動で強制QR
@@ -1764,15 +1974,34 @@ ttsBtn.onclick = async () => {
     let currentSession = ""; // ★追加：activity.session を保持
 
     function buildStudentUrl(session){
-    const base = `https://qzp04374-code.github.io/quiz-app/exp-display/student.html?room=${encodeURIComponent(room)}`;
-    return session ? `${base}&s=${encodeURIComponent(session)}` : base;
+      const base = `https://qzp04374-code.github.io/quiz-app/exp-display/student.html?room=${encodeURIComponent(room)}`;
+      return session ? `${base}&s=${encodeURIComponent(session)}` : base;
+    }
+    
+    function buildDisplayQRUrl(){
+      const display = currentDisplay || {};
+      const url = String(display.qrUrl || "").trim();
+    
+      if (url) return url;
+    
+      return buildStudentUrl(currentSession);
     }
        
     function safeDrawQR(){
       try{
         if (!qrDiv) return;
         qrDiv.innerHTML = "";
-
+    
+        const display = currentDisplay || {};
+        const title = String(display.qrTitle || "参加用QRコード");
+        const hint = String(display.qrHint || "スマホで読み取って参加");
+    
+        const qrTitleEl = document.querySelector(".qrTitle");
+        const qrHintEl = document.querySelector(".qrHint");
+    
+        if (qrTitleEl) qrTitleEl.textContent = title;
+        if (qrHintEl) qrHintEl.textContent = hint;
+    
         // QRCode.js が落ちてる／読み込み失敗でも全停止させない
         if (!window.QRCode){
           qrDiv.innerHTML = `<div style="color:#fca5a5;font-weight:800;">
@@ -1780,9 +2009,9 @@ ttsBtn.onclick = async () => {
           </div>`;
           return;
         }
-
+    
         // eslint-disable-next-line no-undef
-        new window.QRCode(qrDiv, { text: buildStudentUrl(currentSession), width: 520, height: 520 });
+        new window.QRCode(qrDiv, { text: buildDisplayQRUrl(), width: 520, height: 520 });
       }catch(e){
         console.error("QR draw failed:", e);
         try{
@@ -1791,7 +2020,7 @@ ttsBtn.onclick = async () => {
           </div>`;
         }catch(_){}
       }
-    }    
+    } 
 
     // 早めに1回、load後にもう1回（CDN遅延にも強くする）
     safeDrawQR();
@@ -1800,12 +2029,15 @@ ttsBtn.onclick = async () => {
     let isQR = true;
     let currentStatus = "-";
     let lastStatus = null;
-
+    
     let currentMode = null;
     let currentView = "quiz";
+    let currentDisplay = {};
     let choiceOrder = ["A","B","C","D","E"];
     let currentQuestion = null;
     let currentRevealMode = "live"; // ★追加：live / closed
+    
+    let groupShareSummaries = {};
     
     let expectedN = 0;              // ★追加：100%人数（母数）。0なら従来どおり「投票数=母数」
     let lastAnswers = {};
@@ -2725,18 +2957,24 @@ onValue(activityRef, snap => {
   }
 
   currentView = a.view || "qr";
+  currentDisplay = a.display || {};
   timerState = a.timer || null;
   if (timerState && timerState.running && timerState.endsAt) ensureTimerTick();
   else stopTimerTick();
   document.body.classList.toggle("timer-running", !!(timerState && timerState.running && timerState.endsAt));
-
+  
   statusLabel.textContent = `status: ${currentStatus}`;
   document.body.classList.toggle("poll", currentView === "poll");
   document.body.classList.toggle("closed", currentStatus === "closed");
   document.body.classList.toggle("textmode", currentMode === "text");
-
+  document.body.classList.toggle("groupshare-summary", currentView === "groupshare-summary");
+  
   rightTitle.textContent =
    (currentMode === "text") ? "文字入力（件数＋一覧）" : "集計（縦棒）";
+  
+  if (currentView === "groupshare-summary"){
+    renderGroupShareDisplay();
+  }
 
   // ✅QR判定：ONなら表示、ONでなければ必ず非表示（固まり防止）
   const qrOn =
@@ -2798,6 +3036,13 @@ onValue(activityRef, snap => {
     qEl.textContent = "（スタンバイ中… 先生の操作を待っています）";
     cEl.innerHTML = "";
     updateAnswerUI();
+  } else if (currentView === "groupshare-summary"){
+    if (unsubQ) { unsubQ(); unsubQ = null; }
+    currentQuestion = null;
+    qEl.textContent = "";
+    cEl.innerHTML = "";
+    updateAnswerUI();
+    renderGroupShareDisplay();
   } else {
     updateAnswerUI();
   }
@@ -2826,15 +3071,9 @@ onValue(activityRef, snap => {
       rosterCache = snap.exists() ? (snap.val() || {}) : {};
     });
 
-    onValue(answersRef, snap => {
-      const ans = snap.val() || {};
-      lastAnswers = ans;
-
-      const n = Object.keys(ans).length;
-      if (n > lastAnswerTotal) playPoyon();
-      lastAnswerTotal = n;
-
-      recomputeAndRenderFromAnswers(ans);
+    onValue(groupShareSummariesRef, snap => {
+      groupShareSummaries = snap.val() || {};
+      renderGroupShareDisplay();
     });
 
     </script>
