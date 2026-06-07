@@ -1203,7 +1203,8 @@
 
         <div class="actionRow" style="margin-top:18px;">
           <button id="openDisplayBtnFromQR" class="purpleAction">display画面を開く</button>
-          <button id="setDisplayQRBtn" class="orangeAction">displayにQR表示</button>
+          <button id="setDisplayStudentQRBtn" class="orangeAction">displayに学生QR表示</button>
+          <button id="setDisplayGroupQRBtn" class="greenAction">displayにグループ確認QR表示</button>
         </div>
       </div>
     </section>
@@ -1226,8 +1227,10 @@
             </div>
 
             <div class="actionRow">
+              <button id="groupShareNewBtn" class="orangeAction">新しいGroupShareを開始</button>
               <button id="groupShareStartBtn" class="greenAction">GroupShare開始</button>
               <button id="groupShareEndBtn" class="redAction">GroupShare終了</button>
+              <button id="showGroupSummaryOnDisplayBtn" class="purpleAction">displayに班まとめ表示</button>
             </div>
 
             <div id="groupShareStateBox" class="urlBox">状態：—</div>
@@ -1610,6 +1613,7 @@
             <div class="fixedGroupQRActions">
               <button type="button" data-open-group="${groupId}">開く</button>
               <button type="button" data-copy-group="${groupId}">URLコピー</button>
+              <button type="button" data-display-group="${groupId}">display表示</button>
             </div>
           </section>
         `;
@@ -1630,6 +1634,13 @@
           copyText(getFixedGroupUrl(groupId));
         });
       });
+      
+      grid.querySelectorAll("[data-display-group]").forEach(btn => {
+        btn.addEventListener("click", async () => {
+          const groupId = btn.dataset.displayGroup;
+          await setDisplayQR("fixedGroup", groupId);
+        });
+      });
     }
 
     async function copyText(text){
@@ -1641,25 +1652,38 @@
       }
     }
 
-    function setupQRButtons(){
-      const openStudentBtn = document.getElementById("openStudentBtn");
-      const copyStudentBtn = document.getElementById("copyStudentBtn");
-      const openGroupBtn = document.getElementById("openGroupBtn");
-      const copyGroupBtn = document.getElementById("copyGroupBtn");
-      const openDisplayBtnFromQR = document.getElementById("openDisplayBtnFromQR");
-      const setDisplayQRBtn = document.getElementById("setDisplayQRBtn");
-      const openGroupFromGroupShareBtn = document.getElementById("openGroupFromGroupShareBtn");
-      const openStudentFromGroupShareBtn = document.getElementById("openStudentFromGroupShareBtn");
-
-      if (openStudentBtn) openStudentBtn.onclick = () => window.open(getStudentUrl(), "_blank");
-      if (copyStudentBtn) copyStudentBtn.onclick = () => copyText(getStudentUrl());
-      if (openGroupBtn) openGroupBtn.onclick = () => window.open(getGroupUrl(), "_blank");
-      if (copyGroupBtn) copyGroupBtn.onclick = () => copyText(getGroupUrl());
-      if (openDisplayBtnFromQR) openDisplayBtnFromQR.onclick = () => window.open(getDisplayUrl(), "_blank");
-      if (setDisplayQRBtn) setDisplayQRBtn.onclick = async () => await toggleQR();
-      if (openGroupFromGroupShareBtn) openGroupFromGroupShareBtn.onclick = () => window.open(getGroupUrl(), "_blank");
-      if (openStudentFromGroupShareBtn) openStudentFromGroupShareBtn.onclick = () => window.open(getStudentUrl(), "_blank");
-    }
+      function setupQRButtons(){
+        const openStudentBtn = document.getElementById("openStudentBtn");
+        const copyStudentBtn = document.getElementById("copyStudentBtn");
+        const openGroupBtn = document.getElementById("openGroupBtn");
+        const copyGroupBtn = document.getElementById("copyGroupBtn");
+        const openDisplayBtnFromQR = document.getElementById("openDisplayBtnFromQR");
+        const setDisplayStudentQRBtn = document.getElementById("setDisplayStudentQRBtn");
+        const setDisplayGroupQRBtn = document.getElementById("setDisplayGroupQRBtn");
+        const openGroupFromGroupShareBtn = document.getElementById("openGroupFromGroupShareBtn");
+        const openStudentFromGroupShareBtn = document.getElementById("openStudentFromGroupShareBtn");
+      
+        if (openStudentBtn) openStudentBtn.onclick = () => window.open(getStudentUrl(), "_blank");
+        if (copyStudentBtn) copyStudentBtn.onclick = () => copyText(getStudentUrl());
+        if (openGroupBtn) openGroupBtn.onclick = () => window.open(getGroupUrl(), "_blank");
+        if (copyGroupBtn) copyGroupBtn.onclick = () => copyText(getGroupUrl());
+        if (openDisplayBtnFromQR) openDisplayBtnFromQR.onclick = () => window.open(getDisplayUrl(), "_blank");
+      
+        if (setDisplayStudentQRBtn) {
+          setDisplayStudentQRBtn.onclick = async () => {
+            await setDisplayQR("student");
+          };
+        }
+      
+        if (setDisplayGroupQRBtn) {
+          setDisplayGroupQRBtn.onclick = async () => {
+            await setDisplayQR("group");
+          };
+        }
+      
+        if (openGroupFromGroupShareBtn) openGroupFromGroupShareBtn.onclick = () => window.open(getGroupUrl(), "_blank");
+        if (openStudentFromGroupShareBtn) openStudentFromGroupShareBtn.onclick = () => window.open(getStudentUrl(), "_blank");
+      }
 
     async function clearAnswers(){
       await set(answersRef(), {});
@@ -1884,27 +1908,160 @@
       });
     }
 
-    async function startGroupShare(){
-      await ensureGroupShareSettings();
+async function setDisplayQR(target, groupId=null){
+  let qrUrl = getStudentUrl();
+  let qrTitle = "参加用QRコード";
+  let qrHint = "スマホで読み取って参加";
 
-      const aSnap = await get(activityRef());
-      const aNow = aSnap.val() || {};
-      const session = String(aNow.session || "") || Date.now().toString(36);
+  if (target === "group"){
+    qrUrl = getGroupUrl();
+    qrTitle = "グループ確認用QRコード";
+    qrHint = "班を切り替えて確認できます";
+  }
 
-      await update(activityRef(), {
-        status: "open",
-        qr: false,
-        view: "groupshare",
-        mode: "groupshare",
-        config: {
-          type: "groupshare"
-        },
-        timer: { running:false },
-        session
-      });
+  if (target === "fixedGroup"){
+    qrUrl = getFixedGroupUrl(groupId);
+    qrTitle = `${groupLabel(groupId)} QRコード`;
+    qrHint = "この班専用のGroupShare画面です";
+  }
 
-      alert("GroupShareを開始しました。学生用QRから投稿画面に入れます。");
+  const session = Date.now().toString(36);
+
+  await update(activityRef(), {
+    qr: true,
+    view: "qr",
+    status: "ready",
+    mode: null,
+    config: null,
+    session,
+    display: {
+      type: "qr",
+      qrTarget: target,
+      groupId: groupId || null,
+      qrUrl,
+      qrTitle,
+      qrHint,
+      updatedAt: Date.now()
     }
+  });
+
+  alert("displayにQRを表示しました。");
+}
+
+async function showGroupShareSummaryOnDisplay(){
+  await update(activityRef(), {
+    qr: false,
+    view: "groupshare-summary",
+    status: "closed",
+    mode: "groupshare",
+    config: {
+      type: "groupshare-summary"
+    },
+    timer: { running:false },
+    display: {
+      type: "groupshare-summary",
+      updatedAt: Date.now()
+    }
+  });
+
+  alert("displayに提出済みの班まとめを表示しました。");
+}
+
+    async function setDisplayQR(target, groupId=null){
+  let qrUrl = getStudentUrl();
+  let qrTitle = "参加用QRコード";
+  let qrHint = "スマホで読み取って参加";
+
+  if (target === "group"){
+    qrUrl = getGroupUrl();
+    qrTitle = "グループ確認用QRコード";
+    qrHint = "班を切り替えて確認できます";
+  }
+
+  if (target === "fixedGroup"){
+    qrUrl = getFixedGroupUrl(groupId);
+    qrTitle = `${groupLabel(groupId)} QRコード`;
+    qrHint = "この班専用のGroupShare画面です";
+  }
+
+  const session = Date.now().toString(36);
+
+  await update(activityRef(), {
+    qr: true,
+    view: "qr",
+    status: "ready",
+    mode: null,
+    config: null,
+    session,
+    display: {
+      type: "qr",
+      qrTarget: target,
+      groupId: groupId || null,
+      qrUrl,
+      qrTitle,
+      qrHint,
+      updatedAt: Date.now()
+    }
+  });
+
+  alert("displayにQRを表示しました。");
+}
+
+async function showGroupShareSummaryOnDisplay(){
+  await update(activityRef(), {
+    qr: false,
+    view: "groupshare-summary",
+    status: "closed",
+    mode: "groupshare",
+    config: {
+      type: "groupshare-summary"
+    },
+    timer: { running:false },
+    display: {
+      type: "groupshare-summary",
+      updatedAt: Date.now()
+    }
+  });
+
+  alert("displayに提出済みの班まとめを表示しました。");
+}
+
+async function startNewGroupShare(){
+  const ok = confirm(
+    "新しいGroupShareを開始しますか？\n\n" +
+    "現在の個人投稿と班まとめはリセットされます。"
+  );
+
+  if (!ok) return;
+
+  await ensureGroupShareSettings();
+
+  const workId = Date.now().toString(36);
+
+  await set(groupSharePostsRef(), {});
+  await set(groupShareSummariesRef(), {});
+
+  await update(groupShareSettingsRef(), {
+    currentWorkId: workId,
+    updatedAt: Date.now()
+  });
+
+  await update(activityRef(), {
+    status: "open",
+    qr: false,
+    view: "groupshare",
+    mode: "groupshare",
+    groupShareWorkId: workId,
+    config: {
+      type: "groupshare",
+      workId
+    },
+    timer: { running:false },
+    session: workId
+  });
+
+  alert("新しいGroupShareを開始しました。投稿と班まとめをリセットしました。");
+}
 
     async function endGroupShare(){
       const ok = confirm("GroupShareを終了して、学生画面を待機状態に戻しますか？\n投稿データと班まとめは削除されません。");
@@ -2640,6 +2797,21 @@ function renderGroupShareSummaries(){
     document.getElementById("projectionBtn").onclick = () => {
       window.open(getDisplayUrl(), "_blank");
     };
+    
+    const groupShareNewBtn = document.getElementById("groupShareNewBtn");
+    const showGroupSummaryOnDisplayBtn = document.getElementById("showGroupSummaryOnDisplayBtn");
+    
+    if (groupShareNewBtn) {
+      groupShareNewBtn.onclick = async () => {
+        await startNewGroupShare();
+      };
+    }
+    
+    if (showGroupSummaryOnDisplayBtn) {
+      showGroupSummaryOnDisplayBtn.onclick = async () => {
+        await showGroupShareSummaryOnDisplay();
+      };
+    }
 
     document.getElementById("importBtn").onclick = () => {
       window.open(`https://qzp04374-code.github.io/quiz-app/exp-display/import-csv.html?room=${encodeURIComponent(currentRoom)}`, "_blank");
