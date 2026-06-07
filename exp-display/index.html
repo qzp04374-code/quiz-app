@@ -1892,6 +1892,8 @@
             qrUrl: getStudentUrl(),
             qrTitle: "参加用QRコード",
             qrHint: "スマホで読み取って参加",
+            returnView: state.activity?.view || "quiz",
+            returnStatus: state.activity?.status || "open",
             updatedAt: Date.now()
           }
         });
@@ -1900,20 +1902,32 @@
       }
     
       const previousMode = state.activity?.mode || null;
+      const displayState = state.activity?.display || {};
     
-      let nextView = "standby";
+      let nextView = displayState.returnView || "quiz";
+      let nextStatus = displayState.returnStatus || state.activity?.status || "open";
     
-      if (previousMode === "ox" || previousMode === "five" || previousMode === "text"){
+      if (nextView === "qr") {
         nextView = "quiz";
       }
     
-      if (previousMode === "groupshare"){
+      if (previousMode === "groupshare") {
         nextView = "groupshare";
+        nextStatus = "open";
+      }
+    
+      if (previousMode === "ox" || previousMode === "five" || previousMode === "text") {
+        nextView = "quiz";
+    
+        if (nextStatus !== "closed") {
+          nextStatus = "open";
+        }
       }
     
       await update(activityRef(), {
         qr: false,
         view: nextView,
+        status: nextStatus,
         display: null
       });
     }
