@@ -1796,11 +1796,12 @@
       await update(activityRef(), {
         status: "open",
         qr: false,
-        view: "quiz",
+        view: "poll",
         mode,
         config,
         timer: { running:false },
-        session
+        session,
+        display: null
       });
     }
 
@@ -1882,7 +1883,19 @@
         await update(activityRef(), {
           qr: true,
           view: "qr",
-          session: session
+          status: "ready",
+          mode: null,
+          config: null,
+          session: session,
+          display: {
+            type: "qr",
+            qrTarget: "student",
+            groupId: null,
+            qrUrl: getStudentUrl(),
+            qrTitle: "参加用QRコード",
+            qrHint: "スマホで読み取って参加",
+            updatedAt: Date.now()
+          }
         });
 
         return;
