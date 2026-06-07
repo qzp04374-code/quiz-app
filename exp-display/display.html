@@ -2857,7 +2857,7 @@ function applyCurrentQid(){
     return;
   }
 
-  // 同じqidで購読が生きている：購読は張り直さないが、再描画はする
+  // 同じqidで購読が生きている：問題データがあるなら再描画、ないなら張り直す
   if (qid === subscribedQid && unsubQ) {
     if (currentQuestion) {
       qEl.textContent = currentQuestion.question || "";
@@ -2870,26 +2870,31 @@ function applyCurrentQid(){
       } else {
         const norm = normalizeChoicesObj(currentQuestion.choices || {});
         const choicesForUI = norm.obj;
-
+  
         // choiceOrder更新（表示と集計一致）
         if (choicesForUI && typeof choicesForUI === "object"){
           const ord = Object.keys(choicesForUI).map(k => String(k).trim().toUpperCase());
           if (ord.length) choiceOrder = ord;
         }
-
+  
         let ck = currentQuestion.answer ? String(currentQuestion.answer).trim().toUpperCase() : null;
         if (norm.mapAB && ck) ck = mapABtoOXKey(ck);
-
+  
         renderChoices(choicesForUI || {}, ck, currentStatus === "closed");
       }
-
+  
       updateAnswerUI();
       maybeAutoSpeak();
       recomputeAndRenderFromAnswers(lastAnswers);
       applyTuneForCurrentQid();
       requestFitQuestion();
+      return;
     }
-    return;
+  
+    // currentQuestion が空のまま同じqid扱いになると、問題が復元されないため購読を張り直す
+    unsubQ();
+    unsubQ = null;
+    subscribedQid = null;
   }
 
   // ここから「新しいqid」：購読を張り直す
