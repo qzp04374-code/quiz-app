@@ -1125,7 +1125,7 @@
   <div id="buildTag">build: 2026-01-06 / tts-runid-stable</div>
   <div id="toast">解答終了 → 公開</div>
 
-  <div id="qrLayer">
+  <div id="qrLayer" class="hidden">
     <div class="qrBox">
       <div class="qrTitle">参加用QRコード</div>
       <div class="qrHint">スマホで読み取って参加</div>
@@ -2986,19 +2986,23 @@ onValue(activityRef, snap => {
     renderGroupShareDisplay();
   }
 
-  // ✅QR判定：ONなら表示、ONでなければ必ず非表示（固まり防止）
+  // ✅QR判定：ONなら表示、ONでなければ必ず即時非表示（固まり防止）
   const qrOn =
     (a.qr === true) ||
     (a.qr === "true") ||
     (a.view === "qr");
   
+  isQR = qrOn;
+  
   if (qrOn) {
-    safeDrawQR(); // ★追加：session反映して描き直す
+    safeDrawQR(); // session / activity.display 反映して描き直す
     showQR();
   } else {
-    hideQRWithFade();
+    if (qrLayer) {
+      qrLayer.classList.add("hidden");
+    }
   }
-
+  
   const cfgChoices = (a.config && Array.isArray(a.config.choices)) ? a.config.choices : null;
   if (cfgChoices && cfgChoices.length){
     choiceOrder = cfgChoices.map(x => String(x).trim().toUpperCase());
