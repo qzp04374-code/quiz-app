@@ -3003,8 +3003,27 @@ onValue(activityRef, snap => {
     safeDrawQR(); // session / activity.display 反映して描き直す
     showQR();
   } else {
+    // ★重要：QRレイヤーだけでなく、QR表示用に残った画面状態も解除する
     if (qrLayer) {
       qrLayer.classList.add("hidden");
+      qrLayer.style.display = "";
+      qrLayer.style.opacity = "";
+      qrLayer.style.pointerEvents = "";
+    }
+  
+    document.body.classList.remove("qr");
+    document.body.classList.remove("qrmode");
+    document.body.classList.remove("qrMode");
+    document.body.classList.remove("showQR");
+    document.body.classList.remove("show-qr");
+    document.body.classList.remove("qr-open");
+  
+    // ★QRから戻った瞬間に、保持している問題を即再描画する
+    if (currentView === "quiz") {
+      applyCurrentQid();
+      updateAnswerUI();
+      recomputeAndRenderFromAnswers(lastAnswers);
+      requestFitQuestion();
     }
   }
   
