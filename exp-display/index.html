@@ -1789,9 +1789,8 @@
       else if (mode === "ox") config = { choices:["O","X"] };
       else if (mode === "five") config = { choices:["A","B","C","D","E"] };
 
-      const aSnap = await get(activityRef());
-      const aNow = aSnap.val() || {};
-      const session = String(aNow.session || "") || Date.now().toString(36);
+      // ★修正：sessionは常に新しく生成（display側が新しい出題と確実に認識するため）
+      const session = Date.now().toString(36);
 
       await update(activityRef(), {
         status: "open",
@@ -1800,9 +1799,12 @@
         mode,
         config,
         timer: { running:false },
-        session,
-        display: null
+        session
       });
+
+      // ★修正：display フィールドを remove() で確実に削除
+      // update()にnullを渡すだけでは削除されない場合があるため
+      await remove(ref(db, `rooms/${currentRoom}/activity/display`));
     }
 
     async function startQuickPoll(mode){
@@ -1927,9 +1929,11 @@
       await update(activityRef(), {
         qr: false,
         view: nextView,
-        status: nextStatus,
-        display: null
+        status: nextStatus
       });
+
+      // ★修正：display フィールドを remove() で確実に削除
+      await remove(ref(db, `rooms/${currentRoom}/activity/display`));
     }
 
     async function ensureGroupShareSettings(){
