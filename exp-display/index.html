@@ -1796,7 +1796,7 @@
       await update(activityRef(), {
         status: "open",
         qr: false,
-        view: "poll",
+        view: "quiz",
         mode,
         config,
         timer: { running:false },
@@ -1825,7 +1825,8 @@
         mode,
         config,
         timer: { running:false },
-        session
+        session,
+        display: null
       });
     }
 
@@ -1950,7 +1951,6 @@
   await update(activityRef(), {
     qr: true,
     view: "qr",
-    status: "ready",
     session,
     display: {
       type: "qr",
