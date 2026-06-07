@@ -2860,8 +2860,9 @@ function applyCurrentQid(){
   // 同じqidで購読が生きている：購読は張り直さないが、再描画はする
   if (qid === subscribedQid && unsubQ) {
     if (currentQuestion) {
+      qEl.textContent = currentQuestion.question || "";
       cEl.innerHTML = ""; // 前の選択肢DOM残り事故防止
-
+  
       const isTextMode = (currentMode === "text") || document.body.classList.contains("textmode");
       if (isTextMode){
         choiceOrder = [];
