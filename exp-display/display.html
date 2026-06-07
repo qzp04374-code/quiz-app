@@ -2486,17 +2486,40 @@ tpQMaxVal.textContent = String(qMax);
     }
 
     function showQR(){
-      isQR = true;
-      qrLayer.classList.remove("hidden");
-      document.getElementById("mainGrid").style.visibility = "hidden";
+  isQR = true;
+
+  if (qrLayer) {
+    qrLayer.classList.remove("hidden");
+    qrLayer.style.display = "";
+    qrLayer.style.opacity = "";
+    qrLayer.style.pointerEvents = "";
+  }
+
+  const mainGrid = document.getElementById("mainGrid");
+  if (mainGrid) {
+    mainGrid.style.visibility = "hidden";
+  }
+}
+
+function hideQRWithFade(){
+  isQR = false;
+
+  if (qrLayer) {
+    qrLayer.classList.add("hidden");
+    qrLayer.style.display = "";
+    qrLayer.style.opacity = "";
+    qrLayer.style.pointerEvents = "";
+  }
+
+  setTimeout(() => {
+    if (!isQR) {
+      const mainGrid = document.getElementById("mainGrid");
+      if (mainGrid) {
+        mainGrid.style.visibility = "visible";
+      }
     }
-    function hideQRWithFade(){
-      isQR = false;
-      qrLayer.classList.add("hidden");
-      setTimeout(()=>{
-        if (!isQR) document.getElementById("mainGrid").style.visibility = "visible";
-      }, 460);
-    }
+  }, 460);
+}
 
     function placeAnswerBoxTop(isTop){
       if (!leftScroll) return;
@@ -3014,12 +3037,18 @@ onValue(activityRef, snap => {
     safeDrawQR(); // session / activity.display 反映して描き直す
     showQR();
   } else {
-    // ★重要：QRレイヤーだけでなく、QR表示用に残った画面状態も解除する
+    // ★QR OFF時は、必ずQRレイヤーを消す
     if (qrLayer) {
       qrLayer.classList.add("hidden");
       qrLayer.style.display = "";
       qrLayer.style.opacity = "";
       qrLayer.style.pointerEvents = "";
+    }
+  
+    // ★最重要：showQR() で hidden にした本体画面を必ず戻す
+    const mainGrid = document.getElementById("mainGrid");
+    if (mainGrid) {
+      mainGrid.style.visibility = "visible";
     }
   
     document.body.classList.remove("qr");
