@@ -1981,6 +1981,7 @@ ttsBtn.onclick = async () => {
     // QR表示はindex.html側の操作だけで制御する
 
     let currentSession = ""; // ★追加：activity.session を保持
+    let prevSession = "";    // ★修正追加：session変化検知用
     let currentDisplay = {};
     
     function buildStudentUrl(session){
@@ -2962,8 +2963,17 @@ onValue(activityRef, snap => {
   currentMode = a.mode || null;
   currentRevealMode = (a.revealMode === "closed") ? "closed" : "live";
   // ★ここに追加
+  prevSession = currentSession;
   currentSession = String(a.session || "");
   expectedN = Math.max(0, Math.floor(Number(a.expectedN || 0)));
+
+  // ★修正追加：sessionが変わった＝新しい出題 → 問題購読を強制リセット
+  // これにより「QRを消した後に次の問題を押してもdisplayに問題が出ない」バグを修正
+  if (prevSession && currentSession && prevSession !== currentSession) {
+    if (unsubQ) { unsubQ(); unsubQ = null; }
+    subscribedQid = null;
+    currentQuestion = null;
+  }
 
   // ★安全弁：cElが存在するときだけ消す（存在しないと全停止→QRが出ない）
   if (currentMode === "text" && typeof cEl !== "undefined" && cEl) {
