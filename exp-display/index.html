@@ -1929,42 +1929,46 @@
       });
     }
 
-    async function setDisplayQR(target, groupId=null){
-  let qrUrl = getStudentUrl();
-  let qrTitle = "参加用QRコード";
-  let qrHint = "スマホで読み取って参加";
-
-  if (target === "group"){
-    qrUrl = getGroupUrl();
-    qrTitle = "グループ確認用QRコード";
-    qrHint = "班を切り替えて確認できます";
-  }
-
-  if (target === "fixedGroup"){
-    qrUrl = getFixedGroupUrl(groupId);
-    qrTitle = `${groupLabel(groupId)} QRコード`;
-    qrHint = "この班専用のGroupShare画面です";
-  }
-
-  const session = Date.now().toString(36);
-
-  await update(activityRef(), {
-    qr: true,
-    view: "qr",
-    session,
-    display: {
-      type: "qr",
-      qrTarget: target,
-      groupId: groupId || null,
-      qrUrl,
-      qrTitle,
-      qrHint,
-      updatedAt: Date.now()
+    async function setDisplayQR(target, groupId=null, options={}){
+      const silent = options?.silent === true;
+    
+      let qrUrl = getStudentUrl();
+      let qrTitle = "参加用QRコード";
+      let qrHint = "スマホで読み取って参加";
+    
+      if (target === "group"){
+        qrUrl = getGroupUrl();
+        qrTitle = "グループ確認用QRコード";
+        qrHint = "班を切り替えて確認できます";
+      }
+    
+      if (target === "fixedGroup"){
+        qrUrl = getFixedGroupUrl(groupId);
+        qrTitle = `${groupLabel(groupId)} QRコード`;
+        qrHint = "この班専用のGroupShare画面です";
+      }
+    
+      const session = Date.now().toString(36);
+    
+      await update(activityRef(), {
+        qr: true,
+        view: "qr",
+        session,
+        display: {
+          type: "qr",
+          qrTarget: target,
+          groupId: groupId || null,
+          qrUrl,
+          qrTitle,
+          qrHint,
+          updatedAt: Date.now()
+        }
+      });
+    
+      if (!silent) {
+        alert("displayにQRを表示しました。");
+      }
     }
-  });
-
-  alert("displayにQRを表示しました。");
-}
 
 async function showGroupShareSummaryOnDisplay(){
   await update(activityRef(), {
@@ -2402,14 +2406,23 @@ async function startNewGroupShare(){
       }).join("") || `<div style="opacity:.75;">まだ回答がありません</div>`;
     }
 
+    function esc(s){
+      return String(s ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+    
     function formatGroupShareTime(ts){
       if (!ts) return "—";
-
+    
       try {
         const d = new Date(Number(ts));
-
+    
         if (Number.isNaN(d.getTime())) return "—";
-
+    
         return d.toLocaleString("ja-JP", {
           hour: "2-digit",
           minute: "2-digit"
@@ -2753,10 +2766,15 @@ function renderGroupShareSummaries(){
     btnT60.onclick  = () => startTimer(60);
     btnTOff.onclick = () => stopTimer();
 
-    setClickById("projectionBtn", async () => {
-      await setDisplayQR("student");
-      window.open(getDisplayUrl(), "_blank");
-    });
+    document.getElementById("projectionBtn").onclick = async () => {
+      const displayWin = window.open(getDisplayUrl(), "_blank");
+    
+      await setDisplayQR("student", null, { silent: true });
+    
+      if (!displayWin) {
+        alert("display画面のポップアップがブロックされました。ブラウザのポップアップ許可を確認してください。");
+      }
+    };
     
     const groupShareNewBtn = document.getElementById("groupShareNewBtn");
     const showGroupSummaryOnDisplayBtn = document.getElementById("showGroupSummaryOnDisplayBtn");
