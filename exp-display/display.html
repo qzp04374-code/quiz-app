@@ -3159,10 +3159,26 @@ onValue(activityRef, snap => {
  });
 
     // answers：保存＋音＋再描画
+    onValue(answersRef, snap => {
+      const nextAnswers = snap.val() || {};
+      const prevTotal = Object.keys(lastAnswers || {}).length;
+      const nextTotal = Object.keys(nextAnswers || {}).length;
+
+      lastAnswers = nextAnswers;
+
+      if (nextTotal > prevTotal) {
+        playPoyon();
+      }
+
+      recomputeAndRenderFromAnswers(lastAnswers);
+      syncRevealUI();
+    });
+
     // ===== roster 購読: uid → { emoji, tag, color } =====
     let rosterCache = {}; // { uid: { emoji, tag, color } }
     onValue(rosterRef, snap => {
       rosterCache = snap.exists() ? (snap.val() || {}) : {};
+      recomputeAndRenderFromAnswers(lastAnswers);
     });
 
     onValue(groupShareSummariesRef, snap => {
