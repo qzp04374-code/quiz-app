@@ -1914,6 +1914,15 @@ ttsBtn.onclick = async () => {
       list.innerHTML = html;
     }
 
+    function uiLabel(key){
+      const k = String(key).trim().toUpperCase();
+    
+      if (k === "O") return "○";
+      if (k === "X") return "✕";
+    
+      return k;
+    }
+    
     // ===== ABのみ問題を OX に統一する（display側の正規化）=====
     function isABOnlyChoices(obj){
       if (!obj || typeof obj !== "object") return false;
@@ -1968,11 +1977,12 @@ ttsBtn.onclick = async () => {
     const groupShareSummariesRef = ref(db, `rooms/${room}/groupShare/summaries`);
     const qRef = (qid) => ref(db, `rooms/${room}/questions/${qid}`);
 
-    // display起動で強制QR
-    update(activityRef, { qr: true }).catch(()=>{});
+    // display起動時はFirebaseを書き換えない
+    // QR表示はindex.html側の操作だけで制御する
 
     let currentSession = ""; // ★追加：activity.session を保持
-
+    let currentDisplay = {};
+    
     function buildStudentUrl(session){
       const base = `https://qzp04374-code.github.io/quiz-app/exp-display/student.html?room=${encodeURIComponent(room)}`;
       return session ? `${base}&s=${encodeURIComponent(session)}` : base;
@@ -2032,7 +2042,6 @@ ttsBtn.onclick = async () => {
     
     let currentMode = null;
     let currentView = "quiz";
-    let currentDisplay = {};
     let choiceOrder = ["A","B","C","D","E"];
     let currentQuestion = null;
     let currentRevealMode = "live"; // ★追加：live / closed
